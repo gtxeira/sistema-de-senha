@@ -68,7 +68,7 @@ export function getInitialState() {
   };
 }
 
-function clearHistoryFromNewDay(state) {
+export function clearHistoryFromNewDay(state) {
   const today = localDateKey();
   let changed = false;
   const nextState = Object.fromEntries(
