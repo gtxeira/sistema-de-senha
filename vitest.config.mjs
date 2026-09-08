@@ -12,6 +12,12 @@ export default defineConfig({
     globals: true,
     include: ["tests/**/*.test.{js,jsx}"],
     setupFiles: ["./tests/setup.js"],
+
+    // Override environment for integration tests (need Node.js for Supabase client)
+    environmentMatchGlobs: [
+      ["tests/integration/**", "node"],
+    ],
+
     coverage: {
       provider: "v8",
       include: [

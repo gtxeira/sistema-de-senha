@@ -11,6 +11,10 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:unit": "vitest run tests/lib/ tests/api/ tests/middleware/",
+    "test:contracts": "vitest run tests/contracts/ tests/in-memory/",
+    "test:integration": "vitest run tests/integration/",
+    "test:all": "vitest run",
     "electron:dev": "electron .",
     "dist": "electron-builder --win nsis"
   },
