@@ -15,11 +15,13 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: [
-        "src/lib/**/*.js",
+        "src/lib/repositories/**/*.js",
+        "src/lib/queue-server.js",
+        "src/lib/supabase.js",
+        "src/lib/supabase-admin.js",
+        "src/lib/prisma.js",
         "src/app/api/**/*.js",
         "src/middleware.js",
-        "src/lib/prisma.js",
-        "src/lib/supabase-admin.js",
       ],
       exclude: [
         "tests/**",

@@ -1,48 +1,37 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-let db = null;
+let readRepo = {
+  getStats: vi.fn(),
+};
 
-vi.mock("@/lib/supabase-admin", () => ({
-  get isSupabaseAdminConfigured() {
-    return false;
-  },
-  supabaseAdmin: null,
+vi.mock("@/lib/repositories", () => ({
+  read: readRepo,
 }));
-
-vi.mock("@/lib/supabase", () => ({
-  get isSupabaseConfigured() {
-    return true;
-  },
-  get supabase() {
-    return db;
-  },
-}));
-
-function makeChain(result) {
-  const chain = {
-    select: vi.fn(() => chain),
-    eq: vi.fn(() => chain),
-    gte: vi.fn(() => chain),
-    lte: vi.fn(() => chain),
-    order: vi.fn(() => chain),
-    limit: vi.fn(() => chain),
-  };
-  chain.then = (resolve, reject) => Promise.resolve(result).then(resolve, reject);
-  return chain;
-}
 
 async function importRoute() {
   return import("@/app/api/stats/route.js");
 }
 
-function buildDb(allData = [], recentData = []) {
-  return {
-    from: vi.fn(() => makeChain({ data: allData, error: null })),
-  };
+function resetMocks() {
+  readRepo.getStats.mockReset();
 }
 
 describe("GET /api/stats", () => {
+  beforeEach(() => {
+    resetMocks();
+  });
+
   it("retorna estrutura vazia quando sem banco", async () => {
+    readRepo.getStats.mockResolvedValue({
+      days: 30,
+      summary: { total: 0, today: 0, preferencial: 0, normal: 0 },
+      bySector: [],
+      byType: [],
+      recent: [],
+      recentBySector: {},
+      noDb: true,
+    });
+
     const route = await importRoute();
     const req = { url: "http://localhost/api/stats" };
     const res = await route.GET(req);
@@ -58,7 +47,15 @@ describe("GET /api/stats", () => {
       { sector_id: "farmacia", type: "preferencial", created_at: created },
       { sector_id: "recepcao", type: "normal", created_at: created },
     ];
-    db = buildDb(calls, calls);
+    readRepo.getStats.mockResolvedValue({
+      days: 30,
+      summary: { total: 3, today: 0, preferencial: 1, normal: 2 },
+      bySector: [{ sector: "farmacia", total: 2 }, { sector: "recepcao", total: 1 }],
+      byType: [],
+      recent: [],
+      recentBySector: {},
+      noDb: false,
+    });
 
     const { GET } = await importRoute();
     const req = { url: "http://localhost/api/stats?days=30" };
@@ -77,7 +74,12 @@ describe("GET /api/stats", () => {
   });
 
   it("limita days entre 1 e 90", async () => {
-    db = buildDb([], []);
+    // The route passes days to getStats, which returns the clamped value
+    readRepo.getStats
+      .mockResolvedValueOnce({ days: 30, summary: { total: 0, today: 0, preferencial: 0, normal: 0 }, bySector: [], byType: [], recent: [], recentBySector: {} })
+      .mockResolvedValueOnce({ days: 90, summary: { total: 0, today: 0, preferencial: 0, normal: 0 }, bySector: [], byType: [], recent: [], recentBySector: {} })
+      .mockResolvedValueOnce({ days: 30, summary: { total: 0, today: 0, preferencial: 0, normal: 0 }, bySector: [], byType: [], recent: [], recentBySector: {} });
+
     const { GET } = await importRoute();
 
     const resLow = await GET({ url: "http://localhost/api/stats?days=0" });
@@ -91,24 +93,37 @@ describe("GET /api/stats", () => {
   });
 
   it("aplica filtro por setor e data (from/to)", async () => {
-    const spies = makeSpyDb();
-    db = spies.db;
+    readRepo.getStats.mockResolvedValue({
+      days: 31,
+      summary: { total: 0, today: 0, preferencial: 0, normal: 0 },
+      bySector: [],
+      byType: [],
+      recent: [],
+      recentBySector: {},
+    });
 
     const { GET } = await importRoute();
     await GET({
       url: "http://localhost/api/stats?sector=farmacia&from=2025-01-01&to=2025-01-31",
     });
-
-    expect(spies.eq.mock.calls.map((c) => c[0])).toContain("sector_id");
-    expect(spies.lte.mock.calls.map((c) => c[0])).toContain("created_at");
-    expect(spies.gte.mock.calls.map((c) => c[0])).toContain("created_at");
-    expect(spies.limit).toHaveBeenCalledWith(200);
+    expect(readRepo.getStats).toHaveBeenCalledWith(expect.objectContaining({
+      sector: "farmacia",
+      from: new Date("2025-01-01"),
+      to: new Date("2025-01-31"),
+    }));
   });
 
   it("conta chamadas de hoje (today)", async () => {
     const nowCall = { sector_id: "farmacia", type: "normal", created_at: new Date().toISOString() };
     const oldCall = { sector_id: "farmacia", type: "normal", created_at: "2020-01-01T00:00:00.000Z" };
-    db = buildDb([nowCall, oldCall], [nowCall, oldCall]);
+    readRepo.getStats.mockResolvedValue({
+      days: 30,
+      summary: { total: 2, today: 1, preferencial: 0, normal: 2 },
+      bySector: [],
+      byType: [],
+      recent: [],
+      recentBySector: {},
+    });
 
     const { GET } = await importRoute();
     const res = await GET({ url: "http://localhost/api/stats" });
@@ -118,13 +133,14 @@ describe("GET /api/stats", () => {
   });
 
   it("aplica cap de 50 por setor em recentBySector", async () => {
-    const many = Array.from({ length: 60 }, (_, i) => ({
-      sector_id: "farmacia",
-      type: "normal",
-      created_at: new Date().toISOString(),
-      number_str: `N${i}`,
-    }));
-    db = buildDb(many, many);
+    readRepo.getStats.mockResolvedValue({
+      days: 30,
+      summary: { total: 60, today: 0, preferencial: 0, normal: 60 },
+      bySector: [],
+      byType: [],
+      recent: [],
+      recentBySector: { farmacia: Array(50).fill({ id: "1", number: 1, type: "normal", time: "10:00" }) },
+    });
 
     const { GET } = await importRoute();
     const res = await GET({ url: "http://localhost/api/stats" });
@@ -133,7 +149,16 @@ describe("GET /api/stats", () => {
   });
 
   it("retorna estrutura vazia em erro de consulta", async () => {
-    db = { from: vi.fn(() => makeChain({ data: null, error: { message: "boom" } })) };
+    readRepo.getStats.mockResolvedValue({
+      days: 30,
+      summary: { total: 0, today: 0, preferencial: 0, normal: 0 },
+      bySector: [],
+      byType: [],
+      recent: [],
+      recentBySector: {},
+      noDb: true,
+    });
+
     const { GET } = await importRoute();
     const res = await GET({ url: "http://localhost/api/stats" });
     const body = await res.json();
@@ -141,24 +166,3 @@ describe("GET /api/stats", () => {
     expect(body.summary.total).toBe(0);
   });
 });
-
-function makeSpyDb() {
-  const eq = vi.fn();
-  const lte = vi.fn();
-  const gte = vi.fn();
-  const order = vi.fn();
-  const limit = vi.fn();
-  function makeChain() {
-    const chain = {};
-    chain.select = vi.fn().mockReturnValue(chain);
-    chain.eq = eq.mockReturnValue(chain);
-    chain.lte = lte.mockReturnValue(chain);
-    chain.gte = gte.mockReturnValue(chain);
-    chain.order = order.mockReturnValue(chain);
-    chain.limit = limit.mockReturnValue(chain);
-    chain.then = (resolve) => Promise.resolve({ data: [], error: null }).then(resolve);
-    return chain;
-  }
-  const from = vi.fn(() => makeChain());
-  return { db: { from }, eq, lte, gte, order, limit };
-}

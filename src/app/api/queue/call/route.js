@@ -1,80 +1,62 @@
 import { NextResponse } from "next/server";
-import {
-  formatNumberString,
-  getQueueDbClients,
-  insertQueueCall,
-  isInvalidApiKeyError,
-  nextQueueNumberForSector,
-  normalizeCallType,
-} from "../../../../lib/queue-server";
+import { queue } from "@/lib/repositories";
+import { formatNumberString, normalizeCallType } from "@/lib/repositories/utils";
 
+/* ─────────────────────────────────────────────────
+   POST — chama próxima senha de um setor
+   Fluxo:
+   1. Valida setor e tipo
+   2. Obtém próximo número
+   3. Formata número (N001, P002, etc.)
+   4. Salva chamada no banco
+   5. Retorna número e tipo
+───────────────────────────────────────────────── */
 export async function POST(request) {
   try {
     const body = await request.json();
     const { sector, type, attendantId } = body;
 
+    // Validate sector
     if (!sector || !["farmacia", "recepcao"].includes(sector)) {
       return NextResponse.json(
         { error: "Setor não informado." },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
+    // Normalize type
     const { sequenceType, callType } = normalizeCallType(type);
-    const clients = getQueueDbClients();
 
-    if (!clients.length) {
-      return NextResponse.json(
-        { error: "Supabase não está configurado.", useLocal: true },
-        { status: 503 },
-      );
-    }
+    // Get next number
+    const nextNum = await queue.nextNumber(sector, sequenceType);
+    const numberStr = formatNumberString(nextNum, sequenceType);
 
-    let lastError = null;
-    for (const db of clients) {
-      try {
-        const nextNum = await nextQueueNumberForSector(db, sector, sequenceType);
-        const numberStr = formatNumberString(nextNum, sequenceType);
-        await insertQueueCall(db, {
-          sector,
-          nextNum,
-          numberStr,
-          sequenceType,
-          callType,
-          attendantId,
-        });
-        return NextResponse.json({
-          success: true,
-          number: nextNum,
-          numberStr,
-          type: sequenceType,
-        });
-      } catch (error) {
-        lastError = error;
-        if (!isInvalidApiKeyError(error)) break;
-      }
-    }
+    // Save the call
+    await queue.saveCall({
+      sector,
+      number: nextNum,
+      numberStr,
+      sequenceType,
+      callType,
+      attendantId,
+    });
 
-    if (isInvalidApiKeyError(lastError)) {
-      return NextResponse.json(
-        {
-          error: "Chave do Supabase inválida. Usando sequência local.",
-          useLocal: true,
-        },
-        { status: 503 },
-      );
-    }
-
-    console.error("Erro interno na rota /api/queue/call:", lastError);
-    return NextResponse.json(
-      { error: lastError?.message || "Erro interno no servidor." },
-      { status: 500 },
-    );
+    return NextResponse.json({
+      success: true,
+      number: nextNum,
+      numberStr,
+      type: sequenceType,
+    });
   } catch (err) {
-    console.error("Erro interno na rota /api/queue/call:", err);
+    if (err.status === 503 || err.message.includes("Não configurado")) {
+      return NextResponse.json(
+        { error: err.message, useLocal: true },
+        { status: 503 }
+      );
+    }
     return NextResponse.json(
-      { error: err.message || "Erro interno no servidor." },
-      { status: 500 },
+      { error: err.message || "Erro ao chamar próxima senha" },
+      { status: err.status || 500 }
     );
   }
 }
