@@ -31,6 +31,7 @@ const serverQueueSnapshot = {
 
 let clientQueueSnapshot = null;
 let clientQueueRaw = null;
+let hasClientQueueSnapshot = false;
 let clientSessionSnapshot = null;
 let clientSessionRaw = null;
 
@@ -43,12 +44,12 @@ function localDateKey() {
 
 export function nextQueueNumber(current = 0) {
   const next = Number(current) + 1;
-  return next > 1000 ? 1 : next;
+  return next > 999 ? 0 : next;
 }
 
 export function formatQueueNumber(number, type = "normal") {
   const prefix = type === "preferencial" || type === "preferential" ? "P" : "N";
-  return `${prefix}${Number(number) === 1000 ? "1000" : String(Number(number) || 0).padStart(3, "0")}`;
+  return `${prefix}${String(Number(number) || 0).padStart(3, "0")}`;
 }
 
 export function getInitialState() {
@@ -185,9 +186,12 @@ export function subscribeQueue(callback) {
 
 export function getQueueSnapshot() {
   const raw = window.localStorage.getItem(QUEUE_KEY);
-  if (raw === clientQueueRaw && clientQueueSnapshot) return clientQueueSnapshot;
-  clientQueueRaw = raw;
+  if (raw === clientQueueRaw && hasClientQueueSnapshot)
+    return clientQueueSnapshot;
   clientQueueSnapshot = readQueueState();
+  // readQueueState pode normalizar o estado do dia e atualizar o localStorage.
+  clientQueueRaw = window.localStorage.getItem(QUEUE_KEY);
+  hasClientQueueSnapshot = true;
   return clientQueueSnapshot;
 }
 

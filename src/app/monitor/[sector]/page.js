@@ -54,8 +54,7 @@ function subscribeNews(cb) {
 }
 
 function formatMonitorNumber(number) {
-  const n = Number(number) || 0;
-  return n === 1000 ? "1000" : String(n).padStart(3, "0");
+  return String(Number(number) || 0).padStart(3, "0");
 }
 
 function cleanHistory(history = []) {
@@ -73,7 +72,11 @@ function cleanHistory(history = []) {
 
 /* ─── carrossel de notícias isolado (evita re-render da voz) ─── */
 const NewsCarousel = memo(function NewsCarousel() {
-  const news = useSyncExternalStore(subscribeNews, getNewsSnapshot, () => serverNewsSnapshot);
+  const news = useSyncExternalStore(
+    subscribeNews,
+    getNewsSnapshot,
+    () => serverNewsSnapshot,
+  );
   const [newsIndex, setNewsIndex] = useState(0);
 
   useEffect(() => {
@@ -89,7 +92,10 @@ const NewsCarousel = memo(function NewsCarousel() {
 
   useEffect(() => {
     if (!news?.length) return;
-    const t = setInterval(() => setNewsIndex((p) => (p + 1) % news.length), 5000);
+    const t = setInterval(
+      () => setNewsIndex((p) => (p + 1) % news.length),
+      5000,
+    );
     return () => clearInterval(t);
   }, [news]);
 
@@ -109,7 +115,13 @@ const NewsCarousel = memo(function NewsCarousel() {
         <img
           src={item.image}
           alt={item.title || ""}
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+          }}
         />
       )}
       <div className={styles.newsCaption}>
@@ -131,22 +143,31 @@ export default function MonitorPage({ params }) {
   const resolvedParams = params ? (params.then ? use(params) : params) : {};
   const sector = resolvedParams?.sector || "farmacia";
 
-  const state = useSyncExternalStore(subscribeQueue, getQueueSnapshot, () => monitorServerSnapshot);
+  const state = useSyncExternalStore(
+    subscribeQueue,
+    getQueueSnapshot,
+    () => monitorServerSnapshot,
+  );
 
   const [time, setTime] = useState("");
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [calling, setCalling] = useState(false);
 
   const audioEnabledRef = useRef(false);
-  audioEnabledRef.current = audioEnabled;
+
+  useEffect(() => {
+    audioEnabledRef.current = audioEnabled;
+  }, [audioEnabled]);
 
   /* relógio */
   useEffect(() => {
     const t = setInterval(() => {
       setTime(
         new Intl.DateTimeFormat("pt-BR", {
-          hour: "2-digit", minute: "2-digit", second: "2-digit",
-        }).format(new Date())
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        }).format(new Date()),
       );
     }, 1000);
     return () => clearInterval(t);
@@ -193,12 +214,23 @@ export default function MonitorPage({ params }) {
         const formatted = data.map((item) => ({
           id: item.id,
           number: item.number_int,
-          type: item.type === "preferential" || item.type === "preferencial" ? "preferencial" : "normal",
-          time: new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" })
-            .format(new Date(item.created_at || Date.now())),
+          type:
+            item.type === "preferential" || item.type === "preferencial"
+              ? "preferencial"
+              : "normal",
+          time: new Intl.DateTimeFormat("pt-BR", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }).format(new Date(item.created_at || Date.now())),
         }));
         const prev = getQueueSnapshot() || monitorServerSnapshot;
-        saveQueueState({ ...prev, [sector]: { ...(prev[sector] || {}), history: cleanHistory(formatted) } });
+        saveQueueState({
+          ...prev,
+          [sector]: {
+            ...(prev[sector] || {}),
+            history: cleanHistory(formatted),
+          },
+        });
       } catch (err) {
         console.error("Erro ao carregar histórico:", err);
       }
@@ -208,111 +240,137 @@ export default function MonitorPage({ params }) {
 
     const channel = db
       .channel(`realtime-monitor-${sector}`)
-      .on("postgres_changes", {
-        event: "INSERT", schema: "public", table: "queue_calls",
-        filter: `sector_id=eq.${sector}`,
-      }, (payload) => {
-        const call = payload.new;
-        if (!call?.number_int) return;
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "queue_calls",
+          filter: `sector_id=eq.${sector}`,
+        },
+        (payload) => {
+          const call = payload.new;
+          if (!call?.number_int) return;
 
-        const callKey = `${call.id || call.number_int}-${call.type}`;
-        if (lastSpokenCallId === callKey) return;
-        lastSpokenCallId = callKey;
+          const callKey = `${call.id || call.number_int}-${call.type}`;
+          if (lastSpokenCallId === callKey) return;
+          lastSpokenCallId = callKey;
 
-        const prev = getQueueSnapshot() || monitorServerSnapshot;
-        const queue = prev[sector] || {};
-        const callType = call.type === "preferential" || call.type === "preferencial"
-          ? "preferencial" : "normal";
-        const field = callType === "preferencial" ? "priorityCurrent" : "normalCurrent";
-        const timeStr = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" })
-          .format(new Date(call.created_at || Date.now()));
+          const prev = getQueueSnapshot() || monitorServerSnapshot;
+          const queue = prev[sector] || {};
+          const callType =
+            call.type === "preferential" || call.type === "preferencial"
+              ? "preferencial"
+              : "normal";
+          const field =
+            callType === "preferencial" ? "priorityCurrent" : "normalCurrent";
+          const timeStr = new Intl.DateTimeFormat("pt-BR", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }).format(new Date(call.created_at || Date.now()));
 
-        const currentHistory = queue.history || [];
-        const newEntry = { id: call.id, number: call.number_int, type: callType, time: timeStr };
+          const currentHistory = queue.history || [];
+          const newEntry = {
+            id: call.id,
+            number: call.number_int,
+            type: callType,
+            time: timeStr,
+          };
 
-        saveQueueState({
-          ...prev,
-          [sector]: {
-            ...queue,
-            [field]: call.number_int,
-            history: cleanHistory([newEntry, ...currentHistory]).slice(0, 30),
-          },
-        });
+          saveQueueState({
+            ...prev,
+            [sector]: {
+              ...queue,
+              [field]: call.number_int,
+              history: cleanHistory([newEntry, ...currentHistory]).slice(0, 30),
+            },
+          });
 
-        if (audioEnabledRef.current) {
-          monitorSpeak(call.number_int, callType);
-        }
-      })
+          if (audioEnabledRef.current) {
+            monitorSpeak(call.number_int, callType);
+          }
+        },
+      )
       .subscribe();
 
-    return () => { db.removeChannel(channel); };
+    return () => {
+      db.removeChannel(channel);
+    };
   }, [sector]);
 
   /* ─── chamar próxima senha (via teclado / passador) ─── */
-  const callNext = useCallback(async (type) => {
-    if (calling) return;
-    setCalling(true);
+  const callNext = useCallback(
+    async (type) => {
+      if (calling) return;
+      setCalling(true);
 
-    await withQueueLock(async () => {
-      let next = null;
-      try {
-        const res = await fetch("/api/queue/call", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sector, type, attendantId: null }),
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          if (data.useLocal) {
-            const ls = normalizeQueue(readQueueState()[sector]);
-            next = type === "preferencial"
+      await withQueueLock(async () => {
+        let next = null;
+        try {
+          const res = await fetch("/api/queue/call", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sector, type, attendantId: null }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            if (data.useLocal) {
+              const ls = normalizeQueue(readQueueState()[sector]);
+              next =
+                type === "preferencial"
+                  ? nextQueueNumber(ls.priorityCurrent)
+                  : nextQueueNumber(ls.normalCurrent);
+            } else {
+              setCalling(false);
+              return;
+            }
+          } else {
+            next = Number(data.number);
+          }
+        } catch {
+          const ls = normalizeQueue(readQueueState()[sector]);
+          next =
+            type === "preferencial"
               ? nextQueueNumber(ls.priorityCurrent)
               : nextQueueNumber(ls.normalCurrent);
-          } else {
-            setCalling(false);
-            return;
-          }
-        } else {
-          next = Number(data.number);
         }
-      } catch {
-        const ls = normalizeQueue(readQueueState()[sector]);
-        next = type === "preferencial"
-          ? nextQueueNumber(ls.priorityCurrent)
-          : nextQueueNumber(ls.normalCurrent);
-      }
 
-      next = Number(next);
-      if (!Number.isInteger(next) || next < 1 || next > 1000) {
-        setCalling(false);
-        return;
-      }
+        next = Number(next);
+        if (!Number.isInteger(next) || next < 1 || next > 1000) {
+          setCalling(false);
+          return;
+        }
 
-      // Atualiza só o contador atual para feedback visual imediato.
-      // NÃO adiciona ao histórico — o Realtime é a única fonte de verdade
-      // para o histórico, evitando duplicação em produção.
-      const latest = readQueueState();
-      const q = normalizeQueue(latest[sector]);
-      const field = type === "preferencial" ? "priorityCurrent" : "normalCurrent";
+        // Atualiza só o contador atual para feedback visual imediato.
+        // NÃO adiciona ao histórico — o Realtime é a única fonte de verdade
+        // para o histórico, evitando duplicação em produção.
+        const latest = readQueueState();
+        const q = normalizeQueue(latest[sector]);
+        const field =
+          type === "preferencial" ? "priorityCurrent" : "normalCurrent";
 
-      saveQueueState({
-        ...latest,
-        [sector]: {
-          ...q,
-          [field]: next,
-          // histórico inalterado — Realtime vai inserir
-        },
+        saveQueueState({
+          ...latest,
+          [sector]: {
+            ...q,
+            [field]: next,
+            // histórico inalterado — Realtime vai inserir
+          },
+        });
+
+        if (audioEnabledRef.current) forceAnnounce(next, type);
       });
 
-      if (audioEnabledRef.current) forceAnnounce(next, type);
-    });
-
-    setCalling(false);
-  }, [calling, sector]);
+      setCalling(false);
+    },
+    [calling, sector],
+  );
 
   /* ─── repetir última senha ─── */
   const reCall = useCallback(() => {
-    const q = normalizeQueue((getQueueSnapshot() || monitorServerSnapshot)[sector]);
+    const q = normalizeQueue(
+      (getQueueSnapshot() || monitorServerSnapshot)[sector],
+    );
     const last = q.history[0];
     if (!last) return;
     if (audioEnabledRef.current) forceAnnounce(last.number, last.type);
@@ -321,11 +379,19 @@ export default function MonitorPage({ params }) {
   /* ─── atalhos de teclado ─── */
   useEffect(() => {
     function onKey(e) {
-      if (["INPUT", "TEXTAREA", "SELECT", "BUTTON"].includes(e.target.tagName)) return;
+      if (["INPUT", "TEXTAREA", "SELECT", "BUTTON"].includes(e.target.tagName))
+        return;
       const k = e.key;
-      if (k === "ArrowRight")  { e.preventDefault(); callNext("normal"); }
-      else if (k === "ArrowLeft")  { e.preventDefault(); callNext("preferencial"); }
-      else if (k === "ArrowUp")    { e.preventDefault(); reCall(); }
+      if (["ArrowRight", "PageDown", "Enter", " "].includes(k)) {
+        e.preventDefault();
+        callNext("normal");
+      } else if (["ArrowLeft", "PageUp"].includes(k)) {
+        e.preventDefault();
+        callNext("preferencial");
+      } else if (["ArrowUp", "Home"].includes(k)) {
+        e.preventDefault();
+        reCall();
+      }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -336,8 +402,13 @@ export default function MonitorPage({ params }) {
     function onMouseDown(e) {
       // ignora cliques em botões/links
       if (e.target.closest("a, button, input, select, textarea")) return;
-      if (e.button === 0) { e.preventDefault(); callNext("normal"); }
-      else if (e.button === 2) { e.preventDefault(); callNext("preferencial"); }
+      if (e.button === 0) {
+        e.preventDefault();
+        callNext("normal");
+      } else if (e.button === 2) {
+        e.preventDefault();
+        callNext("preferencial");
+      }
     }
     function onWheel(e) {
       if (e.target.closest("a, button, input, select, textarea")) return;
@@ -364,7 +435,10 @@ export default function MonitorPage({ params }) {
   const info = SECTORS[sector] || SECTORS.farmacia;
   const current = state[sector] || monitorServerSnapshot[sector];
   const validHistory = cleanHistory(current.history || []);
-  const latest = validHistory[0] || { number: current.normalCurrent || 0, type: "normal" };
+  const latest = validHistory[0] || {
+    number: current.normalCurrent || 0,
+    type: "normal",
+  };
   const recentCalls = validHistory.slice(1, 5);
   const isPriority = latest.type === "preferencial";
 
@@ -382,37 +456,62 @@ export default function MonitorPage({ params }) {
           </div>
           <div className={styles.date}>
             {new Intl.DateTimeFormat("pt-BR", {
-              weekday: "long", day: "2-digit", month: "long", year: "numeric",
-            }).format(new Date()).toUpperCase()}
+              weekday: "long",
+              day: "2-digit",
+              month: "long",
+              year: "numeric",
+            })
+              .format(new Date())
+              .toUpperCase()}
           </div>
         </div>
       </header>
 
       <div className={styles.content}>
         <section className={styles.leftColumn}>
-
-          <section className={`${styles.featured} ${isPriority ? styles.featuredPriority : ""}`}>
+          <section
+            className={`${styles.featured} ${isPriority ? styles.featuredPriority : ""}`}
+          >
             <p>SENHA</p>
             <strong>{formatMonitorNumber(latest.number)}</strong>
-            {isPriority
-              ? <span className={styles.priorityTag}>ATENDIMENTO PREFERENCIAL</span>
-              : <span>ATENDIMENTO</span>}
+            {isPriority ? (
+              <span className={styles.priorityTag}>
+                ATENDIMENTO PREFERENCIAL
+              </span>
+            ) : (
+              <span>ATENDIMENTO</span>
+            )}
             <small>Dirija-se ao balcão de atendimento</small>
           </section>
 
           <section className={styles.recent}>
             <p className={styles.kicker}>ÚLTIMAS SENHAS</p>
-            {recentCalls.length > 0 ? recentCalls.map((item, i) => (
-              <div className={styles.historyItem} key={`${item.id || item.number}-${item.type}-${i}`}>
-                <strong className={item.type === "preferencial" ? styles.priorityNumber : styles.normalNumber}>
-                  {formatMonitorNumber(item.number)}
-                </strong>
-                {item.type === "preferencial"
-                  ? <span className={styles.priorityTagSmall}>PREFERENCIAL</span>
-                  : <span className={styles.normal}>ATENDIMENTO</span>}
-                <time>{item.time}</time>
-              </div>
-            )) : (
+            {recentCalls.length > 0 ? (
+              recentCalls.map((item, i) => (
+                <div
+                  className={styles.historyItem}
+                  key={`${item.id || item.number}-${item.type}-${i}`}
+                >
+                  <strong
+                    className={
+                      item.type === "preferencial"
+                        ? styles.priorityNumber
+                        : styles.normalNumber
+                    }
+                  >
+                    {formatMonitorNumber(item.number)}
+                  </strong>
+                  {item.type === "preferencial" ? (
+                    <span className={styles.priorityTagSmall}>
+                      PREFERENCIAL
+                    </span>
+                  ) : (
+                    <span className={styles.normal}>ATENDIMENTO</span>
+                  )}
+                  <time>{item.time}</time>
+                </div>
+              ))
+            ) : (
               <p style={{ fontSize: "14px", color: "#888", marginTop: "12px" }}>
                 Aguardando chamadas anteriores...
               </p>

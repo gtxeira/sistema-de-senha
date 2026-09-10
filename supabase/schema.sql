@@ -30,7 +30,7 @@ create table if not exists public.queues (
 create table if not exists public.queue_sequences (
   sector_id text not null references public.sectors(id),
   call_type text not null check (call_type in ('normal', 'preferencial')),
-  current_number integer not null default 0 check (current_number between 0 and 1000),
+  current_number integer not null default 0 check (current_number between 0 and 999),
   updated_at timestamptz not null default now(),
   primary key (sector_id, call_type)
 );
@@ -41,7 +41,7 @@ create table if not exists public.queue_calls (
   id bigint generated always as identity primary key,
   sector_id text not null references public.sectors(id),
   number_str varchar(4) not null,
-  number_int integer not null check (number_int between 1 and 1000),
+  number_int integer not null check (number_int between 0 and 999),
   type text not null check (type in ('normal', 'preferential')),
   called_by uuid references auth.users(id),
   created_at timestamptz not null default now()
@@ -114,11 +114,11 @@ begin
   end;
 
   insert into public.queue_sequences (sector_id, call_type, current_number, updated_at)
-  values (p_sector_id, normalized, 1, now())
+  values (p_sector_id, normalized, 0, now())
   on conflict (sector_id, call_type)
   do update set
     current_number = case
-      when public.queue_sequences.current_number >= 1000 then 1
+      when public.queue_sequences.current_number >= 999 then 0
       else public.queue_sequences.current_number + 1
     end,
     updated_at = now()

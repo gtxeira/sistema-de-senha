@@ -31,13 +31,12 @@ export function normalizeCallType(type) {
 export function formatNumberString(num, type) {
   const prefix =
     type === "preferencial" || type === "preferential" ? "P" : "N";
-  if (Number(num) >= 1000) return "1000";
   return `${prefix}${String(Number(num) || 0).padStart(3, "0")}`;
 }
 
 function nextValue(current) {
   const value = Number(current) || 0;
-  return value >= 1000 ? 1 : value + 1;
+  return value >= 999 ? 0 : value + 1;
 }
 
 async function incrementViaRpc(db, sector, sequenceType) {
@@ -54,7 +53,7 @@ async function incrementViaRpc(db, sector, sequenceType) {
         result.current_number ??
         result.next_number,
     );
-    return Number.isInteger(number) && number >= 1 ? number : null;
+    return Number.isInteger(number) && number >= 0 ? number : null;
   } catch {
     return null;
   }
@@ -89,10 +88,10 @@ async function incrementCurrentNumber(db, sector, sequenceType) {
   const { error: insertError } = await db.from("queue_sequences").insert({
     sector_id: sector,
     call_type: sequenceType,
-    current_number: 1,
+    current_number: 0,
   });
   if (insertError) throw insertError;
-  return 1;
+  return 0;
 }
 
 async function incrementLegacyColumns(db, sector, sequenceType) {
