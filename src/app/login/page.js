@@ -1,9 +1,8 @@
 "use client";
 
-"use client";
-
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { LockKeyhole } from "lucide-react";
 import { SESSION_KEY } from "../../lib/queue";
 import styles from "./Login.module.css";
@@ -21,16 +20,34 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ login, password }),
+      const result = await signIn("credentials", {
+        username: login,
+        password,
+        redirect: false,
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
 
-      window.localStorage.setItem(SESSION_KEY, JSON.stringify(data));
-      document.cookie = `session=1; path=/; max-age=86400; SameSite=Lax`;
+      if (result?.error) {
+        throw new Error("Usuário ou senha inválidos.");
+      }
+
+      // Busca a sessão estabelecida pelo Auth.js
+      const res = await fetch("/api/auth/session");
+      const session = await res.json();
+
+      if (session?.user) {
+        window.localStorage.setItem(
+          SESSION_KEY,
+          JSON.stringify({
+            id: session.user.id,
+            name: session.user.name,
+            initials: session.user.initials,
+            role: session.user.role,
+            sector: session.user.sector,
+            guiche: session.user.guiche,
+          }),
+        );
+      }
+
       router.push("/home");
     } catch (err) {
       setError(err.message || "Usuário ou senha inválidos.");

@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 import { LogOut, Monitor, Settings2 } from "lucide-react";
 import { getSessionSnapshot, SESSION_KEY, SECTORS } from "../../lib/queue";
 import styles from "./Home.module.css";
@@ -19,8 +20,7 @@ export default function HomePage() {
 
   function logout() {
     window.localStorage.removeItem(SESSION_KEY);
-    document.cookie = "session=; path=/; max-age=0";
-    router.push("/login");
+    signOut({ callbackUrl: "/login" });
   }
 
   return (

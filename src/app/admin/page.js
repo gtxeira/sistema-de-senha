@@ -10,6 +10,7 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 import {
   AlertTriangle,
   Filter,
@@ -292,7 +293,7 @@ export default function AdminPage() {
           href="/login"
           onClick={() => {
             window.localStorage.removeItem(SESSION_KEY);
-            document.cookie = "session=; path=/; max-age=0";
+            signOut({ callbackUrl: "/login" });
           }}
         >
           <LogOut size={16} /> Sair
