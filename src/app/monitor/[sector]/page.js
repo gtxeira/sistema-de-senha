@@ -153,56 +153,51 @@ export default function MonitorPage({ params }) {
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [calling, setCalling] = useState(false);
 
-  // Ao abrir o monitor, ajusta o histórico para mostrar apenas a última senha chamada
+  // Busca a última senha chamada do banco ao abrir o monitor
   useEffect(() => {
     if (!sector) return;
     
-    const prev = readQueueState();
-    const queue = normalizeQueue(prev[sector] || {});
-    
-    // Determina qual foi a última senha chamada baseada nos contadores
-    const normalCurrent = queue.normalCurrent || 0;
-    const priorityCurrent = queue.priorityCurrent || 0;
-    
-    let currentPasswordEntry = null;
-    
-    // Se há senhas chamadas, cria uma entrada para a última senha
-    if (normalCurrent > 0 || priorityCurrent > 0) {
-      if (priorityCurrent >= normalCurrent && priorityCurrent > 0) {
-        currentPasswordEntry = {
-          number: priorityCurrent,
-          type: "preferencial",
-          time: new Date().toLocaleTimeString("pt-BR", { 
-            hour: "2-digit", 
-            minute: "2-digit" 
-          }),
-          id: `current-${priorityCurrent}-preferencial`
-        };
-      } else if (normalCurrent > 0) {
-        currentPasswordEntry = {
-          number: normalCurrent,
-          type: "normal", 
-          time: new Date().toLocaleTimeString("pt-BR", { 
-            hour: "2-digit", 
-            minute: "2-digit" 
-          }),
-          id: `current-${normalCurrent}-normal`
-        };
+    async function syncCurrentPassword() {
+      try {
+        // Busca a última senha do setor no banco
+        const response = await fetch(`/api/queue/current?sector=${sector}`);
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Se há uma senha atual no banco, sincroniza com localStorage
+          if (data.current && data.current.number) {
+            const prev = readQueueState();
+            const queue = normalizeQueue(prev[sector] || {});
+            
+            const field = data.current.type === 'preferencial' ? 'priorityCurrent' : 'normalCurrent';
+            
+            const updatedState = {
+              ...prev,
+              [sector]: {
+                ...queue,
+                [field]: data.current.number,
+                history: data.current ? [{
+                  number: data.current.number,
+                  type: data.current.type,
+                  time: new Date().toLocaleTimeString("pt-BR", { 
+                    hour: "2-digit", 
+                    minute: "2-digit" 
+                  }),
+                  id: `sync-${data.current.number}-${data.current.type}`
+                }] : [],
+                historyDate: queue.historyDate || new Date().toISOString().split('T')[0],
+              },
+            };
+            
+            saveQueueState(updatedState);
+          }
+        }
+      } catch (error) {
+        console.log('Não foi possível sincronizar com servidor, usando dados locais');
       }
     }
     
-    // Ajusta o histórico para mostrar apenas a senha atual (se existir)
-    const updatedState = {
-      ...prev,
-      [sector]: {
-        ...queue,
-        history: currentPasswordEntry ? [currentPasswordEntry] : [],
-        historyDate: queue.historyDate || new Date().toISOString().split('T')[0],
-      },
-    };
-    
-    saveQueueState(updatedState);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    syncCurrentPassword();
   }, [sector]);
 
   const audioEnabledRef = useRef(false);
@@ -497,8 +492,25 @@ export default function MonitorPage({ params }) {
   const current = state[sector] || monitorServerSnapshot[sector];
   const validHistory = cleanHistory(current.history || []);
   
-  // A primeira entrada do histórico é sempre a senha atual
-  const latest = validHistory[0] || { number: 0, type: "normal" };
+  // NOVA LÓGICA: Se não há histórico, busca diretamente do localStorage
+  let latest;
+  if (validHistory.length > 0) {
+    latest = validHistory[0];
+  } else {
+    // Se não há histórico, determina a senha atual pelos contadores
+    const freshState = readQueueState();
+    const freshQueue = normalizeQueue(freshState[sector] || {});
+    const normalCurrent = freshQueue.normalCurrent || 0;
+    const priorityCurrent = freshQueue.priorityCurrent || 0;
+    
+    if (normalCurrent === 0 && priorityCurrent === 0) {
+      latest = { number: 0, type: "normal" };
+    } else if (priorityCurrent >= normalCurrent && priorityCurrent > 0) {
+      latest = { number: priorityCurrent, type: "preferencial" };
+    } else {
+      latest = { number: normalCurrent, type: "normal" };
+    }
+  }
   
   // As "últimas senhas" são as entradas seguintes (excluindo a atual)
   const recentCalls = validHistory.slice(1, 5);
@@ -535,7 +547,7 @@ export default function MonitorPage({ params }) {
             className={`${styles.featured} ${isPriority ? styles.featuredPriority : ""}`}
           >
             <p>SENHA</p>
-            <strong>{formatMonitorNumber(latest.number)}</strong>
+            <strong>{formatMonitorNumber(latest?.number || 0)}</strong>
             {isPriority ? (
               <span className={styles.priorityTag}>
                 ATENDIMENTO PREFERENCIAL
@@ -561,7 +573,7 @@ export default function MonitorPage({ params }) {
                         : styles.normalNumber
                     }
                   >
-                    {formatMonitorNumber(item.number)}
+                    {formatMonitorNumber(item?.number || 0)}
                   </strong>
                   {item.type === "preferencial" ? (
                     <span className={styles.priorityTagSmall}>

@@ -80,9 +80,11 @@ function clearHistoryFromNewDay(state) {
         sector,
         {
           ...queue,
+          // PRESERVA os contadores — nunca zera ao mudar de dia
           normalCurrent:
-            queue.normalCurrent ?? (queue.historyDate ? queue.current : 0),
+            queue.normalCurrent ?? queue.current ?? 0,
           priorityCurrent: queue.priorityCurrent ?? 0,
+          // Limpa apenas o histórico visual
           history: [],
           historyDate: today,
         },
