@@ -153,6 +153,28 @@ export default function MonitorPage({ params }) {
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [calling, setCalling] = useState(false);
 
+  // Ao abrir o monitor, limpa o histórico visual mas preserva os contadores
+  useEffect(() => {
+    if (!sector) return;
+    
+    // Força a limpeza do histórico ao montar o monitor
+    const prev = readQueueState();
+    const queue = normalizeQueue(prev[sector] || {});
+    
+    // Sempre limpa o histórico visual, preservando apenas os contadores
+    const updatedState = {
+      ...prev,
+      [sector]: {
+        ...queue,
+        history: [], // Sempre vazio ao abrir o monitor
+        historyDate: queue.historyDate || new Date().toISOString().split('T')[0],
+      },
+    };
+    
+    saveQueueState(updatedState);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sector]);
+
   const audioEnabledRef = useRef(false);
 
   useEffect(() => {
@@ -204,31 +226,40 @@ export default function MonitorPage({ params }) {
 
     async function fetchInitialHistory() {
       try {
-        const { data, error } = await db
+        // Busca apenas a última senha chamada (qualquer dia)
+        // para manter o contador correto ao reabrir o sistema.
+        // O histórico visual sempre começa vazio.
+        const { data: lastCallData } = await db
           .from("queue_calls")
-          .select("*")
+          .select("number_int, type")
           .eq("sector_id", sector)
           .order("id", { ascending: false })
-          .limit(30);
-        if (error || !data?.length) return;
-        const formatted = data.map((item) => ({
-          id: item.id,
-          number: item.number_int,
-          type:
-            item.type === "preferential" || item.type === "preferencial"
-              ? "preferencial"
-              : "normal",
-          time: new Intl.DateTimeFormat("pt-BR", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }).format(new Date(item.created_at || Date.now())),
-        }));
-        const prev = getQueueSnapshot() || monitorServerSnapshot;
+          .limit(1);
+
+        const prev  = getQueueSnapshot() || monitorServerSnapshot;
+        const queue = prev[sector] || {};
+
+        let normalCurrent   = queue.normalCurrent   ?? 0;
+        let priorityCurrent = queue.priorityCurrent ?? 0;
+
+        const lastCall = lastCallData?.[0];
+        if (lastCall) {
+          const isPreferencial =
+            lastCall.type === "preferencial" || lastCall.type === "preferential";
+          if (isPreferencial) {
+            priorityCurrent = lastCall.number_int;
+          } else {
+            normalCurrent = lastCall.number_int;
+          }
+        }
+
         saveQueueState({
           ...prev,
           [sector]: {
-            ...(prev[sector] || {}),
-            history: cleanHistory(formatted),
+            ...queue,
+            normalCurrent,
+            priorityCurrent,
+            history: [], // sempre inicia vazio
           },
         });
       } catch (err) {
