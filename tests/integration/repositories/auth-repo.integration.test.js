@@ -1,6 +1,6 @@
 import { describe, beforeEach, afterEach } from "vitest";
-import { authRepoContract } from "../contracts/auth-repo.contract.js";
-import { isSupabaseReady, getAdminClient, seedTestUser, cleanupTestUsers } from "./setup.js";
+import { authRepoContract } from "../../contracts/auth-repo.contract.js";
+import { isSupabaseReady, getAdminClient, seedTestUser, cleanupTestUsers } from "../setup.js";
 
 const describeIfSupabase = isSupabaseReady ? describe : describe.skip;
 

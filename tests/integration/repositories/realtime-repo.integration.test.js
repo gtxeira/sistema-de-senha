@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { isSupabaseReady, getAdminClient, cleanupQueueTestData } from "./setup.js";
+import { isSupabaseReady, getAdminClient, cleanupQueueTestData } from "../setup.js";
 
 const describeIfSupabase = isSupabaseReady ? describe : describe.skip;
 

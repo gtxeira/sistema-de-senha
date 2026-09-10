@@ -1,5 +1,5 @@
-import { InMemoryReadRepository } from "./in-memory-read-repo.js";
-import { readRepoContract } from "../contracts/read-repo.contract.js";
+import { InMemoryReadRepository } from "../../helpers/in-memory-repos/in-memory-read-repo.js";
+import { readRepoContract } from "../../contracts/read-repo.contract.js";
 
 readRepoContract(() => {
   // Shared calls array — seedCalls appends to it, repo reads from it
