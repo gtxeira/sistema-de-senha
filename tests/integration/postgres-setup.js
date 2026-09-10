@@ -56,4 +56,35 @@ export async function cleanupAllTestUsers() {
   });
 }
 
+/**
+ * Seed a test news item into the news table via Prisma.
+ * @param {object} data
+ * @param {string} [data.title]
+ * @param {string} [data.image]
+ * @returns {{ id: number, title: string }}
+ */
+export async function seedTestNews(data = {}) {
+  const result = await prisma.news.create({
+    data: {
+      title: data.title || `Test News ${Date.now()}`,
+      image_url: data.image || "https://fake.test/news.jpg",
+      active: true,
+    },
+    select: { id: true, title: true },
+  });
+
+  return { id: Number(result.id), title: result.title };
+}
+
+/**
+ * Clean up test news items by id.
+ * @param {number[]} ids
+ */
+export async function cleanupTestNews(ids) {
+  if (!ids.length) return;
+  await prisma.news.deleteMany({
+    where: { id: { in: ids.map(BigInt) } },
+  });
+}
+
 export { prisma };
