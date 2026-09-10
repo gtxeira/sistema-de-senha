@@ -82,6 +82,13 @@ export async function POST(request) {
       .single();
 
     if (profileError || !userProfile?.active) {
+      console.error("Login: perfil bloqueado", {
+        userId: data.user.id,
+        usingAdmin: !!(isSupabaseAdminConfigured && supabaseAdmin),
+        profileError: profileError?.message,
+        profileError_code: profileError?.code,
+        active: userProfile?.active,
+      });
       return Response.json(
         { error: "Usuário sem acesso ativo." },
         { status: 403 },
