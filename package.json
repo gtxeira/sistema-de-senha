@@ -15,7 +15,12 @@
     "test:coverage": "vitest run --coverage",
     "test:all": "vitest run",
     "electron:dev": "electron .",
-    "dist": "electron-builder --win nsis"
+    "dist": "electron-builder --win nsis",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "prisma db seed",
+    "db:reset": "prisma migrate reset --force",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -48,5 +53,8 @@
       "target": "nsis",
       "icon": "public/favicon.ico"
     }
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   }
 }
