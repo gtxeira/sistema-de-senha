@@ -153,20 +153,50 @@ export default function MonitorPage({ params }) {
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [calling, setCalling] = useState(false);
 
-  // Ao abrir o monitor, limpa o histórico visual mas preserva os contadores
+  // Ao abrir o monitor, ajusta o histórico para mostrar apenas a última senha chamada
   useEffect(() => {
     if (!sector) return;
     
-    // Força a limpeza do histórico ao montar o monitor
     const prev = readQueueState();
     const queue = normalizeQueue(prev[sector] || {});
     
-    // Sempre limpa o histórico visual, preservando apenas os contadores
+    // Determina qual foi a última senha chamada baseada nos contadores
+    const normalCurrent = queue.normalCurrent || 0;
+    const priorityCurrent = queue.priorityCurrent || 0;
+    
+    let currentPasswordEntry = null;
+    
+    // Se há senhas chamadas, cria uma entrada para a última senha
+    if (normalCurrent > 0 || priorityCurrent > 0) {
+      if (priorityCurrent >= normalCurrent && priorityCurrent > 0) {
+        currentPasswordEntry = {
+          number: priorityCurrent,
+          type: "preferencial",
+          time: new Date().toLocaleTimeString("pt-BR", { 
+            hour: "2-digit", 
+            minute: "2-digit" 
+          }),
+          id: `current-${priorityCurrent}-preferencial`
+        };
+      } else if (normalCurrent > 0) {
+        currentPasswordEntry = {
+          number: normalCurrent,
+          type: "normal", 
+          time: new Date().toLocaleTimeString("pt-BR", { 
+            hour: "2-digit", 
+            minute: "2-digit" 
+          }),
+          id: `current-${normalCurrent}-normal`
+        };
+      }
+    }
+    
+    // Ajusta o histórico para mostrar apenas a senha atual (se existir)
     const updatedState = {
       ...prev,
       [sector]: {
         ...queue,
-        history: [], // Sempre vazio ao abrir o monitor
+        history: currentPasswordEntry ? [currentPasswordEntry] : [],
         historyDate: queue.historyDate || new Date().toISOString().split('T')[0],
       },
     };
@@ -467,25 +497,10 @@ export default function MonitorPage({ params }) {
   const current = state[sector] || monitorServerSnapshot[sector];
   const validHistory = cleanHistory(current.history || []);
   
-  // Se há histórico, usa a primeira entrada (senha atual)
-  // Se não há histórico, determina qual foi a última senha chamada baseada nos contadores
-  const latest = validHistory[0] || (() => {
-    const normalCurrent = current.normalCurrent || 0;
-    const priorityCurrent = current.priorityCurrent || 0;
-    
-    // Se ambos são 0, não há senhas chamadas ainda
-    if (normalCurrent === 0 && priorityCurrent === 0) {
-      return { number: 0, type: "normal" };
-    }
-    
-    // Retorna a maior senha entre os contadores como a última chamada
-    if (priorityCurrent >= normalCurrent) {
-      return { number: priorityCurrent, type: "preferencial" };
-    } else {
-      return { number: normalCurrent, type: "normal" };
-    }
-  })();
+  // A primeira entrada do histórico é sempre a senha atual
+  const latest = validHistory[0] || { number: 0, type: "normal" };
   
+  // As "últimas senhas" são as entradas seguintes (excluindo a atual)
   const recentCalls = validHistory.slice(1, 5);
   const isPriority = latest.type === "preferencial";
 
