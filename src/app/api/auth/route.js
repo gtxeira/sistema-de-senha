@@ -22,103 +22,84 @@ export async function POST(request) {
 
   try {
     const { login, password } = await request.json();
-    const username = String(login || "")
-      .trim()
-      .toLowerCase();
+    const username = String(login || "").trim().toLowerCase();
+
     if (!/^[a-z0-9]+(?:[._][a-z0-9]+)*$/.test(username)) {
       return Response.json(
-        { error: "Usuário inválido. Use nome.sobrenome." },
+        { error: "Usuário inválido." },
         { status: 400 },
       );
     }
 
+    // Estratégia 1: buscar email pelo username no profiles (via admin)
+    // Estratégia 2: fallback direto com email padrão
+    // Estratégia 3: fallback com username como email local
     let loginEmail = `${username}@central-atendimento.local`;
+
     if (isSupabaseAdminConfigured && supabaseAdmin) {
-      const { data: usernameProfile, error: usernameError } =
-        await supabaseAdmin
+      try {
+        // Tenta achar o perfil pelo username
+        const { data: profile } = await supabaseAdmin
           .from("profiles")
           .select("id")
           .ilike("username", username)
           .maybeSingle();
 
-      if (usernameError || !usernameProfile) {
-        console.error("Login: username não encontrado", {
-          username,
-          error: usernameError?.message,
-        });
-        if (usernameError?.message?.toLowerCase().includes("invalid api key")) {
-          return Response.json(
-            { error: "Configuração do Supabase inválida no servidor." },
-            { status: 503 },
-          );
+        if (profile?.id) {
+          // Busca o email real no Auth
+          const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(profile.id);
+          if (authUser?.user?.email) {
+            loginEmail = authUser.user.email;
+          }
         }
-        return Response.json(
-          { error: "Login ou senha inválidos." },
-          { status: 401 },
-        );
+      } catch {
+        // Falha silenciosa — usa o email padrão como fallback
       }
-
-      const { data: authUser, error: authUserError } =
-        await supabaseAdmin.auth.admin.getUserById(usernameProfile.id);
-      if (authUserError || !authUser.user?.email) {
-        console.error("Login: usuário Auth não encontrado", {
-          profileId: usernameProfile.id,
-          error: authUserError?.message,
-        });
-        return Response.json(
-          { error: "Login ou senha inválidos." },
-          { status: 401 },
-        );
-      }
-      loginEmail = authUser.user.email;
     }
 
+    // Tenta login com o email resolvido
     const { data, error } = await supabase.auth.signInWithPassword({
       email: loginEmail,
       password,
     });
 
-    if (error || !data.user) {
-      console.error("Login: senha ou usuário rejeitado pelo Supabase Auth", {
-        email: loginEmail,
-        error: error?.message,
-      });
+    if (error || !data?.user) {
       return Response.json(
         { error: "Login ou senha inválidos." },
         { status: 401 },
       );
     }
 
-    const profileClient =
-      isSupabaseAdminConfigured && supabaseAdmin ? supabaseAdmin : supabase;
-    const { data: profile, error: profileError } = await profileClient
+    // Busca perfil do usuário autenticado
+    const profileClient = isSupabaseAdminConfigured && supabaseAdmin
+      ? supabaseAdmin
+      : supabase;
+
+    const { data: userProfile, error: profileError } = await profileClient
       .from("profiles")
       .select("full_name, role, sector_id, guiche_id, active")
       .eq("id", data.user.id)
       .single();
-    if (profileError || !profile?.active) {
-      console.error("Login: perfil sem acesso ativo", {
-        userId: data.user.id,
-        error: profileError?.message,
-        active: profile?.active,
-      });
+
+    if (profileError || !userProfile?.active) {
       return Response.json(
         { error: "Usuário sem acesso ativo." },
         { status: 403 },
       );
     }
+
     return Response.json({
       id: data.user.id,
-      name: profile.full_name,
-      initials: profile.full_name
+      name: userProfile.full_name,
+      initials: userProfile.full_name
         .split(/\s+/)
-        .map((part) => part[0])
+        .map((p) => p[0])
         .join("")
         .slice(0, 2)
         .toUpperCase(),
-      role: profile.role,
-      sector: profile.sector_id,
-      guiche: profile.guiche_id || "none",
+      role: userProfile.role,
+      sector: userProfile.sector_id,
+      guiche: userProfile.guiche_id || "none",
     });
   } catch {
     return Response.json(
