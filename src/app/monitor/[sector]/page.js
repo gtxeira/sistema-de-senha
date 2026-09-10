@@ -466,10 +466,26 @@ export default function MonitorPage({ params }) {
   const info = SECTORS[sector] || SECTORS.farmacia;
   const current = state[sector] || monitorServerSnapshot[sector];
   const validHistory = cleanHistory(current.history || []);
-  const latest = validHistory[0] || {
-    number: current.normalCurrent || 0,
-    type: "normal",
-  };
+  
+  // Se há histórico, usa a primeira entrada (senha atual)
+  // Se não há histórico, determina qual foi a última senha chamada baseada nos contadores
+  const latest = validHistory[0] || (() => {
+    const normalCurrent = current.normalCurrent || 0;
+    const priorityCurrent = current.priorityCurrent || 0;
+    
+    // Se ambos são 0, não há senhas chamadas ainda
+    if (normalCurrent === 0 && priorityCurrent === 0) {
+      return { number: 0, type: "normal" };
+    }
+    
+    // Retorna a maior senha entre os contadores como a última chamada
+    if (priorityCurrent >= normalCurrent) {
+      return { number: priorityCurrent, type: "preferencial" };
+    } else {
+      return { number: normalCurrent, type: "normal" };
+    }
+  })();
+  
   const recentCalls = validHistory.slice(1, 5);
   const isPriority = latest.type === "preferencial";
 
