@@ -61,6 +61,7 @@ export async function cleanupAllTestUsers() {
  * @param {object} data
  * @param {string} [data.title]
  * @param {string} [data.image]
+ * @param {Date} [data.created_at]
  * @returns {{ id: number, title: string }}
  */
 export async function seedTestNews(data = {}) {
@@ -68,7 +69,8 @@ export async function seedTestNews(data = {}) {
     data: {
       title: data.title || `Test News ${Date.now()}`,
       image_url: data.image || "https://fake.test/news.jpg",
-      active: true,
+      active: data.active !== undefined ? data.active : true,
+      ...(data.created_at ? { created_at: data.created_at } : {}),
     },
     select: { id: true, title: true },
   });
@@ -85,6 +87,13 @@ export async function cleanupTestNews(ids) {
   await prisma.news.deleteMany({
     where: { id: { in: ids.map(BigInt) } },
   });
+}
+
+/**
+ * Clean up all news records (for tests that need isolated state).
+ */
+export async function cleanupAllNews() {
+  await prisma.news.deleteMany();
 }
 
 export { prisma };
