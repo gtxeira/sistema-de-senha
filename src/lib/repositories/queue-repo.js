@@ -221,18 +221,19 @@ export class QueueRepository {
     const primary = await db.from("queue_calls").insert({
       ...base,
       called_by: callerId,
-    });
+    }).select("id").single();
 
-    if (!primary.error) return;
+    if (!primary.error) return { id: String(primary.data?.id || "") };
 
     // Fallback to legacy columns if primary fails
     const fallback = await db.from("queue_calls").insert({
       ...base,
       call_type: sequenceType,
       attendant_id: callerId,
-    });
+    }).select("id").single();
 
     if (fallback.error) throw fallback.error;
+    return { id: String(fallback.data?.id || "") };
   }
 
   /**

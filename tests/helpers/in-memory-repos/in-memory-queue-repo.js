@@ -15,11 +15,13 @@ export class InMemoryQueueRepository {
   }
 
   async saveCall(call) {
+    const id = crypto.randomUUID();
     this.#calls.push({
       ...call,
-      id: crypto.randomUUID(),
+      id,
       created_at: new Date(),
     });
+    return { id };
   }
 
   async resetSector(sector) {

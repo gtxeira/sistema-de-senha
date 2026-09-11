@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { queue } from "@/lib/repositories";
+import { eventManager } from "@/lib/event-manager";
 import { formatNumberString, normalizeCallType } from "@/lib/repositories/utils";
 
 /* ─────────────────────────────────────────────────
@@ -32,7 +33,7 @@ export async function POST(request) {
     const numberStr = formatNumberString(nextNum, sequenceType);
 
     // Save the call
-    await queue.saveCall({
+    const saved = await queue.saveCall({
       sector,
       number: nextNum,
       numberStr,
@@ -41,6 +42,18 @@ export async function POST(request) {
       attendantId,
     });
 
+    // Emit realtime event for monitors
+    const callEvent = {
+      id: saved.id,
+      number: nextNum,
+      type: sequenceType,
+      time: new Intl.DateTimeFormat("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date()),
+    };
+    eventManager.emitQueueCall(sector, callEvent);
+
     return NextResponse.json({
       success: true,
       number: nextNum,
@@ -48,7 +61,7 @@ export async function POST(request) {
       type: sequenceType,
     });
   } catch (err) {
-    if (err.status === 503 || err.message.includes("Não configurado")) {
+    if (err.status === 503 || err.message.includes("not configured") || err.message.includes("Não configurado")) {
       return NextResponse.json(
         { error: err.message, useLocal: true },
         { status: 503 }

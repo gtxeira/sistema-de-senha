@@ -1,7 +1,5 @@
-import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
-
-const prisma = new PrismaClient();
+import { prisma } from "../prisma-client.js";
 
 /**
  * Validate username format (nome.sobrenome)

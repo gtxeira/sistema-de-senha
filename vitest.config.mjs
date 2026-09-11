@@ -18,6 +18,7 @@ export default defineConfig(({ mode }) => {
       globals: true,
       include: ["tests/**/*.test.{js,jsx}"],
       setupFiles: ["./tests/setup.js"],
+      fileParallelism: false,
       env: {
         DATABASE_URL: env.DATABASE_URL_TEST,
         NEWS_DIR: join(root, "tests", "fixtures", "news"),
@@ -35,7 +36,9 @@ export default defineConfig(({ mode }) => {
           "src/lib/queue-server.js",
           "src/lib/supabase.js",
           "src/lib/supabase-admin.js",
-          "src/lib/prisma.js",
+          "src/lib/prisma-client.js",
+          "src/lib/event-manager.js",
+          "src/lib/hooks/**/*.js",
           "src/app/api/**/*.js",
           "src/middleware.js",
         ],

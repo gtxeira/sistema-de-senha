@@ -20,7 +20,7 @@ export class QueueRepository {
    *   callType: 'normal'|'preferencial',
    *   attendantId: string|null
    * }} call
-   * @returns {Promise<void>}
+   * @returns {Promise<{id: string}>}
    */
   async saveCall(call) {}
 

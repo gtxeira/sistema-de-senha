@@ -1,8 +1,6 @@
-import { PrismaClient } from "@prisma/client";
 import { writeFile, unlink, mkdir } from "node:fs/promises";
 import { join } from "node:path";
-
-const prisma = new PrismaClient();
+import { prisma } from "../prisma-client.js";
 
 const NEWS_DIR = process.env.NEWS_DIR || join(process.cwd(), "public", "news");
 

@@ -1,16 +1,4 @@
-import { isSupabaseConfigured, supabase } from "../supabase";
-import { isSupabaseAdminConfigured, supabaseAdmin } from "../supabase-admin";
-
-/**
- * Get appropriate database client (anon preferred for reads)
- * @returns {any}
- */
-function getDb() {
-  // For reads, prefer anon client, fallback to admin if anon not configured
-  if (isSupabaseConfigured && supabase) return supabase;
-  if (isSupabaseAdminConfigured && supabaseAdmin) return supabaseAdmin;
-  return null;
-}
+import { prisma } from "../prisma-client.js";
 
 /**
  * Build empty response structure
@@ -48,10 +36,13 @@ function formatTime(date) {
  */
 function formatCallRecord(call) {
   return {
-    id: call.id,
+    id: String(call.id),
     sector_id: call.sector_id,
     number: call.number_int,
-    type: call.type === "preferential" || call.type === "preferencial" ? "preferencial" : "normal",
+    type:
+      call.type === "preferential" || call.type === "preferencial"
+        ? "preferencial"
+        : "normal",
     time: formatTime(new Date(call.created_at || Date.now())),
   };
 }
@@ -75,13 +66,6 @@ export class ReadRepository {
    * }>}
    */
   async getStats(options = {}) {
-    const db = getDb();
-    if (!db) {
-      // Return empty structure when no DB configured
-      const days = Math.min(90, Math.max(1, Number(options.days) || 30));
-      return emptyResponse(days);
-    }
-
     try {
       // Parse options
       const sector = options.sector || null;
@@ -95,43 +79,55 @@ export class ReadRepository {
       today.setHours(0, 0, 0, 0);
       const todayIso = today.toISOString();
 
-      // Build base query
-      let query = db
-        .from("queue_calls")
-        .select("sector_id, type, created_at, number_int")
-        .gte("created_at", since.toISOString());
+      // Build where clause for all calls
+      const whereClause = {
+        created_at: {
+          gte: since.toISOString(),
+        },
+      };
 
-      if (until) query = query.lte("created_at", until.toISOString());
-      if (sector) query = query.eq("sector_id", sector);
+      if (until) {
+        whereClause.created_at.lte = until.toISOString();
+      }
 
-      // Build recent query (for the list)
-      let recentQuery = db
-        .from("queue_calls")
-        .select("sector_id, number_str, type, created_at, id, number_int")
-        .gte("created_at", since.toISOString())
-        .order("created_at", { ascending: false })
-        .limit(limit);
+      if (sector) {
+        whereClause.sector_id = sector;
+      }
 
-      if (until) recentQuery = recentQuery.lte("created_at", until.toISOString());
-      if (sector) recentQuery = recentQuery.eq("sector_id", sector);
+      // Build where clause for recent calls
+      const recentWhereClause = { ...whereClause };
 
-      // Execute both queries
-      const [allCallsResult, recentCallsResult] = await Promise.all([
-        query,
-        recentQuery,
+      // Execute both queries in parallel
+      const [calls, recent] = await Promise.all([
+        prisma.queue_calls.findMany({
+          where: whereClause,
+          select: {
+            sector_id: true,
+            type: true,
+            created_at: true,
+            number_int: true,
+          },
+        }),
+        prisma.queue_calls.findMany({
+          where: recentWhereClause,
+          orderBy: { created_at: "desc" },
+          take: limit,
+          select: {
+            id: true,
+            sector_id: true,
+            number_str: true,
+            type: true,
+            created_at: true,
+            number_int: true,
+          },
+        }),
       ]);
-
-      if (allCallsResult.error) throw allCallsResult.error;
-      if (recentCallsResult.error) throw recentCallsResult.error;
-
-      const calls = allCallsResult.data || [];
-      const recent = recentCallsResult.data || [];
 
       // Calculate totals
       const total = calls.length;
       const todayCount = calls.filter((c) => c.created_at >= todayIso).length;
       const prefCount = calls.filter((c) =>
-        ["preferencial", "preferential"].includes(c.type)
+        ["preferencial", "preferential"].includes(c.type),
       ).length;
       const normalCount = total - prefCount;
 
@@ -159,21 +155,32 @@ export class ReadRepository {
       // Group recent by sector (max 50 per sector)
       const recentBySector = {};
       for (const item of formattedRecent) {
-        const sid = item.sector_id || "desconhecido"; // fallback for sector_id
+        const sid = item.sector_id || "desconhecido";
         if (!recentBySector[sid]) recentBySector[sid] = [];
         if (recentBySector[sid].length < 50) recentBySector[sid].push(item);
       }
 
       return {
-        days: Math.min(90, Math.max(1, Math.ceil((Date.now() - since.getTime()) / (24 * 60 * 60 * 1000)))),
-        summary: { total, today: todayCount, preferencial: prefCount, normal: normalCount },
+        days: Math.min(
+          90,
+          Math.max(
+            1,
+            Math.ceil((Date.now() - since.getTime()) / (24 * 60 * 60 * 1000)),
+          ),
+        ),
+        summary: {
+          total,
+          today: todayCount,
+          preferencial: prefCount,
+          normal: normalCount,
+        },
         bySector,
         byType,
         recent: formattedRecent,
         recentBySector,
       };
     } catch (error) {
-      // On error, return empty structure instead of 503 to avoid breaking admin UI
+      // On error, return empty structure instead of throwing
       const days = Math.min(90, Math.max(1, Number(options.days) || 30));
       return emptyResponse(days);
     }

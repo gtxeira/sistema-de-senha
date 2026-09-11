@@ -43,7 +43,7 @@ describe("POST /api/queue/call", () => {
 
   it("chama com sucesso e retorna número", async () => {
     queueRepo.nextNumber.mockResolvedValue(7);
-    queueRepo.saveCall.mockResolvedValue(undefined);
+    queueRepo.saveCall.mockResolvedValue({ id: "mock-uuid-123" });
 
     const { POST } = await importRoute();
     const req = {

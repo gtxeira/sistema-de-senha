@@ -56,44 +56,41 @@ export function queueRepoContract(createRepo) {
     describe("saveCall()", () => {
       it("salva uma chamada sem erro", async () => {
         const num = await repo.nextNumber("farmacia", "normal");
-        await expect(
-          repo.saveCall({
+        const result = await repo.saveCall({
             sector: "farmacia",
             number: num,
             numberStr: `N${String(num).padStart(3, "0")}`,
             sequenceType: "normal",
             callType: "normal",
             attendantId: null,
-          }),
-        ).resolves.toBeUndefined();
+          });
+        expect(result).toEqual(expect.objectContaining({ id: expect.any(String) }));
       });
 
       it("aceita attendantId null", async () => {
         const num = await repo.nextNumber("farmacia", "preferencial");
-        await expect(
-          repo.saveCall({
+        const result = await repo.saveCall({
             sector: "farmacia",
             number: num,
             numberStr: `P${String(num).padStart(3, "0")}`,
             sequenceType: "preferencial",
             callType: "preferencial",
             attendantId: null,
-          }),
-        ).resolves.toBeUndefined();
+          });
+        expect(result).toEqual(expect.objectContaining({ id: expect.any(String) }));
       });
 
       it("aceita attendantId com valor", async () => {
         const num = await repo.nextNumber("recepcao", "normal");
-        await expect(
-          repo.saveCall({
+        const result = await repo.saveCall({
             sector: "recepcao",
             number: num,
             numberStr: `N${String(num).padStart(3, "0")}`,
             sequenceType: "normal",
             callType: "normal",
             attendantId: "some-uuid",
-          }),
-        ).resolves.toBeUndefined();
+          });
+        expect(result).toEqual(expect.objectContaining({ id: expect.any(String) }));
       });
     });
 
