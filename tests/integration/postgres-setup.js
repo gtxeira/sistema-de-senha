@@ -96,4 +96,31 @@ export async function cleanupAllNews() {
   await prisma.news.deleteMany();
 }
 
+/**
+ * Seed a queue sequence for a sector/type.
+ * @param {'farmacia'|'recepcao'} sector
+ * @param {'normal'|'preferencial'} type
+ * @param {number} currentNumber
+ */
+export async function seedTestQueueSequence(sector, type, currentNumber) {
+  await prisma.queue_sequences.upsert({
+    where: {
+      sector_id_call_type: {
+        sector_id: sector,
+        call_type: type,
+      },
+    },
+    update: { current_number: currentNumber, updated_at: new Date() },
+    create: { sector_id: sector, call_type: type, current_number: currentNumber },
+  });
+}
+
+/**
+ * Clean up queue test data (calls + sequences).
+ */
+export async function cleanupQueueTestData() {
+  await prisma.queue_calls.deleteMany();
+  await prisma.queue_sequences.deleteMany();
+}
+
 export { prisma };

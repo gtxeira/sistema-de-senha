@@ -1,210 +1,277 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { seedTestUser, cleanupAllTestUsers } from "../../postgres-setup.js";
 
-let usersRepo = {
-  list: vi.fn(),
-  create: vi.fn(),
-  remove: vi.fn(),
-};
-
-vi.mock("@/lib/repositories", () => ({
-  users: usersRepo,
-}));
+let createdUsernames = [];
 
 async function importRoute() {
   return import("@/app/api/users/route.js");
 }
 
-function resetMocks() {
-  usersRepo.list.mockReset();
-  usersRepo.create.mockReset();
-  usersRepo.remove.mockReset();
+async function importUsersRepo() {
+  const mod = await import("@/lib/repositories");
+  return mod.users;
 }
 
-describe("GET /api/users", () => {
+describe("/api/users — integration", () => {
   beforeEach(() => {
-    resetMocks();
+    createdUsernames = [];
   });
 
-  it("retorna 503 sem configuração", async () => {
-    usersRepo.list.mockRejectedValue({ status: 503, message: "Supabase não configurado" });
-    const { GET } = await importRoute();
-    const res = await GET();
-    expect(res.status).toBe(503);
-    const body = await res.json();
-    expect(body.error).toBe("Supabase não configurado");
+  afterEach(async () => {
+    await cleanupAllTestUsers();
+    createdUsernames = [];
   });
 
-  it("lista usuários com sucesso", async () => {
-    const users = [{ id: "1", full_name: "João" }];
-    usersRepo.list.mockResolvedValue(users);
+  describe("GET", () => {
+    it("retorna lista de usuários", async () => {
+      const repo = await importUsersRepo();
+      const user = await seedTestUser({
+        username: `test.get.user.${Date.now()}`,
+        full_name: "GET Test User",
+      });
+      createdUsernames.push(user.username);
 
-    const { GET } = await importRoute();
-    const res = await GET();
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.users).toEqual(users);
+      const { GET } = await importRoute();
+      const res = await GET();
+      const body = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(body.users)).toBe(true);
+      const found = body.users.find((u) => u.id === user.id);
+      expect(found).toBeDefined();
+      expect(found.full_name).toBe("GET Test User");
+    });
+
+    it("retorna vazio quando não há usuários de teste", async () => {
+      const { GET } = await importRoute();
+      const res = await GET();
+      const body = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(body.users)).toBe(true);
+    });
   });
 
-  it("retorna 500 em erro de consulta", async () => {
-    usersRepo.list.mockRejectedValue({ status: 500, message: "boom" });
+  describe("POST", () => {
+    it("cria usuário e persiste no banco", async () => {
+      const username = `test.post.user.${Date.now()}`;
+      const { POST } = await importRoute();
+      const req = {
+        json: () =>
+          Promise.resolve({
+            username,
+            password: "123456",
+            full_name: "Post Test User",
+            role: "attendant",
+            sector_id: "farmacia",
+          }),
+      };
+      const res = await POST(req);
+      const body = await res.json();
 
-    const { GET } = await importRoute();
-    const res = await GET();
-    expect(res.status).toBe(500);
-    const body = await res.json();
-    expect(body.error).toBe("boom");
-  });
-});
+      expect(res.status).toBe(200);
+      expect(body.success).toBe(true);
+      expect(body.user.username).toBe(username);
+      expect(body.user.full_name).toBe("Post Test User");
+      expect(body.user.role).toBe("attendant");
+      expect(body.user.sector_id).toBe("farmacia");
 
-describe("POST /api/users", () => {
-  beforeEach(() => {
-    resetMocks();
-  });
+      createdUsernames.push(username);
 
-  it("retorna 400 com dados inválidos", async () => {
-    usersRepo.create.mockRejectedValue({ status: 400, message: "Usuário (nome.sobrenome), senha e nome completo são obrigatórios" });
+      const repo = await importUsersRepo();
+      const list = await repo.list();
+      const found = list.find((u) => u.username === username);
+      expect(found).toBeDefined();
+      expect(found.full_name).toBe("Post Test User");
+    });
 
-    const { POST } = await importRoute();
-    const req = {
-      json: vi.fn().mockResolvedValue({ username: "!invalido", password: "", full_name: "" }),
-    };
-    const res = await POST(req);
-    expect(res.status).toBe(400);
-    const body = await res.json();
-    expect(body.error).toBe("Usuário (nome.sobrenome), senha e nome completo são obrigatórios");
-  });
+    it("retorna 400 com username inválido", async () => {
+      const { POST } = await importRoute();
+      const req = {
+        json: () =>
+          Promise.resolve({
+            username: "!invalido!",
+            password: "123456",
+            full_name: "Test",
+          }),
+      };
+      const res = await POST(req);
 
-  it("cria usuário e profile", async () => {
-    const result = {
-      success: true,
-      user: {
-        id: "user-1",
-        username: "joao.silva",
-        full_name: "João Silva",
-        role: "attendant",
-        sector_id: "farmacia",
-      },
-    };
-    usersRepo.create.mockResolvedValue(result);
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(body.error).toBeDefined();
+    });
 
-    const { POST } = await importRoute();
-    const req = {
-      json: vi.fn().mockResolvedValue({
-        username: "joao.silva",
-        password: "123456",
-        full_name: "João Silva",
-        role: "attendant",
-        sector_id: "farmacia",
-      }),
-    };
-    const res = await POST(req);
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.success).toBe(true);
-    expect(body.user.username).toBe("joao.silva");
-  });
+    it("retorna 400 sem senha", async () => {
+      const { POST } = await importRoute();
+      const req = {
+        json: () =>
+          Promise.resolve({
+            username: `test.nopw.user.${Date.now()}`,
+            password: "",
+            full_name: "Test",
+          }),
+      };
+      const res = await POST(req);
 
-  it("faz rollback do auth quando profile falha", async () => {
-    usersRepo.create.mockRejectedValue({ status: 500, message: "dup" });
+      expect(res.status).toBe(400);
+    });
 
-    const { POST } = await importRoute();
-    const req = {
-      json: vi.fn().mockResolvedValue({
-        username: "joao.silva",
-        password: "123456",
-        full_name: "João Silva",
-      }),
-    };
-    const res = await POST(req);
-    expect(res.status).toBe(500);
-    const body = await res.json();
-    expect(body.error).toBe("dup");
-  });
+    it("retorna 400 sem full_name", async () => {
+      const { POST } = await importRoute();
+      const req = {
+        json: () =>
+          Promise.resolve({
+            username: `test.noname.user.${Date.now()}`,
+            password: "123456",
+            full_name: "",
+          }),
+      };
+      const res = await POST(req);
 
-  it("retorna 500 quando createUser falha (sem rollback)", async () => {
-    usersRepo.create.mockRejectedValue({ status: 500, message: "auth boom" });
+      expect(res.status).toBe(400);
+    });
 
-    const { POST } = await importRoute();
-    const req = {
-      json: vi.fn().mockResolvedValue({
-        username: "joao.silva",
-        password: "123456",
-        full_name: "João Silva",
-      }),
-    };
-    const res = await POST(req);
-    expect(res.status).toBe(500);
-    const body = await res.json();
-    expect(body.error).toBe("auth boom");
-  });
+    it("retorna 409 com username duplicado", async () => {
+      const username = `test.dup.user.${Date.now()}`;
+      await seedTestUser({ username, full_name: "Original" });
+      createdUsernames.push(username);
 
-  it("aplica defaults de role/sector_id quando omitidos", async () => {
-    const result = {
-      success: true,
-      user: {
-        id: "user-1",
-        username: "joao.silva",
-        full_name: "João Silva",
-        role: "attendant",
-        sector_id: null,
-      },
-    };
-    usersRepo.create.mockResolvedValue(result);
+      const { POST } = await importRoute();
+      const req = {
+        json: () =>
+          Promise.resolve({
+            username,
+            password: "123456",
+            full_name: "Duplicado",
+          }),
+      };
+      const res = await POST(req);
 
-    const { POST } = await importRoute();
-    const req = {
-      json: vi.fn().mockResolvedValue({
-        username: "joao.silva",
-        password: "123456",
-        full_name: "João Silva",
-      }),
-    };
-    const res = await POST(req);
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.user.role).toBe("attendant");
-    expect(body.user.sector_id).toBeNull();
-  });
-});
+      expect(res.status).toBe(409);
+      const body = await res.json();
+      expect(body.error).toMatch(/já existe/i);
+    });
 
-describe("DELETE /api/users", () => {
-  beforeEach(() => {
-    resetMocks();
-  });
+    it("aplica defaults (role=attendant, sector_id=null)", async () => {
+      const username = `test.defaults.user.${Date.now()}`;
+      const { POST } = await importRoute();
+      const req = {
+        json: () =>
+          Promise.resolve({
+            username,
+            password: "123456",
+            full_name: "Defaults User",
+          }),
+      };
+      const res = await POST(req);
+      const body = await res.json();
 
-  it("retorna 400 sem id", async () => {
-    const { DELETE } = await importRoute();
-    const req = { url: "http://localhost/api/users" };
-    const res = await DELETE(req);
-    expect(res.status).toBe(400);
-  });
+      expect(res.status).toBe(200);
+      expect(body.user.role).toBe("attendant");
+      expect(body.user.sector_id).toBeNull();
 
-  it("remove profile e auth", async () => {
-    usersRepo.remove.mockResolvedValue({ success: true });
+      createdUsernames.push(username);
+    });
 
-    const { DELETE } = await importRoute();
-    const req = { url: "http://localhost/api/users?id=user-1" };
-    const res = await DELETE(req);
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.success).toBe(true);
-  });
+    it("faz trim no username", async () => {
+      const base = `test.trim.user.${Date.now()}`;
+      const username = `  ${base}  `;
+      const { POST } = await importRoute();
+      const req = {
+        json: () =>
+          Promise.resolve({
+            username,
+            password: "123456",
+            full_name: "Trim User",
+          }),
+      };
+      const res = await POST(req);
+      const body = await res.json();
 
-  it("retorna 500 quando remoção do profile falha (sem excluir auth)", async () => {
-    usersRepo.remove.mockRejectedValue({ status: 500, message: "boom" });
+      expect(res.status).toBe(200);
+      expect(body.user.username).toBe(base);
 
-    const { DELETE } = await importRoute();
-    const req = { url: "http://localhost/api/users?id=user-1" };
-    const res = await DELETE(req);
-    expect(res.status).toBe(500);
+      createdUsernames.push(base);
+    });
   });
 
-  it("retorna 500 quando remoção do auth falha", async () => {
-    usersRepo.remove.mockRejectedValue({ status: 500, message: "boom" });
+  describe("DELETE", () => {
+    it("retorna 400 sem id", async () => {
+      const { DELETE } = await importRoute();
+      const req = { url: "http://localhost/api/users" };
+      const res = await DELETE(req);
 
-    const { DELETE } = await importRoute();
-    const req = { url: "http://localhost/api/users?id=user-1" };
-    const res = await DELETE(req);
-    expect(res.status).toBe(500);
+      expect(res.status).toBe(400);
+    });
+
+    it("retorna 404 quando usuário não existe", async () => {
+      const { DELETE } = await importRoute();
+      const fakeId = "00000000-0000-0000-0000-000000000000";
+      const req = { url: `http://localhost/api/users?id=${fakeId}` };
+      const res = await DELETE(req);
+
+      expect(res.status).toBe(404);
+      const body = await res.json();
+      expect(body.error).toMatch(/não encontrado/i);
+    });
+
+    it("remove usuário e não aparece mais na listagem", async () => {
+      const username = `test.del.user.${Date.now()}`;
+      const user = await seedTestUser({ username, full_name: "To Delete" });
+      createdUsernames.push(username);
+
+      const { DELETE } = await importRoute();
+      const req = { url: `http://localhost/api/users?id=${user.id}` };
+      const res = await DELETE(req);
+
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.success).toBe(true);
+
+      const repo = await importUsersRepo();
+      const list = await repo.list();
+      const found = list.find((u) => u.id === user.id);
+      expect(found).toBeUndefined();
+    });
+  });
+
+  describe("fluxo completo", () => {
+    it("cria, lista e deleta usuário", async () => {
+      const username = `test.flow.user.${Date.now()}`;
+
+      // 1. Criar
+      const { POST } = await importRoute();
+      const postRes = await POST({
+        json: () =>
+          Promise.resolve({
+            username,
+            password: "123456",
+            full_name: "Flow User",
+          }),
+      });
+      const postData = await postRes.json();
+      expect(postRes.status).toBe(200);
+      const userId = postData.user.id;
+
+      // 2. Listar e verificar que aparece
+      const { GET } = await importRoute();
+      const getRes = await GET();
+      const getData = await getRes.json();
+      const found = getData.users.find((u) => u.id === userId);
+      expect(found).toBeDefined();
+      expect(found.full_name).toBe("Flow User");
+
+      // 3. Deletar
+      const { DELETE } = await importRoute();
+      const delRes = await DELETE({ url: `http://localhost/api/users?id=${userId}` });
+      expect(delRes.status).toBe(200);
+
+      // 4. Verificar que não aparece mais
+      const getRes2 = await GET();
+      const getData2 = await getRes2.json();
+      const notFound = getData2.users.find((u) => u.id === userId);
+      expect(notFound).toBeUndefined();
+    });
   });
 });

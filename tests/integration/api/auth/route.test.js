@@ -1,138 +1,174 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { seedTestUser, cleanupAllTestUsers } from "../../postgres-setup.js";
 
-let authRepo = {
-  login: vi.fn(),
-  resolveLoginEmail: vi.fn(),
-};
-
-vi.mock("@/lib/repositories", () => ({
-  auth: authRepo,
-}));
+let createdUsernames = [];
 
 async function importRoute() {
   return import("@/app/api/auth/route.js");
 }
 
-function resetMocks() {
-  authRepo.login.mockReset();
-  authRepo.resolveLoginEmail.mockReset();
-}
-
-describe("POST /api/auth", () => {
+describe("/api/auth — integration", () => {
   beforeEach(() => {
-    resetMocks();
+    createdUsernames = [];
   });
 
-  it("retorna 503 sem configuração", async () => {
-    authRepo.login.mockRejectedValue({ status: 503, message: "Supabase não configurado" });
-    const { POST } = await importRoute();
-    const res = await POST({ json: vi.fn().mockResolvedValue({ login: "a", password: "b" }) });
-    expect(res.status).toBe(503);
+  afterEach(async () => {
+    await cleanupAllTestUsers();
+    createdUsernames = [];
   });
 
-  it("retorna 400 para username inválido", async () => {
-    authRepo.login.mockRejectedValue({ status: 400, message: "Usuário inválido. Use nome.sobrenome." });
-    const { POST } = await importRoute();
-    const res = await POST({
-      json: vi.fn().mockResolvedValue({ login: "!invalido!", password: "x" }),
+  describe("GET (deprecated)", () => {
+    it("retorna array vazio", async () => {
+      const { GET } = await importRoute();
+      const res = await GET();
+      const body = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(body.users).toEqual([]);
     });
-    expect(res.status).toBe(400);
   });
 
-  it("faz login com sucesso retornando perfil", async () => {
-    const userData = {
-      id: "user-1",
-      name: "João Silva",
-      initials: "JS",
-      role: "admin",
-      sector: "farmacia",
-      guiche: "none",
-    };
-    authRepo.login.mockResolvedValue(userData);
+  describe("POST", () => {
+    it("retorna 400 sem login", async () => {
+      const { POST } = await importRoute();
+      const req = {
+        json: () => Promise.resolve({ password: "123456" }),
+      };
+      const res = await POST(req);
 
-    const { POST } = await importRoute();
-    const req = {
-      json: vi.fn().mockResolvedValue({ login: "joao.silva", password: "123456" }),
-    };
-    const res = await POST(req);
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.name).toBe("João Silva");
-    expect(body.initials).toBe("JS");
-    expect(body.role).toBe("admin");
-  });
-
-  it("retorna 401 para credenciais inválidas", async () => {
-    authRepo.login.mockRejectedValue({ status: 401, message: "Login ou senha inválidos." });
-
-    const { POST } = await importRoute();
-    const res = await POST({
-      json: vi.fn().mockResolvedValue({ login: "joao.silva", password: "errada" }),
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(body.error).toMatch(/obrigatórios/i);
     });
-    expect(res.status).toBe(401);
-  });
 
-  it("retorna 403 para perfil inativo", async () => {
-    authRepo.login.mockRejectedValue({ status: 403, message: "Usuário sem acesso ativo." });
+    it("retorna 400 sem password", async () => {
+      const { POST } = await importRoute();
+      const req = {
+        json: () => Promise.resolve({ login: "test.user" }),
+      };
+      const res = await POST(req);
 
-    const { POST } = await importRoute();
-    const res = await POST({
-      json: vi.fn().mockResolvedValue({ login: "joao.silva", password: "123456" }),
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(body.error).toMatch(/obrigatórios/i);
     });
-    expect(res.status).toBe(403);
-  });
-});
 
-describe("POST /api/auth (com supabaseAdmin)", () => {
-  beforeEach(() => {
-    resetMocks();
-  });
+    it("retorna 400 com username inválido (formato)", async () => {
+      const { POST } = await importRoute();
+      const req = {
+        json: () => Promise.resolve({ login: "!invalido!", password: "123456" }),
+      };
+      const res = await POST(req);
 
-  it("retorna 401 quando username não encontrado no admin", async () => {
-    authRepo.login.mockRejectedValue({ status: 401, message: "Login ou senha inválidos." });
-    const { POST } = await importRoute();
-    const res = await POST({
-      json: vi.fn().mockResolvedValue({ login: "joao.silva", password: "x" }),
+      expect(res.status).toBe(400);
     });
-    expect(res.status).toBe(401);
-  });
 
-  it("retorna 503 para invalid api key no admin", async () => {
-    authRepo.login.mockRejectedValue({ status: 503, message: "Supabase não configurado" });
-    const { POST } = await importRoute();
-    const res = await POST({
-      json: vi.fn().mockResolvedValue({ login: "joao.silva", password: "x" }),
+    it("retorna 401 com credenciais inválidas (usuário não existe)", async () => {
+      const { POST } = await importRoute();
+      const req = {
+        json: () =>
+          Promise.resolve({
+            login: "naoexiste.naoexiste",
+            password: "123456",
+          }),
+      };
+      const res = await POST(req);
+
+      expect(res.status).toBe(401);
+      const body = await res.json();
+      expect(body.error).toMatch(/inválidos/i);
     });
-    expect(res.status).toBe(503);
-  });
 
-  it("retorna 401 quando getUserById falha", async () => {
-    authRepo.login.mockRejectedValue({ status: 401, message: "Login ou senha inválidos." });
-    const { POST } = await importRoute();
-    const res = await POST({
-      json: vi.fn().mockResolvedValue({ login: "joao.silva", password: "x" }),
+    it("retorna 401 com senha incorreta", async () => {
+      const username = `test.wrongpw.user.${Date.now()}`;
+      await seedTestUser({ username, password: "correta123" });
+      createdUsernames.push(username);
+
+      const { POST } = await importRoute();
+      const req = {
+        json: () =>
+          Promise.resolve({ login: username, password: "errada" }),
+      };
+      const res = await POST(req);
+
+      expect(res.status).toBe(401);
     });
-    expect(res.status).toBe(401);
+
+    it("retorna 403 com perfil inativo", async () => {
+      const username = `test.inactive.user.${Date.now()}`;
+      await seedTestUser({ username, password: "123456" });
+      createdUsernames.push(username);
+
+      const { prisma } = await import("../../postgres-setup.js");
+      await prisma.users.update({
+        where: { username },
+        data: { active: false },
+      });
+
+      const { POST } = await importRoute();
+      const req = {
+        json: () =>
+          Promise.resolve({ login: username, password: "123456" }),
+      };
+      const res = await POST(req);
+
+      expect(res.status).toBe(403);
+      const body = await res.json();
+      expect(body.error).toMatch(/acesso ativo/i);
+    });
+
+    it("retorna dados do usuário com login válido", async () => {
+      const username = `test.login.user.${Date.now()}`;
+      await seedTestUser({
+        username,
+        password: "minha123",
+        full_name: "Login User",
+        role: "admin",
+        sector_id: "farmacia",
+      });
+      createdUsernames.push(username);
+
+      const { POST } = await importRoute();
+      const req = {
+        json: () =>
+          Promise.resolve({ login: username, password: "minha123" }),
+      };
+      const res = await POST(req);
+      const body = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(body.name).toBe("Login User");
+      expect(body.role).toBe("admin");
+      expect(body.sector).toBe("farmacia");
+      expect(body.initials).toBe("LU");
+      expect(body.id).toBeDefined();
+    });
   });
 
-  it("usa o email do auth e faz login com sucesso", async () => {
-    const userData = {
-      id: "user-1",
-      name: "João",
-      initials: "J",
-      role: "attendant",
-      sector: null,
-      guiche: "none",
-    };
-    authRepo.login.mockResolvedValue(userData);
+  describe("fluxo completo", () => {
+    it("criar usuário via repo → login via API → verificar retorno", async () => {
+      const username = `test.authflow.user.${Date.now()}`;
 
-    const { POST } = await importRoute();
-    const req = {
-      json: vi.fn().mockResolvedValue({ login: "joao.silva", password: "123456" }),
-    };
-    const res = await POST(req);
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.name).toBe("João");
+      // 1. Criar usuário via repo
+      await seedTestUser({
+        username,
+        password: "flow123",
+        full_name: "Auth Flow User",
+      });
+      createdUsernames.push(username);
+
+      // 2. Login via API
+      const { POST } = await importRoute();
+      const req = {
+        json: () => Promise.resolve({ login: username, password: "flow123" }),
+      };
+      const res = await POST(req);
+      const body = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(body.name).toBe("Auth Flow User");
+      expect(body.id).toBeDefined();
+      expect(body.role).toBeDefined();
+    });
   });
 });

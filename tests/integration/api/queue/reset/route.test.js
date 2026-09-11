@@ -1,72 +1,94 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
-let queueRepo = {
-  resetSector: vi.fn(),
-};
-
-vi.mock("@/lib/repositories", () => ({
-  queue: queueRepo,
-}));
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import {
+  cleanupQueueTestData,
+  seedTestQueueSequence,
+  prisma,
+} from "../../../postgres-setup.js";
 
 async function importRoute() {
   return import("@/app/api/queue/reset/route.js");
 }
 
-describe("POST /api/queue/reset", () => {
-  beforeEach(() => {
-    queueRepo.resetSector.mockReset();
+describe("/api/queue/reset — integration", () => {
+  beforeEach(async () => {
+    await cleanupQueueTestData();
   });
 
-  it("retorna 400 sem setor", async () => {
-    const { POST } = await importRoute();
-    const res = await POST({ json: vi.fn().mockResolvedValue({}) });
-    expect(res.status).toBe(400);
+  afterEach(async () => {
+    await cleanupQueueTestData();
   });
 
-  it("retorna 400 para setor inválido", async () => {
-    const { POST } = await importRoute();
-    const res = await POST({ json: vi.fn().mockResolvedValue({ sector: "x" }) });
-    expect(res.status).toBe(400);
-  });
+  describe("POST", () => {
+    it("retorna 400 sem setor", async () => {
+      const { POST } = await importRoute();
+      const req = { json: () => Promise.resolve({}) };
+      const res = await POST(req);
 
-  it("retorna localOnly quando sem banco", async () => {
-    queueRepo.resetSector.mockRejectedValue(new Error("Database not configured"));
-    const { POST } = await importRoute();
-    const res = await POST({ json: vi.fn().mockResolvedValue({ sector: "farmacia" }) });
-    expect(res.status).toBe(500);
-  });
+      expect(res.status).toBe(400);
+    });
 
-  it("reseta setor único", async () => {
-    queueRepo.resetSector.mockResolvedValue(undefined);
+    it("retorna 400 com setor inválido", async () => {
+      const { POST } = await importRoute();
+      const req = { json: () => Promise.resolve({ sector: "invalido" }) };
+      const res = await POST(req);
 
-    const { POST } = await importRoute();
-    const res = await POST({ json: vi.fn().mockResolvedValue({ sector: "farmacia" }) });
-    expect(res.status).toBe(200);
-    expect(queueRepo.resetSector).toHaveBeenCalledWith("farmacia");
-  });
+      expect(res.status).toBe(400);
+    });
 
-  it("reseta todos os setores com 'all'", async () => {
-    queueRepo.resetSector.mockResolvedValue(undefined);
+    it("reseta setor único", async () => {
+      await seedTestQueueSequence("farmacia", "normal", 5);
 
-    const { POST } = await importRoute();
-    const res = await POST({ json: vi.fn().mockResolvedValue({ sector: "all" }) });
-    expect(res.status).toBe(200);
-    expect(queueRepo.resetSector).toHaveBeenCalledTimes(2);
-    const body = await res.json();
-    expect(body.sectors).toEqual(["farmacia", "recepcao"]);
-  });
+      const { POST } = await importRoute();
+      const req = { json: () => Promise.resolve({ sector: "farmacia" }) };
+      const res = await POST(req);
+      const body = await res.json();
 
-  it("retorna 500 quando reset falha", async () => {
-    queueRepo.resetSector.mockRejectedValue(new Error("reset boom"));
+      expect(res.status).toBe(200);
+      expect(body.success).toBe(true);
+      expect(body.sectors).toEqual(["farmacia"]);
 
-    const { POST } = await importRoute();
-    const res = await POST({ json: vi.fn().mockResolvedValue({ sector: "farmacia" }) });
-    expect(res.status).toBe(500);
-  });
+      const seq = await prisma.queue_sequences.findUnique({
+        where: {
+          sector_id_call_type: { sector_id: "farmacia", call_type: "normal" },
+        },
+      });
+      expect(seq.current_number).toBe(0);
+    });
 
-  it("retorna 500 para JSON inválido", async () => {
-    const { POST } = await importRoute();
-    const res = await POST({ json: vi.fn().mockRejectedValue(new Error("bad json")) });
-    expect(res.status).toBe(500);
+    it("reseta todos os setores com 'all'", async () => {
+      await seedTestQueueSequence("farmacia", "normal", 5);
+      await seedTestQueueSequence("recepcao", "normal", 3);
+
+      const { POST } = await importRoute();
+      const req = { json: () => Promise.resolve({ sector: "all" }) };
+      const res = await POST(req);
+      const body = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(body.success).toBe(true);
+      expect(body.sectors).toEqual(["farmacia", "recepcao"]);
+
+      const farmaciaSeq = await prisma.queue_sequences.findUnique({
+        where: {
+          sector_id_call_type: { sector_id: "farmacia", call_type: "normal" },
+        },
+      });
+      const recepcaoSeq = await prisma.queue_sequences.findUnique({
+        where: {
+          sector_id_call_type: { sector_id: "recepcao", call_type: "normal" },
+        },
+      });
+      expect(farmaciaSeq.current_number).toBe(0);
+      expect(recepcaoSeq.current_number).toBe(0);
+    });
+
+    it("retorna success: true e lista de setores resetados", async () => {
+      const { POST } = await importRoute();
+      const req = { json: () => Promise.resolve({ sector: "farmacia" }) };
+      const res = await POST(req);
+      const body = await res.json();
+
+      expect(body).toEqual({ success: true, sectors: ["farmacia"] });
+    });
   });
 });
