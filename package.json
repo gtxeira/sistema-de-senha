@@ -19,6 +19,9 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",
     "db:reset": "prisma migrate reset --force",
+    "db:migrate:test": "DATABASE_URL=$DATABASE_URL_TEST prisma migrate dev",
+    "db:seed:test": "DATABASE_URL=$DATABASE_URL_TEST prisma db seed",
+    "db:reset:test": "DATABASE_URL=$DATABASE_URL_TEST prisma migrate reset --force",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down"
   },
