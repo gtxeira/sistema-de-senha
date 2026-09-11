@@ -3,7 +3,7 @@ import { seedTestNews, cleanupTestNews, cleanupAllNews } from "../../postgres-se
 import { unlink, access } from "node:fs/promises";
 import { join } from "node:path";
 
-const NEWS_DIR = join(process.cwd(), "public", "news");
+const NEWS_DIR = process.env.NEWS_DIR || join(process.cwd(), "public", "news");
 
 let createdIds = [];
 let createdFiles = [];

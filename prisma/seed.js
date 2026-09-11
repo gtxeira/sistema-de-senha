@@ -8,6 +8,11 @@ const SECTORS = [
   { id: "recepcao", name: "Recepção Saúde" },
 ];
 
+const DEFAULT_NEWS = {
+  title: "Bem-vindo ao Sistema de Senhas",
+  image_url: "/news/1789083615350-os7rdzpymeb.jpeg",
+};
+
 const USERS = [
   {
     username: "admin",
@@ -54,6 +59,17 @@ async function main() {
     });
   }
   console.log(`  ✓ ${SECTORS.length} setores criados/verificados`);
+
+  // ── Notícias ────────────────────────────────────────────────
+  const existingNews = await prisma.news.findFirst({
+    where: { image_url: DEFAULT_NEWS.image_url },
+  });
+  if (!existingNews) {
+    await prisma.news.create({ data: DEFAULT_NEWS });
+    console.log(`  ✓ Notícia padrão criada`);
+  } else {
+    console.log(`  ✓ Notícia padrão já existe`);
+  }
 
   // ── Usuários ─────────────────────────────────────────────────
   for (const user of USERS) {

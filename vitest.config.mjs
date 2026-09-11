@@ -1,9 +1,11 @@
 import { defineConfig } from "vitest/config";
 import { loadEnv } from "vite";
 import { fileURLToPath, URL } from "node:url";
+import { join } from "node:path";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
+  const root = fileURLToPath(new URL(".", import.meta.url));
 
   return {
     resolve: {
@@ -18,6 +20,7 @@ export default defineConfig(({ mode }) => {
       setupFiles: ["./tests/setup.js"],
       env: {
         DATABASE_URL: env.DATABASE_URL_TEST,
+        NEWS_DIR: join(root, "tests", "fixtures", "news"),
       },
 
       // Override environment for integration tests (need Node.js for Supabase client)

@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+tests/fixtures/news/*
+!tests/fixtures/news/.gitkeep
 
 # next.js
 /.next/

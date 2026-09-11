@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 const prisma = new PrismaClient();
 
-const NEWS_DIR = join(process.cwd(), "public", "news");
+const NEWS_DIR = process.env.NEWS_DIR || join(process.cwd(), "public", "news");
 
 /**
  * Create typed error with status
