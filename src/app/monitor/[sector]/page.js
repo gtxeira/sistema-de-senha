@@ -21,7 +21,7 @@ import {
   subscribeQueue,
   withQueueLock,
 } from "../../../lib/queue";
-import { isSupabaseConfigured, getRealtimeClient } from "../../../lib/supabase";
+import { useQueueEvents } from "../../../lib/hooks/useQueueEvents";
 import {
   forceAnnounce,
   monitorSpeak,
@@ -133,6 +133,9 @@ export default function MonitorPage({ params }) {
 
   const state = useSyncExternalStore(subscribeQueue, getQueueSnapshot, () => monitorServerSnapshot);
 
+  // Realtime events via SSE with polling fallback
+  const { connected, lastCall } = useQueueEvents(sector);
+
   const [time, setTime] = useState("");
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [calling, setCalling] = useState(false);
@@ -175,78 +178,40 @@ export default function MonitorPage({ params }) {
     return registerMonitorSpeaker();
   }, [audioEnabled]);
 
-  /* Supabase Realtime */
+  /* Realtime events from SSE/polling hook */
   useEffect(() => {
-    if (!isSupabaseConfigured || !sector) return;
-    const db = getRealtimeClient();
-    if (!db) return;
+    if (!lastCall || !sector) return;
 
-    async function fetchInitialHistory() {
-      try {
-        const { data, error } = await db
-          .from("queue_calls")
-          .select("*")
-          .eq("sector_id", sector)
-          .order("id", { ascending: false })
-          .limit(30);
-        if (error || !data?.length) return;
-        const formatted = data.map((item) => ({
-          id: item.id,
-          number: item.number_int,
-          type: item.type === "preferential" || item.type === "preferencial" ? "preferencial" : "normal",
-          time: new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" })
-            .format(new Date(item.created_at || Date.now())),
-        }));
-        const prev = getQueueSnapshot() || monitorServerSnapshot;
-        saveQueueState({ ...prev, [sector]: { ...(prev[sector] || {}), history: cleanHistory(formatted) } });
-      } catch (err) {
-        console.error("Erro ao carregar histórico:", err);
-      }
+    const callKey = `${lastCall.id || lastCall.number}-${lastCall.type}`;
+    if (lastSpokenCallId === callKey) return;
+    lastSpokenCallId = callKey;
+
+    const prev = getQueueSnapshot() || monitorServerSnapshot;
+    const queue = prev[sector] || {};
+    const callType = lastCall.type === "preferencial" ? "preferencial" : "normal";
+    const field = callType === "preferencial" ? "priorityCurrent" : "normalCurrent";
+
+    const currentHistory = queue.history || [];
+    const newEntry = {
+      id: lastCall.id,
+      number: lastCall.number,
+      type: callType,
+      time: lastCall.time,
+    };
+
+    saveQueueState({
+      ...prev,
+      [sector]: {
+        ...queue,
+        [field]: lastCall.number,
+        history: cleanHistory([newEntry, ...currentHistory]).slice(0, 30),
+      },
+    });
+
+    if (audioEnabledRef.current) {
+      monitorSpeak(lastCall.number, callType);
     }
-
-    fetchInitialHistory();
-
-    const channel = db
-      .channel(`realtime-monitor-${sector}`)
-      .on("postgres_changes", {
-        event: "INSERT", schema: "public", table: "queue_calls",
-        filter: `sector_id=eq.${sector}`,
-      }, (payload) => {
-        const call = payload.new;
-        if (!call?.number_int) return;
-
-        const callKey = `${call.id || call.number_int}-${call.type}`;
-        if (lastSpokenCallId === callKey) return;
-        lastSpokenCallId = callKey;
-
-        const prev = getQueueSnapshot() || monitorServerSnapshot;
-        const queue = prev[sector] || {};
-        const callType = call.type === "preferential" || call.type === "preferencial"
-          ? "preferencial" : "normal";
-        const field = callType === "preferencial" ? "priorityCurrent" : "normalCurrent";
-        const timeStr = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" })
-          .format(new Date(call.created_at || Date.now()));
-
-        const currentHistory = queue.history || [];
-        const newEntry = { id: call.id, number: call.number_int, type: callType, time: timeStr };
-
-        saveQueueState({
-          ...prev,
-          [sector]: {
-            ...queue,
-            [field]: call.number_int,
-            history: cleanHistory([newEntry, ...currentHistory]).slice(0, 30),
-          },
-        });
-
-        if (audioEnabledRef.current) {
-          monitorSpeak(call.number_int, callType);
-        }
-      })
-      .subscribe();
-
-    return () => { db.removeChannel(channel); };
-  }, [sector]);
+  }, [lastCall, sector]);
 
   /* ─── chamar próxima senha (via teclado / passador) ─── */
   const callNext = useCallback(async (type) => {

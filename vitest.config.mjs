@@ -1,0 +1,54 @@
+import { defineConfig } from "vitest/config";
+import { loadEnv } from "vite";
+import { fileURLToPath, URL } from "node:url";
+import { join } from "node:path";
+
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), "");
+  const root = fileURLToPath(new URL(".", import.meta.url));
+
+  return {
+    resolve: {
+      alias: {
+        "@": fileURLToPath(new URL("./src", import.meta.url)),
+      },
+    },
+    test: {
+      environment: "happy-dom",
+      globals: true,
+      include: ["tests/**/*.test.{js,jsx}"],
+      setupFiles: ["./tests/setup.js"],
+      fileParallelism: false,
+      env: {
+        DATABASE_URL: env.DATABASE_URL_TEST,
+        NEWS_DIR: join(root, "tests", "fixtures", "news"),
+      },
+
+      // Override environment for integration tests (need Node.js for Supabase client)
+      environmentMatchGlobs: [
+        ["tests/integration/**", "node"],
+      ],
+
+      coverage: {
+        provider: "v8",
+        include: [
+          "src/lib/repositories/**/*.js",
+          "src/lib/queue-server.js",
+          "src/lib/supabase.js",
+          "src/lib/supabase-admin.js",
+          "src/lib/prisma-client.js",
+          "src/lib/event-manager.js",
+          "src/lib/hooks/**/*.js",
+          "src/app/api/**/*.js",
+          "src/middleware.js",
+        ],
+        exclude: [
+          "tests/**",
+          "src/**/*.test.{js,jsx}",
+          "src/**/*.module.css",
+        ],
+        reporter: ["text", "html", "json-summary"],
+      },
+    },
+  };
+});

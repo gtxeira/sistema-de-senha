@@ -8,23 +8,44 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint .",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:unit": "vitest run tests/unit/",
+    "test:integration": "vitest run tests/integration/",
+    "test:coverage": "vitest run --coverage",
+    "test:all": "vitest run",
     "electron:dev": "electron .",
-    "dist": "electron-builder --win nsis"
+    "dist": "electron-builder --win nsis",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "prisma db seed",
+    "db:reset": "prisma migrate reset --force",
+    "db:migrate:test": "dotenv -e .env.test -- prisma migrate dev",
+    "db:seed:test": "dotenv -e .env.test -- prisma db seed",
+    "db:reset:test": "dotenv -e .env.test -- prisma migrate reset --force",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
     "@supabase/supabase-js": "^2.45.0",
+    "bcryptjs": "^3.0.3",
     "lucide-react": "^0.400.0",
     "next": "^16.3.3",
+    "next-auth": "^5.0.0-beta.32",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@vitest/coverage-v8": "^5.0.0",
     "electron": "^33.0.0",
     "electron-builder": "^25.1.8",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.3.3",
-    "prisma": "^5.22.0"
+    "dotenv-cli": "^7.0.0",
+    "happy-dom": "^20.14.0",
+    "prisma": "^5.22.0",
+    "vitest": "^5.0.0"
   },
   "build": {
     "appId": "com.sistemasenha.app",
@@ -36,5 +57,8 @@
       "target": "nsis",
       "icon": "public/favicon.ico"
     }
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   }
 }
