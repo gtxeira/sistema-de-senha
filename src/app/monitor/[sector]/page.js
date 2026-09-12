@@ -54,8 +54,7 @@ function subscribeNews(cb) {
 }
 
 function formatMonitorNumber(number) {
-  const n = Number(number) || 0;
-  return n === 1000 ? "1000" : String(n).padStart(3, "0");
+  return String(Number(number) || 0).padStart(3, "0");
 }
 
 function cleanHistory(history = []) {
@@ -73,7 +72,11 @@ function cleanHistory(history = []) {
 
 /* ─── carrossel de notícias isolado (evita re-render da voz) ─── */
 const NewsCarousel = memo(function NewsCarousel() {
-  const news = useSyncExternalStore(subscribeNews, getNewsSnapshot, () => serverNewsSnapshot);
+  const news = useSyncExternalStore(
+    subscribeNews,
+    getNewsSnapshot,
+    () => serverNewsSnapshot,
+  );
   const [newsIndex, setNewsIndex] = useState(0);
 
   useEffect(() => {
@@ -89,7 +92,10 @@ const NewsCarousel = memo(function NewsCarousel() {
 
   useEffect(() => {
     if (!news?.length) return;
-    const t = setInterval(() => setNewsIndex((p) => (p + 1) % news.length), 5000);
+    const t = setInterval(
+      () => setNewsIndex((p) => (p + 1) % news.length),
+      5000,
+    );
     return () => clearInterval(t);
   }, [news]);
 
@@ -109,7 +115,13 @@ const NewsCarousel = memo(function NewsCarousel() {
         <img
           src={item.image}
           alt={item.title || ""}
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+          }}
         />
       )}
       <div className={styles.newsCaption}>
@@ -131,7 +143,11 @@ export default function MonitorPage({ params }) {
   const resolvedParams = params ? (params.then ? use(params) : params) : {};
   const sector = resolvedParams?.sector || "farmacia";
 
-  const state = useSyncExternalStore(subscribeQueue, getQueueSnapshot, () => monitorServerSnapshot);
+  const state = useSyncExternalStore(
+    subscribeQueue,
+    getQueueSnapshot,
+    () => monitorServerSnapshot,
+  );
 
   // Realtime events via SSE with polling fallback
   const { connected, lastCall } = useQueueEvents(sector);
@@ -141,15 +157,20 @@ export default function MonitorPage({ params }) {
   const [calling, setCalling] = useState(false);
 
   const audioEnabledRef = useRef(false);
-  audioEnabledRef.current = audioEnabled;
+
+  useEffect(() => {
+    audioEnabledRef.current = audioEnabled;
+  }, [audioEnabled]);
 
   /* relógio */
   useEffect(() => {
     const t = setInterval(() => {
       setTime(
         new Intl.DateTimeFormat("pt-BR", {
-          hour: "2-digit", minute: "2-digit", second: "2-digit",
-        }).format(new Date())
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        }).format(new Date()),
       );
     }, 1000);
     return () => clearInterval(t);
@@ -286,11 +307,20 @@ export default function MonitorPage({ params }) {
   /* ─── atalhos de teclado ─── */
   useEffect(() => {
     function onKey(e) {
-      if (["INPUT", "TEXTAREA", "SELECT", "BUTTON"].includes(e.target.tagName)) return;
+      if (["INPUT", "TEXTAREA", "SELECT", "BUTTON"].includes(e.target.tagName))
+        return;
+
       const k = e.key;
-      if (k === "ArrowRight")  { e.preventDefault(); callNext("normal"); }
-      else if (k === "ArrowLeft")  { e.preventDefault(); callNext("preferencial"); }
-      else if (k === "ArrowUp")    { e.preventDefault(); reCall(); }
+      if (["ArrowRight", "PageDown", "Enter", " "].includes(k)) {
+        e.preventDefault();
+        callNext("normal");
+      } else if (["ArrowLeft", "PageUp"].includes(k)) {
+        e.preventDefault();
+        callNext("preferencial");
+      } else if (["ArrowUp", "Home"].includes(k)) {
+        e.preventDefault();
+        reCall();
+      }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -301,8 +331,13 @@ export default function MonitorPage({ params }) {
     function onMouseDown(e) {
       // ignora cliques em botões/links
       if (e.target.closest("a, button, input, select, textarea")) return;
-      if (e.button === 0) { e.preventDefault(); callNext("normal"); }
-      else if (e.button === 2) { e.preventDefault(); callNext("preferencial"); }
+      if (e.button === 0) {
+        e.preventDefault();
+        callNext("normal");
+      } else if (e.button === 2) {
+        e.preventDefault();
+        callNext("preferencial");
+      }
     }
     function onWheel(e) {
       if (e.target.closest("a, button, input, select, textarea")) return;
@@ -347,37 +382,62 @@ export default function MonitorPage({ params }) {
           </div>
           <div className={styles.date}>
             {new Intl.DateTimeFormat("pt-BR", {
-              weekday: "long", day: "2-digit", month: "long", year: "numeric",
-            }).format(new Date()).toUpperCase()}
+              weekday: "long",
+              day: "2-digit",
+              month: "long",
+              year: "numeric",
+            })
+              .format(new Date())
+              .toUpperCase()}
           </div>
         </div>
       </header>
 
       <div className={styles.content}>
         <section className={styles.leftColumn}>
-
-          <section className={`${styles.featured} ${isPriority ? styles.featuredPriority : ""}`}>
+          <section
+            className={`${styles.featured} ${isPriority ? styles.featuredPriority : ""}`}
+          >
             <p>SENHA</p>
-            <strong>{formatMonitorNumber(latest.number)}</strong>
-            {isPriority
-              ? <span className={styles.priorityTag}>ATENDIMENTO PREFERENCIAL</span>
-              : <span>ATENDIMENTO</span>}
+            <strong>{formatMonitorNumber(latest?.number || 0)}</strong>
+            {isPriority ? (
+              <span className={styles.priorityTag}>
+                ATENDIMENTO PREFERENCIAL
+              </span>
+            ) : (
+              <span>ATENDIMENTO</span>
+            )}
             <small>Dirija-se ao balcão de atendimento</small>
           </section>
 
           <section className={styles.recent}>
             <p className={styles.kicker}>ÚLTIMAS SENHAS</p>
-            {recentCalls.length > 0 ? recentCalls.map((item, i) => (
-              <div className={styles.historyItem} key={`${item.id || item.number}-${item.type}-${i}`}>
-                <strong className={item.type === "preferencial" ? styles.priorityNumber : styles.normalNumber}>
-                  {formatMonitorNumber(item.number)}
-                </strong>
-                {item.type === "preferencial"
-                  ? <span className={styles.priorityTagSmall}>PREFERENCIAL</span>
-                  : <span className={styles.normal}>ATENDIMENTO</span>}
-                <time>{item.time}</time>
-              </div>
-            )) : (
+            {recentCalls.length > 0 ? (
+              recentCalls.map((item, i) => (
+                <div
+                  className={styles.historyItem}
+                  key={`${item.id || item.number}-${item.type}-${i}`}
+                >
+                  <strong
+                    className={
+                      item.type === "preferencial"
+                        ? styles.priorityNumber
+                        : styles.normalNumber
+                    }
+                  >
+                    {formatMonitorNumber(item?.number || 0)}
+                  </strong>
+                  {item.type === "preferencial" ? (
+                    <span className={styles.priorityTagSmall}>
+                      PREFERENCIAL
+                    </span>
+                  ) : (
+                    <span className={styles.normal}>ATENDIMENTO</span>
+                  )}
+                  <time>{item.time}</time>
+                </div>
+              ))
+            ) : (
               <p style={{ fontSize: "14px", color: "#888", marginTop: "12px" }}>
                 Aguardando chamadas anteriores...
               </p>
