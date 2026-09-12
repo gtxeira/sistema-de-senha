@@ -45,13 +45,16 @@
   background: #1678a0;
   display: grid;
   place-items: center;
-  font-size: 34px;
-  font-weight: 900;
-  color: #fff;
   margin-bottom: 32px;
   box-shadow: 0 8px 28px rgba(22, 120, 160, 0.45);
+  overflow: hidden;
 }
 
+.heroMark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
 .heroContent h1 {
   font-size: clamp(32px, 4vw, 48px);
   font-weight: 900;

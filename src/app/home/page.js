@@ -7,6 +7,8 @@ import { signOut } from "next-auth/react";
 import { LogOut, Monitor, Settings2 } from "lucide-react";
 import { getSessionSnapshot, SESSION_KEY, SECTORS } from "../../lib/queue";
 import styles from "./Home.module.css";
+import Image from 'next/image';
+import brandIcon from '@/app/icon.jpeg';
 
 export default function HomePage() {
   const router = useRouter();
@@ -29,7 +31,15 @@ export default function HomePage() {
       {/* ── Header ── */}
       <header className={styles.header}>
         <div className={styles.headerBrand}>
-          <div className={styles.headerMark}>S</div>
+          <div className={styles.headerMark}>
+            <Image
+              src={brandIcon}
+              alt="Logo"
+              width={40}
+              height={40}
+              priority
+            />
+          </div>
           <span>Central de Atendimento</span>
         </div>
         <div className={styles.headerUser}>
