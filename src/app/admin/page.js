@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useSyncExternalStore, } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, CheckCircle2, Clock3, ImagePlus, Monitor, RotateCcw, Save, Trash2, } from "lucide-react";
+import { AlertTriangle, ImagePlus, Monitor, RotateCcw, Save, Trash2, } from "lucide-react";
 import {
   getQueueSnapshot,
   getServerQueueSnapshot,
@@ -17,7 +17,7 @@ import {
   subscribeSession,
 } from "../../lib/queue";
 import styles from "./Admin.module.css";
-import { SidebarLayout, sidebarStyles } from "@/components/SidebarLayout/SidebarLayout";
+import { SidebarLayout } from "@/components/SidebarLayout/SidebarLayout";
 
 let newsCache = [];
 const serverNewsSnapshot = [];
@@ -62,7 +62,6 @@ export default function AdminPage() {
   const [title, setTitle] = useState("");
   const [image, setImage] = useState("");
   const [message, setMessage] = useState("");
-  const [time, setTime]           = useState("");
   const [draftNews, setDraftNews] = useState([]);
   const [savingNews, setSavingNews] = useState(false);
   const [resettingSector, setResettingSector] = useState({});
@@ -72,16 +71,7 @@ export default function AdminPage() {
   /* segurança: só admin */
   useEffect(() => {
     const storedSession = getSessionSnapshot();
-    if (!storedSession || storedSession.role !== "admin") { router.push("/login"); return undefined; }
-
-    const timer = window.setInterval(
-      () => setTime(new Intl.DateTimeFormat("pt-BR", {
-        hour: "2-digit", minute: "2-digit", second: "2-digit",
-      }).format(new Date())),
-      1000
-    );
-
-    return () => window.clearInterval(timer);
+    if (!storedSession || storedSession.role !== "admin") { router.push("/login"); }
   }, [router]);
 
   /* notícias */
@@ -247,17 +237,7 @@ export default function AdminPage() {
       eyebrow="CONTROLE CENTRAL"
       title="Administração"
       subtitle="Gerencie as filas de atendimento e as notícias do monitor."
-      headerActions={
-        <>
-          <div className={sidebarStyles.connection}>
-            <CheckCircle2 size={16} /> Sistema online
-          </div>
-
-          <div className={sidebarStyles.headerTime}>
-            <Clock3 size={16} /> {time || "--:--:--"}
-          </div>
-        </>
-      }
+      headerActions={null}
     >
       <section className={styles.content}>
         {message && <div className={styles.alertBox}>{message}</div>}

@@ -3,8 +3,6 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import {
-  CheckCircle2,
-  Clock3,
   Filter,
 } from "lucide-react";
 import {
@@ -34,7 +32,6 @@ export default function HistoricoPage() {
     getServerSessionSnapshot
   );
 
-  const [time, setTime]             = useState("");
   const [activeSector, setActiveSector] = useState("farmacia");
   const [filterDays, setFilterDays] = useState("30");
   const [filterType, setFilterType] = useState("");
@@ -52,16 +49,6 @@ export default function HistoricoPage() {
       setActiveSector(session.sector);
     }
   }, [session?.role, session?.sector]);
-
-  useEffect(() => {
-    const timer = window.setInterval(
-      () => setTime(new Intl.DateTimeFormat("pt-BR", {
-        hour: "2-digit", minute: "2-digit", second: "2-digit",
-      }).format(new Date())),
-      1000
-    );
-    return () => window.clearInterval(timer);
-  }, []);
 
   const fetchStats = (overrides = {}) => {
     const days   = overrides.days !== undefined ? overrides.days : filterDays;
@@ -104,9 +91,6 @@ export default function HistoricoPage() {
       subtitle="Consulte todas as chamadas de senhas realizadas."
       headerActions={
         <>
-          <div className={sidebarStyles.connection}>
-            <CheckCircle2 size={16} /> Sistema online
-          </div>
           {session?.role === "admin" && (
             <select
               className={sidebarStyles.sectorSelect}
@@ -118,9 +102,6 @@ export default function HistoricoPage() {
               ))}
             </select>
           )}
-          <div className={sidebarStyles.headerTime}>
-            <Clock3 size={16} /> {time || "--:--:--"}
-          </div>
         </>
       }
     >

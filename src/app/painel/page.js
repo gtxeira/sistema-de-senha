@@ -6,14 +6,11 @@ import { useRouter } from "next/navigation";
 import {
   Bell,
   CheckCircle2,
-  Clock3,
   Monitor,
   RotateCcw,
-  Trash2,
 } from "lucide-react";
 import {
   callNextNumber,
-  clearMonitorHistory,
   formatQueueNumber,
   getQueueSnapshot,
   getServerQueueSnapshot,
@@ -55,7 +52,6 @@ export default function PainelPage() {
   );
 
   const [notice, setNotice]       = useState("Pronto para o próximo atendimento");
-  const [time, setTime]           = useState("");
   const [calling, setCalling]     = useState(false);
   const [activeSector, setActiveSector] = useState("farmacia");
   const [historyPage, setHistoryPage] = useState(1);
@@ -82,16 +78,7 @@ export default function PainelPage() {
 
   useEffect(() => {
     const storedSession = getSessionSnapshot();
-    if (!storedSession) { router.push("/login"); return undefined; }
-
-    const timer = window.setInterval(
-      () => setTime(new Intl.DateTimeFormat("pt-BR", {
-        hour: "2-digit", minute: "2-digit", second: "2-digit",
-      }).format(new Date())),
-      1000
-    );
-
-    return () => window.clearInterval(timer);
+    if (!storedSession) { router.push("/login"); }
   }, [router]);
 
   useEffect(() => {
@@ -218,9 +205,6 @@ export default function PainelPage() {
       subtitle="Controle as chamadas da sua unidade em tempo real."
       headerActions={
         <>
-          <div className={sidebarStyles.connection}>
-            <CheckCircle2 size={16} /> Sistema online
-          </div>
           {session?.role === "admin" && (
             <select
               className={sidebarStyles.sectorSelect}
@@ -240,9 +224,6 @@ export default function PainelPage() {
           >
             <Monitor size={17} /> Abrir monitor
           </Link>
-          <div className={sidebarStyles.headerTime}>
-            <Clock3 size={16} /> {time || "--:--:--"}
-          </div>
         </>
       }
     >

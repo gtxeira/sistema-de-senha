@@ -1,9 +1,11 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import {
   Bell,
+  CheckCircle2,
   Clock3,
   Home,
   LogOut,
@@ -31,9 +33,20 @@ export function SidebarLayout({
   headerActions,
   children,
 }) {
+  const [time, setTime] = useState("");
   const visibleNavItems = NAV_ITEMS.filter(
     (item) => !item.onlyAdmin || session?.role === "admin"
   );
+
+  useEffect(() => {
+    const timer = window.setInterval(
+      () => setTime(new Intl.DateTimeFormat("pt-BR", {
+        hour: "2-digit", minute: "2-digit", second: "2-digit",
+      }).format(new Date())),
+      1000
+    );
+    return () => window.clearInterval(timer);
+  }, []);
 
   return (
     <main className={styles.shell}>
@@ -78,11 +91,15 @@ export function SidebarLayout({
             {title && <h1>{title}</h1>}
             {subtitle && <p className={styles.muted}>{subtitle}</p>}
           </div>
-          {headerActions && (
-            <div className={styles.headerActions}>
-              {headerActions}
+          <div className={styles.headerActions}>
+            <div className={styles.connection}>
+              <CheckCircle2 size={16} /> Sistema online
             </div>
-          )}
+            {headerActions}
+            <div className={styles.headerTime}>
+              <Clock3 size={16} /> {time || "--:--:--"}
+            </div>
+          </div>
         </header>
         {children}
       </section>
