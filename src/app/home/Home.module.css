@@ -81,10 +81,11 @@
 /* ── Conteúdo ── */
 .content {
   flex: 1;
-  max-width: 720px;
+  /*max-width: 720px;*/
   width: 100%;
-  margin: 0 auto;
-  padding: 48px 24px;
+  margin-top: 20px;
+  /*margin: 0 auto;*/
+  /*padding: 48px 24px;*/
   box-sizing: border-box;
 }
 
