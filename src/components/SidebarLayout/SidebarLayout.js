@@ -16,6 +16,7 @@ export { styles as sidebarStyles };
 
 const NAV_ITEMS = [
   { route: "home",      href: "/home",      icon: Home,     label: "Home" },
+  { route: "admin",      href: "/admin",      icon: Settings2,     label: "Administração", onlyAdmin: true },
   { route: "painel",    href: "/painel",    icon: Bell,     label: "Chamadas" },
   { route: "historico", href: "/historico",  icon: Clock3,   label: "Histórico" },
 ];
@@ -30,27 +31,24 @@ export function SidebarLayout({
   headerActions,
   children,
 }) {
+  const visibleNavItems = NAV_ITEMS.filter(
+    (item) => !item.onlyAdmin || session?.role === "admin"
+  );
+
   return (
     <main className={styles.shell}>
       <aside className={styles.sidebar}>
         <nav className={styles.nav}>
-          {NAV_ITEMS.map((item) => (
+          {visibleNavItems.map((item) => (
             <Link
               key={item.route}
               href={item.href}
               className={activeRoute === item.route ? styles.activeNav : undefined}
             >
-              <item.icon size={18} /> {item.label}
+              <item.icon size={18}/>
+              {item.label}
             </Link>
           ))}
-          {session?.role === "admin" && (
-            <Link
-              href="/admin"
-              className={activeRoute === "admin" ? styles.activeNav : undefined}
-            >
-              <Settings2 size={18} /> Administração
-            </Link>
-          )}
         </nav>
         <div className={styles.sidebarFoot}>
           <div className={styles.profile}>
