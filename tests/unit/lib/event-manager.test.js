@@ -167,6 +167,32 @@ describe("EventManager", () => {
       manager.emitQueueRecall("farmacia", { id: "1", number: 1, type: "normal", time: "14:30" });
       expect(callback).not.toHaveBeenCalled();
     });
+
+    it("unsubscribe não afeta outros subscribers de recall", () => {
+      const callback1 = vi.fn();
+      const callback2 = vi.fn();
+      const unsub1 = manager.subscribeToRecall("farmacia", callback1);
+      manager.subscribeToRecall("farmacia", callback2);
+
+      unsub1();
+
+      manager.emitQueueRecall("farmacia", { id: "1", number: 1, type: "normal", time: "14:30" });
+      expect(callback1).not.toHaveBeenCalled();
+      expect(callback2).toHaveBeenCalledOnce();
+    });
+
+    it("subscribers de setores diferentes são independentes", () => {
+      const farmaciaCb = vi.fn();
+      const recepcaoCb = vi.fn();
+      manager.subscribeToRecall("farmacia", farmaciaCb);
+      manager.subscribeToRecall("recepcao", recepcaoCb);
+
+      const call = { id: "1", number: 42, type: "normal", time: "14:30" };
+      manager.emitQueueRecall("farmacia", call);
+
+      expect(farmaciaCb).toHaveBeenCalledOnce();
+      expect(recepcaoCb).not.toHaveBeenCalled();
+    });
   });
 
   describe("getRecallSubscriberCount()", () => {
@@ -195,6 +221,20 @@ describe("EventManager", () => {
       expect(calls[0].number).toBe(1);
       expect(calls[1].number).toBe(2);
       expect(calls[2].number).toBe(3);
+    });
+
+    it("emite múltiplos recalls sequencialmente", () => {
+      const calls = [];
+      manager.subscribeToRecall("farmacia", (call) => calls.push(call));
+
+      manager.emitQueueRecall("farmacia", { id: "1", number: 1, type: "normal", time: "14:30" });
+      manager.emitQueueRecall("farmacia", { id: "1", number: 1, type: "normal", time: "14:31" });
+      manager.emitQueueRecall("farmacia", { id: "2", number: 2, type: "normal", time: "14:32" });
+
+      expect(calls).toHaveLength(3);
+      expect(calls[0].number).toBe(1);
+      expect(calls[1].number).toBe(1);
+      expect(calls[2].number).toBe(2);
     });
 
     it("funciona com subscriber removido no meio da emissão", () => {

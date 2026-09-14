@@ -28,4 +28,21 @@ describe("Painel page — audio isolation", () => {
     expect(painelCode).toMatch(/\/api\/queue\/recall/);
     expect(painelCode).not.toMatch(/forceAnnounce.*reCall|reCall.*forceAnnounce/);
   });
+
+  it("reCall usa POST com sector correto no body", () => {
+    expect(painelCode).toMatch(/method:\s*["']POST["']/);
+    expect(painelCode).toMatch(/body:\s*JSON\.stringify\(\{[^}]*sector[^}]*\}\)/);
+  });
+
+  it("callNext não referencia forceAnnounce", () => {
+    const callNextSection = painelCode.substring(
+      painelCode.indexOf("const callNext"),
+      painelCode.indexOf("const reCall"),
+    );
+    expect(callNextSection).not.toMatch(/forceAnnounce/);
+  });
+
+  it("reCall trata erro de fetch", () => {
+    expect(painelCode).toMatch(/catch[\s\S]*?Erro ao repetir/);
+  });
 });

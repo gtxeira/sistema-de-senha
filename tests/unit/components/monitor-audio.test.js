@@ -34,4 +34,28 @@ describe("Monitor page — audio on SSE events", () => {
     expect(monitorCode).toMatch(/isRecall/);
     expect(monitorCode).toMatch(/!isRecall\s*&&\s*lastSpokenCallId\s*===\s*callKey/);
   });
+
+  it("chamadas normais são deduplicadas por lastSpokenCallId", () => {
+    expect(monitorCode).toMatch(/lastSpokenCallId\s*===\s*callKey/);
+  });
+
+  it("callNext do monitor usa forceAnnounce", () => {
+    const callNextSection = monitorCode.substring(
+      monitorCode.indexOf("const callNext"),
+      monitorCode.indexOf("/* ─── repetir"),
+    );
+    expect(callNextSection).toMatch(/forceAnnounce/);
+  });
+
+  it("reCall do monitor usa forceAnnounce", () => {
+    const reCallSection = monitorCode.substring(
+      monitorCode.indexOf("const reCall"),
+      monitorCode.indexOf("/* ─── atalhos de teclado"),
+    );
+    expect(reCallSection).toMatch(/forceAnnounce/);
+  });
+
+  it("importa forceAnnounce de speech.js", () => {
+    expect(monitorCode).toMatch(/forceAnnounce/);
+  });
 });
