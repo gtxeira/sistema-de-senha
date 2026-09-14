@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { queue } from "@/lib/repositories";
 import { eventManager } from "@/lib/event-manager";
 import { formatNumberString, normalizeCallType } from "@/lib/repositories/utils";
+import { auth } from "@/auth";
 
 /* ─────────────────────────────────────────────────
    POST — chama próxima senha de um setor
@@ -12,10 +13,10 @@ import { formatNumberString, normalizeCallType } from "@/lib/repositories/utils"
    4. Salva chamada no banco
    5. Retorna número e tipo
 ───────────────────────────────────────────────── */
-export async function POST(request) {
+export const POST = auth(async function POST (request) {
   try {
     const body = await request.json();
-    const { sector, type, attendantId } = body;
+    const { sector, type } = body;
 
     // Validate sector
     if (!sector || !["farmacia", "recepcao"].includes(sector)) {
@@ -31,6 +32,8 @@ export async function POST(request) {
     // Get next number
     const nextNum = await queue.nextNumber(sector, sequenceType);
     const numberStr = formatNumberString(nextNum, sequenceType);
+
+    const attendantId = request.auth.user.id;
 
     // Save the call
     const saved = await queue.saveCall({
@@ -72,4 +75,4 @@ export async function POST(request) {
       { status: err.status || 500 }
     );
   }
-}
+});

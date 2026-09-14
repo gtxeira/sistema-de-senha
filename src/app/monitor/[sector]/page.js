@@ -245,7 +245,7 @@ export default function MonitorPage({ params }) {
         const res = await fetch("/api/queue/call", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sector, type, attendantId: null }),
+          body: JSON.stringify({ sector, type }),
         });
         const data = await res.json();
         if (!res.ok) {
