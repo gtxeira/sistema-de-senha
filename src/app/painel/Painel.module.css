@@ -127,7 +127,9 @@
   border-radius: 10px;
   padding: 18px 20px;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
   gap: 6px;
   cursor: pointer;
   font-weight: 800;
