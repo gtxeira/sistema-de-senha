@@ -188,11 +188,6 @@ export default function PainelPage() {
     forceAnnounce(lastItem.number, lastItem.type);
   }, [current.history]);
 
-  const handleClearHistory = () => {
-    clearMonitorHistory(activeSector);
-    setNotice("Histórico do painel limpo com sucesso!");
-  };
-
   useEffect(() => {
     function handleKeyDown(event) {
       if (["INPUT","SELECT","TEXTAREA","BUTTON"].includes(event.target.tagName)) return;
@@ -290,6 +285,7 @@ export default function PainelPage() {
               Próxima senha: {formatQueueNumber(nextQueueNumber(current.normalCurrent), "normal")}
             </small>
           </button>
+
           <button
             className={styles.priorityButton}
             disabled={calling}
@@ -300,20 +296,14 @@ export default function PainelPage() {
               Próxima senha: {formatQueueNumber(nextQueueNumber(current.priorityCurrent), "preferencial")}
             </small>
           </button>
-          <button type="button" className={styles.recallButton} onClick={reCall}>
-            <RotateCcw size={18} /> CHAMAR NOVAMENTE ( BOTÃO LUZ / &apos;B&apos; )
-          </button>
+
           <button
-            type="button"
             className={styles.recallButton}
-            onClick={handleClearHistory}
-            style={{ marginTop: "10px", backgroundColor: "#ef4444", color: "#fff" }}
+            disabled={calling}
+            onClick={reCall}
           >
-            <Trash2 size={18} /> LIMPAR PAINEL DE CHAMADAS
+            <span><RotateCcw size={22} /> CHAMAR NOVAMENTE</span>
           </button>
-          <p className={styles.helper}>
-            Limpar o painel remove as senhas do monitor sem resetar a sequência numérica.
-          </p>
         </section>
       </div>
 

@@ -185,23 +185,49 @@
 }
 
 .recallButton {
-  border: 1px solid #cfdee8;
-  border-radius: 8px;
-  padding: 12px 16px;
-  background: #fff;
-  color: #3a6a80;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 12px 20px;
   display: flex;
+  flex-direction: row;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: background 0.12s;
+  gap: 6px;
+  cursor: pointer;
+  font-weight: 700;
+  background-color: #f8fafc;
+  color: #0b3555;
+  transition: transform 0.12s, box-shadow 0.12s, background-color 0.12s, border-color 0.12s;
 }
 
-.recallButton:hover {
-  background: #f0f6f9;
+.recallButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  background-color: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.recallButton:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.recallButton:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.recallButton span {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+}
+
+.recallButton small {
+  font-weight: 600;
+  color: #64748b;
+  font-size: 12px;
 }
 
 .helper {
