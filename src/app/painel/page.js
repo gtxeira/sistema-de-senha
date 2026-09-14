@@ -83,12 +83,14 @@ export default function PainelPage() {
   useEffect(() => {
     const storedSession = getSessionSnapshot();
     if (!storedSession) { router.push("/login"); return undefined; }
+
     const timer = window.setInterval(
       () => setTime(new Intl.DateTimeFormat("pt-BR", {
         hour: "2-digit", minute: "2-digit", second: "2-digit",
       }).format(new Date())),
       1000
     );
+
     return () => window.clearInterval(timer);
   }, [router]);
 

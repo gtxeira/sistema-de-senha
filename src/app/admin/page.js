@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore, } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Filter, ImagePlus, Monitor, RotateCcw, Save, Trash2, } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock3, ImagePlus, Monitor, RotateCcw, Save, Trash2, } from "lucide-react";
 import {
   getQueueSnapshot,
   getServerQueueSnapshot,
@@ -17,7 +17,7 @@ import {
   subscribeSession,
 } from "../../lib/queue";
 import styles from "./Admin.module.css";
-import { SidebarLayout } from "@/components/SidebarLayout/SidebarLayout";
+import { SidebarLayout, sidebarStyles } from "@/components/SidebarLayout/SidebarLayout";
 
 let newsCache = [];
 const serverNewsSnapshot = [];
@@ -62,24 +62,26 @@ export default function AdminPage() {
   const [title, setTitle] = useState("");
   const [image, setImage] = useState("");
   const [message, setMessage] = useState("");
-  const [stats, setStats] = useState(null);
-  const [statsLoading, setStatsLoading] = useState(false);
+  const [time, setTime]           = useState("");
   const [draftNews, setDraftNews] = useState([]);
   const [savingNews, setSavingNews] = useState(false);
   const [resettingSector, setResettingSector] = useState({});
   const [, refreshNews] = useState(0);
   const pendingFileRef = useRef(null);
 
-  // filtros de histórico
-  const [filterSector, setFilterSector] = useState("");
-  const [filterFrom, setFilterFrom] = useState("");
-  const [filterTo, setFilterTo] = useState("");
-  const [filterDays, setFilterDays] = useState("30");
-
   /* segurança: só admin */
   useEffect(() => {
-    const current = getSessionSnapshot();
-    if (!current || current.role !== "admin") router.push("/login");
+    const storedSession = getSessionSnapshot();
+    if (!storedSession || storedSession.role !== "admin") { router.push("/login"); return undefined; }
+
+    const timer = window.setInterval(
+      () => setTime(new Intl.DateTimeFormat("pt-BR", {
+        hour: "2-digit", minute: "2-digit", second: "2-digit",
+      }).format(new Date())),
+      1000
+    );
+
+    return () => window.clearInterval(timer);
   }, [router]);
 
   /* notícias */
@@ -96,37 +98,6 @@ export default function AdminPage() {
       .catch(() => {
       });
   }, []);
-
-  /* busca de estatísticas com filtros */
-  const fetchStats = useCallback(
-    (overrides = {}) => {
-      const days = overrides.days !== undefined ? overrides.days : filterDays;
-      const sector =
-        overrides.sector !== undefined ? overrides.sector : filterSector;
-      const from = overrides.from !== undefined ? overrides.from : filterFrom;
-      const to = overrides.to !== undefined ? overrides.to : filterTo;
-
-      const params = new URLSearchParams({ days });
-      if (sector) params.set("sector", sector);
-      if (from) params.set("from", from);
-      if (to) params.set("to", to);
-
-      setStatsLoading(true);
-      fetch(`/api/stats?${params}`)
-        .then((r) => (r.ok ? r.json() : null))
-        .then((data) => {
-          setStats(data);
-          setStatsLoading(false);
-        })
-        .catch(() => setStatsLoading(false));
-    },
-    [filterDays, filterSector, filterFrom, filterTo],
-  );
-
-  /* estatísticas — carrega ao montar */
-  useEffect(() => {
-    fetchStats();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!session) return null;
 
@@ -276,6 +247,17 @@ export default function AdminPage() {
       eyebrow="CONTROLE CENTRAL"
       title="Administração"
       subtitle="Gerencie as filas de atendimento e as notícias do monitor."
+      headerActions={
+        <>
+          <div className={sidebarStyles.connection}>
+            <CheckCircle2 size={16} /> Sistema online
+          </div>
+
+          <div className={sidebarStyles.headerTime}>
+            <Clock3 size={16} /> {time || "--:--:--"}
+          </div>
+        </>
+      }
     >
       <section className={styles.content}>
         {message && <div className={styles.alertBox}>{message}</div>}
@@ -405,106 +387,6 @@ export default function AdminPage() {
           >
             <Save size={16}/> {savingNews ? "Salvando…" : "Salvar notícias"}
           </button>
-        </section>
-
-        {/* ── Histórico ── */}
-        <section className={styles.section}>
-          <div className={styles.sectionTitle}>
-            <div>
-              <p>GESTÃO</p>
-              <h2>Histórico de atendimentos</h2>
-            </div>
-          </div>
-
-          {/* filtros */}
-          <div className={styles.historyFilters}>
-            <div className={styles.filterGroup}>
-              <label>Período</label>
-              <select
-                value={filterDays}
-                onChange={(e) => {
-                  setFilterDays(e.target.value);
-                  setFilterFrom("");
-                  setFilterTo("");
-                  fetchStats({ days: e.target.value, from: "", to: "" });
-                }}
-              >
-                <option value="1">Hoje</option>
-                <option value="7">Últimos 7 dias</option>
-                <option value="30">Últimos 30 dias</option>
-                <option value="90">Últimos 90 dias</option>
-              </select>
-            </div>
-
-            <div className={styles.filterGroup}>
-              <label>Setor</label>
-              <select
-                value={filterSector}
-                onChange={(e) => {
-                  setFilterSector(e.target.value);
-                  fetchStats({ sector: e.target.value });
-                }}
-              >
-                <option value="">Todos os setores</option>
-                {Object.values(SECTORS).map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className={styles.filterGroup}>
-              <label>De</label>
-              <input
-                type="date"
-                value={filterFrom}
-                onChange={(e) => setFilterFrom(e.target.value)}
-              />
-            </div>
-
-            <div className={styles.filterGroup}>
-              <label>Até</label>
-              <input
-                type="date"
-                value={filterTo}
-                onChange={(e) => setFilterTo(e.target.value)}
-              />
-            </div>
-
-            <button
-              className={styles.filterBtn}
-              type="button"
-              onClick={() => fetchStats()}
-            >
-              <Filter size={14}/> Filtrar
-            </button>
-          </div>
-
-          {statsLoading && <p className={styles.loadingMsg}>Carregando…</p>}
-
-          {stats && !statsLoading && (
-            <div className={styles.statsGrid}>
-              <article className={styles.statCard}>
-                <strong>{stats.summary?.total ?? 0}</strong>
-                <span>Total no período</span>
-              </article>
-              <article className={styles.statCard}>
-                <strong>{stats.summary?.today ?? 0}</strong>
-                <span>Atendimentos hoje</span>
-              </article>
-              <article
-                className={`${styles.statCard} ${styles.statCardNormal}`}
-              >
-                <strong>{stats.summary?.normal ?? 0}</strong>
-                <span>Senhas normais</span>
-              </article>
-              <article className={`${styles.statCard} ${styles.statCardPref}`}>
-                <strong>{stats.summary?.preferencial ?? 0}</strong>
-                <span>Preferenciais</span>
-              </article>
-            </div>
-          )}
         </section>
 
         {/* ── Gerenciamento de usuários ── */}
@@ -698,7 +580,7 @@ function UsersSection() {
         </form>
       )}
 
-      {/* Lista de usuários Supabase */}
+      {/* Lista de usuários */}
       <div className={styles.usersTable}>
         <h3>Usuários cadastrados</h3>
         {loading && <p className={styles.loadingMsg}>Carregando…</p>}
