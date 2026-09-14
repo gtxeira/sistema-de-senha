@@ -4,7 +4,6 @@ import {
   use,
   useCallback,
   useEffect,
-  useRef,
   useState,
   useSyncExternalStore,
   memo,
@@ -153,12 +152,6 @@ export default function MonitorPage({ params }) {
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [calling, setCalling] = useState(false);
 
-  const audioEnabledRef = useRef(false);
-
-  useEffect(() => {
-    audioEnabledRef.current = audioEnabled;
-  }, [audioEnabled]);
-
   /* relógio */
   useEffect(() => {
     const t = setInterval(() => {
@@ -200,8 +193,9 @@ export default function MonitorPage({ params }) {
   useEffect(() => {
     if (!lastCall || !sector) return;
 
+    const isRecall = lastCall.isRecall === true;
     const callKey = `${lastCall.id || lastCall.number}-${lastCall.type}`;
-    if (lastSpokenCallId === callKey) return;
+    if (!isRecall && lastSpokenCallId === callKey) return;
     lastSpokenCallId = callKey;
 
     const prev = getQueueSnapshot() || monitorServerSnapshot;
@@ -226,9 +220,7 @@ export default function MonitorPage({ params }) {
       },
     });
 
-    if (audioEnabledRef.current) {
-      monitorSpeak(lastCall.number, callType);
-    }
+    monitorSpeak(lastCall.number, callType);
   }, [lastCall, sector]);
 
   /* ─── chamar próxima senha (via teclado / passador) ─── */
@@ -238,19 +230,19 @@ export default function MonitorPage({ params }) {
 
     const result = await callNextNumber({ sector, type });
 
-    if (result.ok && audioEnabledRef.current) {
+    if (result.ok) {
       forceAnnounce(result.next, result.type);
     }
 
     setCalling(false);
-  }, [calling, sector, audioEnabled]);
+  }, [calling, sector]);
 
   /* ─── repetir última senha ─── */
   const reCall = useCallback(() => {
     const q = normalizeQueue((getQueueSnapshot() || monitorServerSnapshot)[sector]);
     const last = q.history[0];
     if (!last) return;
-    if (audioEnabledRef.current) forceAnnounce(last.number, last.type);
+    forceAnnounce(last.number, last.type);
   }, [sector]);
 
   /* ─── atalhos de teclado ─── */

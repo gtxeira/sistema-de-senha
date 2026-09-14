@@ -115,6 +115,73 @@ describe("EventManager", () => {
     });
   });
 
+  describe("emitQueueRecall()", () => {
+    it("emite evento de recall para o setor correto", () => {
+      const callback = vi.fn();
+      manager.subscribeToRecall("farmacia", callback);
+
+      const call = { id: "1", number: 42, type: "normal", time: "14:30" };
+      manager.emitQueueRecall("farmacia", call);
+
+      expect(callback).toHaveBeenCalledOnce();
+      expect(callback).toHaveBeenCalledWith(call);
+    });
+
+    it("não emite recall para outros setores", () => {
+      const callback = vi.fn();
+      manager.subscribeToRecall("farmacia", callback);
+
+      const call = { id: "1", number: 42, type: "normal", time: "14:30" };
+      manager.emitQueueRecall("recepcao", call);
+
+      expect(callback).not.toHaveBeenCalled();
+    });
+
+    it("recall e call são eventos independentes", () => {
+      const callCb = vi.fn();
+      const recallCb = vi.fn();
+      manager.subscribeToQueue("farmacia", callCb);
+      manager.subscribeToRecall("farmacia", recallCb);
+
+      const call = { id: "1", number: 42, type: "normal", time: "14:30" };
+      manager.emitQueueCall("farmacia", call);
+      manager.emitQueueRecall("farmacia", call);
+
+      expect(callCb).toHaveBeenCalledTimes(1);
+      expect(recallCb).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("subscribeToRecall()", () => {
+    it("retorna uma função de unsubscribe", () => {
+      const unsub = manager.subscribeToRecall("farmacia", () => {});
+      expect(typeof unsub).toBe("function");
+    });
+
+    it("após unsubscribe, não chama mais callback", () => {
+      const callback = vi.fn();
+      const unsub = manager.subscribeToRecall("farmacia", callback);
+
+      unsub();
+
+      manager.emitQueueRecall("farmacia", { id: "1", number: 1, type: "normal", time: "14:30" });
+      expect(callback).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("getRecallSubscriberCount()", () => {
+    it("retorna 0 quando não há subscribers", () => {
+      expect(manager.getRecallSubscriberCount("farmacia")).toBe(0);
+    });
+
+    it("retorna contagem correta de subscribers", () => {
+      manager.subscribeToRecall("farmacia", () => {});
+      manager.subscribeToRecall("farmacia", () => {});
+
+      expect(manager.getRecallSubscriberCount("farmacia")).toBe(2);
+    });
+  });
+
   describe("edge cases", () => {
     it("emite múltiplos eventos sequencialmente", () => {
       const calls = [];

@@ -24,7 +24,6 @@ import {
   subscribeSession,
 } from "../../lib/queue";
 import { useQueueEvents } from "../../lib/hooks/useQueueEvents";
-import { forceAnnounce, initSpeechClient, speakText, unlockSpeech } from "../../lib/speech";
 import { SidebarLayout, sidebarStyles } from "../../components/SidebarLayout/SidebarLayout";
 import styles from "./Painel.module.css";
 
@@ -55,12 +54,7 @@ export default function PainelPage() {
   const [calling, setCalling]     = useState(false);
   const [activeSector, setActiveSector] = useState("farmacia");
   const [historyPage, setHistoryPage] = useState(1);
-  const [audioEnabled, setAudioEnabled] = useState(false);
-  const audioEnabledRef = useRef(false);
 
-  useEffect(() => {
-    audioEnabledRef.current = audioEnabled;
-  }, [audioEnabled]);
 
   useEffect(() => {
     if (session?.role !== "admin" && session?.sector) {
@@ -80,21 +74,6 @@ export default function PainelPage() {
     const storedSession = getSessionSnapshot();
     if (!storedSession) { router.push("/login"); }
   }, [router]);
-
-  useEffect(() => {
-    initSpeechClient();
-    const unlock = () => {
-      unlockSpeech();
-      speakText("Som ativado.");
-      setAudioEnabled(true);
-    };
-    window.addEventListener("pointerdown", unlock, { once: true });
-    window.addEventListener("keydown", unlock, { once: true });
-    return () => {
-      window.removeEventListener("pointerdown", unlock);
-      window.removeEventListener("keydown", unlock);
-    };
-  }, []);
 
   useEffect(() => {
     if (!activeSector) return;
@@ -162,20 +141,28 @@ export default function PainelPage() {
 
     if (result.ok) {
       setNotice(type === "preferencial" ? "Senha preferencial chamada" : "Senha normal chamada");
-      if (audioEnabledRef.current) forceAnnounce(result.next, result.type);
     } else {
       setNotice(result.error);
     }
 
     setCalling(false);
-  }, [calling, activeSector, audioEnabled]);
+  }, [calling, activeSector]);
 
-  const reCall = useCallback(() => {
+  const reCall = useCallback(async () => {
     const lastItem = current.history[0];
     if (!lastItem) { setNotice("Nenhuma senha anterior para chamar."); return; }
-    setNotice(`Chamando novamente: ${formatQueueNumber(lastItem.number, lastItem.type)}`);
-    forceAnnounce(lastItem.number, lastItem.type);
-  }, [current.history]);
+    setNotice("Repetindo chamada...");
+    try {
+      await fetch("/api/queue/recall", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sector: activeSector }),
+      });
+      setNotice(`Chamando novamente: ${formatQueueNumber(lastItem.number, lastItem.type)}`);
+    } catch {
+      setNotice("Erro ao repetir chamada.");
+    }
+  }, [current.history, activeSector]);
 
   useEffect(() => {
     function handleKeyDown(event) {

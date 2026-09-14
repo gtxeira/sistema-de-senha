@@ -1,5 +1,29 @@
-import { describe, expect, it } from "vitest";
-import { numberToPt, buildSpeechText } from "@/lib/speech";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { numberToPt, buildSpeechText, monitorSpeak, forceAnnounce, initSpeechClient } from "@/lib/speech";
+
+class MockSpeechSynthesisUtterance {
+  constructor(text) {
+    this.text = text;
+    this.lang = "";
+    this.rate = 1;
+    this.pitch = 1;
+    this.volume = 1;
+    this.voice = null;
+    this.onend = null;
+    this.onerror = null;
+  }
+}
+
+beforeEach(() => {
+  vi.useFakeTimers();
+  vi.restoreAllMocks();
+  globalThis.SpeechSynthesisUtterance = MockSpeechSynthesisUtterance;
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+  delete globalThis.SpeechSynthesisUtterance;
+});
 
 describe("numberToPt", () => {
   it("converte zero e mil", () => {
@@ -38,5 +62,51 @@ describe("buildSpeechText", () => {
   it("monta texto para senha preferencial", () => {
     expect(buildSpeechText(3, "preferencial")).toBe("Senha preferencial. três.");
     expect(buildSpeechText(3, "preferential")).toBe("Senha preferencial. três.");
+  });
+});
+
+describe("monitorSpeak", () => {
+  it("fala o texto da senha via speechSynthesis", async () => {
+    const speakSpy = vi.spyOn(window.speechSynthesis, "speak");
+    initSpeechClient();
+
+    const promise = monitorSpeak(42, "normal");
+    await vi.advanceTimersByTimeAsync(3000);
+    await promise;
+
+    expect(speakSpy).toHaveBeenCalled();
+    const utterance = speakSpy.mock.calls[0][0];
+    expect(utterance.text).toBe("Senha. quarenta e dois.");
+    expect(utterance.lang).toBe("pt-BR");
+  });
+
+  it("fala texto preferencial corretamente", async () => {
+    const speakSpy = vi.spyOn(window.speechSynthesis, "speak");
+    initSpeechClient();
+
+    const promise = monitorSpeak(5, "preferencial");
+    await vi.advanceTimersByTimeAsync(3000);
+    await promise;
+
+    expect(speakSpy).toHaveBeenCalled();
+    const utterance = speakSpy.mock.calls[0][0];
+    expect(utterance.text).toBe("Senha preferencial. cinco.");
+  });
+});
+
+describe("forceAnnounce", () => {
+  it("força fala ignorando dedup", async () => {
+    const speakSpy = vi.spyOn(window.speechSynthesis, "speak");
+    initSpeechClient();
+
+    const p1 = forceAnnounce(10, "normal");
+    await vi.advanceTimersByTimeAsync(3000);
+    await p1;
+
+    const p2 = forceAnnounce(10, "normal");
+    await vi.advanceTimersByTimeAsync(3000);
+    await p2;
+
+    expect(speakSpy).toHaveBeenCalledTimes(2);
   });
 });

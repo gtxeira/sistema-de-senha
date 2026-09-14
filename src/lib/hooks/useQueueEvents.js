@@ -91,6 +91,9 @@ export function useQueueEvents(sector) {
           if (data.type === "call" && data.call) {
             lastCallIdRef.current = data.call.id;
             setLastCall(data.call);
+          } else if (data.type === "recall" && data.call) {
+            lastCallIdRef.current = data.call.id;
+            setLastCall({ ...data.call, isRecall: true });
           }
         } catch {
           // Ignore parse errors
