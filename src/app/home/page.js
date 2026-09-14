@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { LogOut, Monitor, Settings2 } from "lucide-react";
+import { LogOut, Monitor, Settings2, Headphones } from "lucide-react";
 import { getSessionSnapshot, SESSION_KEY, SECTORS } from "../../lib/queue";
 import styles from "./Home.module.css";
 import Image from 'next/image';
@@ -72,6 +72,18 @@ export default function HomePage() {
               <div className={styles.cardArrow}>→</div>
             </Link>
           ))}
+
+          {/* Painel de Atendimento */}
+          <Link href="/painel" className={`${styles.card} ${styles.cardAdmin}`}>
+            <div className={`${styles.cardIcon} ${styles.cardIconAtendimento}`}>
+              <Headphones size={30} />
+            </div>
+            <div className={styles.cardBody}>
+              <strong>Painel de Atendimento</strong>
+              <span>Controle as chamadas em tempo real</span>
+            </div>
+            <div className={styles.cardArrow}>→</div>
+          </Link>
 
           {/* Admin — só para admins */}
           {session.role === "admin" && (

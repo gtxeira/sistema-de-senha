@@ -157,9 +157,14 @@
   color: #1678a0;
 }
 
+.cardIconAtendimento {
+  background-color: #f5f3ff;
+  color: #7c3aed;
+}
+
 .cardIconAdmin {
-  background: #f0f4e6;
-  color: #5a7a0e;
+  background-color: #fff7ed;
+  color: #ea580c;
 }
 
 .cardBody {

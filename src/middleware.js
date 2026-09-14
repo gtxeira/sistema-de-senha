@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 
 const PUBLIC = ["/login"];
-const PROTECTED = ["/home", "/admin", "/monitor"];
+const PROTECTED = ["/home", "/admin", "/monitor", "/painel", "/historico"];
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;

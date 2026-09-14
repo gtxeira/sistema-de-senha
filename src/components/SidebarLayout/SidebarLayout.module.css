@@ -1,0 +1,227 @@
+/* ═══════════════════════════════════════════
+   SIDEBAR LAYOUT — Componente compartilhado
+   Shell + Sidebar + Header + Main scroll
+   ═══════════════════════════════════════════ */
+
+/* ── Shell: flex container que ocupa toda a viewport ── */
+.shell {
+  height: 100vh;
+  display: flex;
+  background: #f4f7fb;
+  color: #17324d;
+  overflow: hidden;
+}
+
+/* ── Sidebar: fixa à esquerda, ocupa 100vh ── */
+.sidebar {
+  width: 252px;
+  height: 100vh;
+  flex-shrink: 0;
+  background: #0b3555;
+  color: #d5e4ee;
+  display: flex;
+  flex-direction: column;
+  padding: 28px 18px 20px;
+  overflow-y: auto;
+}
+
+/* ── Navegação da sidebar ── */
+.nav {
+  display: grid;
+  gap: 7px;
+}
+
+.nav a,
+.logout {
+  color: #aac2d0;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  border-radius: 9px;
+  font-size: 14px;
+}
+
+.nav a:hover,
+.activeNav {
+  background: #174a6d;
+  color: #fff !important;
+}
+
+/* ── Rodapé da sidebar (perfil + sair) ── */
+.sidebarFoot {
+  margin-top: auto;
+}
+
+.profile {
+  border-top: 1px solid #28536d;
+  padding: 18px 10px 15px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.avatar {
+  background: #d8f4ee;
+  color: #168778;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.profile strong {
+  display: block;
+  color: #fff;
+  font-size: 12px;
+}
+
+.profile small {
+  font-size: 11px;
+  color: #8eabbc;
+}
+
+.logout {
+  border-top: 1px solid #28536d;
+  border-radius: 0;
+  padding-top: 18px;
+}
+
+/* ═══════════════════════════════════════════
+   CONTEÚDO PRINCIPAL — com scroll vertical
+   ═══════════════════════════════════════════ */
+
+.main {
+  flex: 1;
+  height: 100vh;
+  overflow-y: auto;
+  margin: auto;
+  padding: 2vw;
+  scroll-behavior: smooth;
+}
+
+/* ── Header da página ── */
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.eyebrow,
+.label {
+  color: #7990a1;
+  font-size: 10px;
+  letter-spacing: 1.25px;
+  font-weight: 800;
+}
+
+.header h1 {
+  font-size: 30px;
+  margin: 8px 0 5px;
+  color: #13324d;
+}
+
+.header h1 span {
+  font-size: 24px;
+}
+
+.muted {
+  color: #7590a0;
+  font-size: 13px;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  color: #658296;
+  font-size: 12px;
+}
+
+.connection {
+  color: #159883;
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  font-weight: 700;
+}
+
+.monitorLink {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #236681;
+  text-decoration: none;
+  border: 1px solid #cfdee8;
+  border-radius: 7px;
+  padding: 10px 13px;
+  background: #fff;
+  font-weight: 700;
+}
+
+.headerTime {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ── Seletor de setor (admin) ── */
+.sectorSelect {
+  border: 1px solid #cfdee8;
+  border-radius: 7px;
+  padding: 10px 13px;
+  background: #fff;
+  color: #236681;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  outline-color: #1678a0;
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVO
+   ═══════════════════════════════════════════ */
+
+@media (max-width: 900px) {
+  .sidebar {
+    width: 72px;
+    padding: 22px 9px;
+  }
+
+  .nav a {
+    font-size: 0;
+    justify-content: center;
+  }
+
+  .profile div:last-child,
+  .logout {
+    font-size: 0;
+    justify-content: center;
+  }
+
+  .main {
+    padding: 28px 22px;
+  }
+
+  .headerActions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 560px) {
+  .header {
+    display: block;
+  }
+
+  .headerActions {
+    justify-content: flex-start;
+    margin-top: 18px;
+  }
+}
