@@ -6,9 +6,11 @@ import { signOut } from "next-auth/react";
 import {
   Bell,
   CheckCircle2,
+  ChevronDown,
   Clock3,
   Home,
   LogOut,
+  Monitor,
   Settings2,
 } from "lucide-react";
 import { SECTORS, SESSION_KEY } from "../../lib/queue";
@@ -34,6 +36,7 @@ export function SidebarLayout({
   children,
 }) {
   const [time, setTime] = useState("");
+  const [monitorsOpen, setMonitorsOpen] = useState(false);
   const visibleNavItems = NAV_ITEMS.filter(
     (item) => !item.onlyAdmin || session?.role === "admin"
   );
@@ -62,6 +65,33 @@ export function SidebarLayout({
               {item.label}
             </Link>
           ))}
+          <button
+            type="button"
+            className={`${styles.navItem} ${monitorsOpen ? styles.activeNav : ""}`}
+            onClick={() => setMonitorsOpen(!monitorsOpen)}
+          >
+            <Monitor size={18}/>
+            Monitores
+            <ChevronDown
+              size={14}
+              className={`${styles.chevron} ${monitorsOpen ? styles.chevronOpen : ""}`}
+            />
+          </button>
+          {monitorsOpen && (
+            <div className={styles.monitorSubmenu}>
+              {Object.values(SECTORS).map((s) => (
+                <a
+                  key={s.id}
+                  href={`/monitor/${s.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.monitorItem}
+                >
+                  {s.name}
+                </a>
+              ))}
+            </div>
+          )}
         </nav>
         <div className={styles.sidebarFoot}>
           <div className={styles.profile}>
