@@ -12,23 +12,22 @@ import {
   Trash2,
 } from "lucide-react";
 import {
+  callNextNumber,
   clearMonitorHistory,
   formatQueueNumber,
   getQueueSnapshot,
   getServerQueueSnapshot,
   getServerSessionSnapshot,
-  getSessionSnapshot,
-  nextQueueNumber,
+  getSessionSnapshot, nextQueueNumber,
   normalizeQueue,
   readQueueState,
   saveQueueState,
   SECTORS,
   subscribeQueue,
   subscribeSession,
-  withQueueLock,
 } from "../../lib/queue";
 import { useQueueEvents } from "../../lib/hooks/useQueueEvents";
-import { forceAnnounce, initSpeechClient, unlockSpeech } from "../../lib/speech";
+import { forceAnnounce, initSpeechClient, speakText, unlockSpeech } from "../../lib/speech";
 import { SidebarLayout, sidebarStyles } from "../../components/SidebarLayout/SidebarLayout";
 import styles from "./Painel.module.css";
 
@@ -60,6 +59,12 @@ export default function PainelPage() {
   const [calling, setCalling]     = useState(false);
   const [activeSector, setActiveSector] = useState("farmacia");
   const [historyPage, setHistoryPage] = useState(1);
+  const [audioEnabled, setAudioEnabled] = useState(false);
+  const audioEnabledRef = useRef(false);
+
+  useEffect(() => {
+    audioEnabledRef.current = audioEnabled;
+  }, [audioEnabled]);
 
   useEffect(() => {
     if (session?.role !== "admin" && session?.sector) {
@@ -89,7 +94,11 @@ export default function PainelPage() {
 
   useEffect(() => {
     initSpeechClient();
-    const unlock = () => unlockSpeech();
+    const unlock = () => {
+      unlockSpeech();
+      speakText("Som ativado.");
+      setAudioEnabled(true);
+    };
     window.addEventListener("pointerdown", unlock, { once: true });
     window.addEventListener("keydown", unlock, { once: true });
     return () => {
@@ -160,68 +169,17 @@ export default function PainelPage() {
     if (calling) return;
     setCalling(true);
 
-    await withQueueLock(async () => {
-      let next;
-      try {
-        const response = await fetch("/api/queue/call", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sector: activeSector, type, attendantId: session?.id || null }),
-        });
-        const data = await response.json();
-        if (!response.ok) {
-          if (data.useLocal) {
-            const latestState = readQueueState();
-            const latest      = normalizeQueue(latestState[activeSector]);
-            next = type === "preferencial"
-              ? nextQueueNumber(latest.priorityCurrent)
-              : nextQueueNumber(latest.normalCurrent);
-          } else {
-            setNotice(data.error || "Erro ao conectar à sequência central.");
-            next = null;
-          }
-        } else {
-          next = Number(data.number);
-        }
-      } catch {
-        next = null;
-      }
+    const result = await callNextNumber({ sector: activeSector, type });
 
-      next = Number(next);
-      if (!Number.isInteger(next) || next < 0 || next > 999) {
-        setNotice("Não foi possível conectar à sequência central.");
-        setCalling(false);
-        return;
-      }
-
-      const latestState = readQueueState();
-      const latest      = normalizeQueue(latestState[activeSector]);
-      const field       = type === "preferencial" ? "priorityCurrent" : "normalCurrent";
-
-      saveQueueState({
-        ...latestState,
-        [activeSector]: {
-          ...latest,
-          [field]: next,
-          history: [
-            {
-              number: next,
-              type,
-              time: new Intl.DateTimeFormat("pt-BR", {
-                hour: "2-digit", minute: "2-digit",
-              }).format(new Date()),
-            },
-            ...latest.history,
-          ].slice(0, HISTORY_LIMIT),
-        },
-      });
-
+    if (result.ok) {
       setNotice(type === "preferencial" ? "Senha preferencial chamada" : "Senha normal chamada");
-      forceAnnounce(next, type);
-    });
+      if (audioEnabledRef.current) forceAnnounce(result.next, result.type);
+    } else {
+      setNotice(result.error);
+    }
 
     setCalling(false);
-  }, [calling, activeSector, session]);
+  }, [calling, activeSector, audioEnabled]);
 
   const reCall = useCallback(() => {
     const lastItem = current.history[0];

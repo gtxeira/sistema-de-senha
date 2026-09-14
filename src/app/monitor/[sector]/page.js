@@ -11,15 +11,12 @@ import {
 } from "react";
 import { Clock3 } from "lucide-react";
 import {
-  formatQueueNumber,
+  callNextNumber,
   getQueueSnapshot,
-  nextQueueNumber,
   normalizeQueue,
-  readQueueState,
   saveQueueState,
   SECTORS,
   subscribeQueue,
-  withQueueLock,
 } from "../../../lib/queue";
 import { useQueueEvents } from "../../../lib/hooks/useQueueEvents";
 import {
@@ -239,62 +236,14 @@ export default function MonitorPage({ params }) {
     if (calling) return;
     setCalling(true);
 
-    await withQueueLock(async () => {
-      let next = null;
-      try {
-        const res = await fetch("/api/queue/call", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sector, type }),
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          if (data.useLocal) {
-            const ls = normalizeQueue(readQueueState()[sector]);
-            next = type === "preferencial"
-              ? nextQueueNumber(ls.priorityCurrent)
-              : nextQueueNumber(ls.normalCurrent);
-          } else {
-            setCalling(false);
-            return;
-          }
-        } else {
-          next = Number(data.number);
-        }
-      } catch {
-        const ls = normalizeQueue(readQueueState()[sector]);
-        next = type === "preferencial"
-          ? nextQueueNumber(ls.priorityCurrent)
-          : nextQueueNumber(ls.normalCurrent);
-      }
+    const result = await callNextNumber({ sector, type });
 
-      next = Number(next);
-      if (!Number.isInteger(next) || next < 1 || next > 1000) {
-        setCalling(false);
-        return;
-      }
-
-      // Atualiza só o contador atual para feedback visual imediato.
-      // NÃO adiciona ao histórico — o Realtime é a única fonte de verdade
-      // para o histórico, evitando duplicação em produção.
-      const latest = readQueueState();
-      const q = normalizeQueue(latest[sector]);
-      const field = type === "preferencial" ? "priorityCurrent" : "normalCurrent";
-
-      saveQueueState({
-        ...latest,
-        [sector]: {
-          ...q,
-          [field]: next,
-          // histórico inalterado — Realtime vai inserir
-        },
-      });
-
-      if (audioEnabledRef.current) forceAnnounce(next, type);
-    });
+    if (result.ok && audioEnabledRef.current) {
+      forceAnnounce(result.next, result.type);
+    }
 
     setCalling(false);
-  }, [calling, sector]);
+  }, [calling, sector, audioEnabled]);
 
   /* ─── repetir última senha ─── */
   const reCall = useCallback(() => {
