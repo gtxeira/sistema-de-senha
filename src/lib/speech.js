@@ -32,7 +32,7 @@ function getChannel() {
 }
 
 // ─── Conversão numérica pt-BR ─────────────────────────────────────────────────
-function numberToPt(value) {
+export function numberToPt(value) {
   const n = Math.max(0, Math.min(1000, Number(value) || 0));
   if (n === 0) return "zero";
   if (n === 1000) return "mil";

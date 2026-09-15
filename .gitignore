@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+tests/fixtures/news/*
+!tests/fixtures/news/.gitkeep
 
 # next.js
 /.next/
@@ -38,3 +40,12 @@ VERCEL_ENV.md
 *.tsbuildinfo
 next-env.d.ts
 .eslintignore
+/.idea/inspectionProfiles/Project_Default.xml
+/.idea/.gitignore
+/.idea/jsLibraryMappings.xml
+/.idea/misc.xml
+/.idea/modules.xml
+/.idea/php.xml
+/.idea/sistemadesenha.iml
+/.idea/vcs.xml
+/bun.lock

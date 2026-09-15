@@ -4,24 +4,20 @@ import {
   use,
   useCallback,
   useEffect,
-  useRef,
   useState,
   useSyncExternalStore,
   memo,
 } from "react";
 import { Clock3 } from "lucide-react";
 import {
-  formatQueueNumber,
+  callNextNumber,
   getQueueSnapshot,
-  nextQueueNumber,
   normalizeQueue,
-  readQueueState,
   saveQueueState,
   SECTORS,
   subscribeQueue,
-  withQueueLock,
 } from "../../../lib/queue";
-import { isSupabaseConfigured, getRealtimeClient } from "../../../lib/supabase";
+import { useQueueEvents } from "../../../lib/hooks/useQueueEvents";
 import {
   forceAnnounce,
   monitorSpeak,
@@ -149,62 +145,12 @@ export default function MonitorPage({ params }) {
     () => monitorServerSnapshot,
   );
 
+  // Realtime events via SSE with polling fallback
+  const { connected, lastCall } = useQueueEvents(sector);
+
   const [time, setTime] = useState("");
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [calling, setCalling] = useState(false);
-
-  // Busca a última senha chamada do banco ao abrir o monitor
-  useEffect(() => {
-    if (!sector) return;
-    
-    async function syncCurrentPassword() {
-      try {
-        // Busca a última senha do setor no banco
-        const response = await fetch(`/api/queue/current?sector=${sector}`);
-        if (response.ok) {
-          const data = await response.json();
-          
-          // Se há uma senha atual no banco, sincroniza com localStorage
-          if (data.current && data.current.number) {
-            const prev = readQueueState();
-            const queue = normalizeQueue(prev[sector] || {});
-            
-            const field = data.current.type === 'preferencial' ? 'priorityCurrent' : 'normalCurrent';
-            
-            const updatedState = {
-              ...prev,
-              [sector]: {
-                ...queue,
-                [field]: data.current.number,
-                history: data.current ? [{
-                  number: data.current.number,
-                  type: data.current.type,
-                  time: new Date().toLocaleTimeString("pt-BR", { 
-                    hour: "2-digit", 
-                    minute: "2-digit" 
-                  }),
-                  id: `sync-${data.current.number}-${data.current.type}`
-                }] : [],
-                historyDate: queue.historyDate || new Date().toISOString().split('T')[0],
-              },
-            };
-            
-            saveQueueState(updatedState);
-          }
-        }
-      } catch (error) {
-        console.log('Não foi possível sincronizar com servidor, usando dados locais');
-      }
-    }
-    
-    syncCurrentPassword();
-  }, [sector]);
-
-  const audioEnabledRef = useRef(false);
-
-  useEffect(() => {
-    audioEnabledRef.current = audioEnabled;
-  }, [audioEnabled]);
 
   /* relógio */
   useEffect(() => {
@@ -243,193 +189,60 @@ export default function MonitorPage({ params }) {
     return registerMonitorSpeaker();
   }, [audioEnabled]);
 
-  /* Supabase Realtime */
+  /* Realtime events from SSE/polling hook */
   useEffect(() => {
-    if (!isSupabaseConfigured || !sector) return;
-    const db = getRealtimeClient();
-    if (!db) return;
+    if (!lastCall || !sector) return;
 
-    async function fetchInitialHistory() {
-      try {
-        // Busca apenas a última senha chamada (qualquer dia)
-        // para manter o contador correto ao reabrir o sistema.
-        // O histórico visual sempre começa vazio.
-        const { data: lastCallData } = await db
-          .from("queue_calls")
-          .select("number_int, type")
-          .eq("sector_id", sector)
-          .order("id", { ascending: false })
-          .limit(1);
+    const isRecall = lastCall.isRecall === true;
+    const callKey = `${lastCall.id || lastCall.number}-${lastCall.type}`;
+    if (!isRecall && lastSpokenCallId === callKey) return;
+    lastSpokenCallId = callKey;
 
-        const prev  = getQueueSnapshot() || monitorServerSnapshot;
-        const queue = prev[sector] || {};
+    const prev = getQueueSnapshot() || monitorServerSnapshot;
+    const queue = prev[sector] || {};
+    const callType = lastCall.type === "preferencial" ? "preferencial" : "normal";
+    const field = callType === "preferencial" ? "priorityCurrent" : "normalCurrent";
 
-        let normalCurrent   = queue.normalCurrent   ?? 0;
-        let priorityCurrent = queue.priorityCurrent ?? 0;
-
-        const lastCall = lastCallData?.[0];
-        if (lastCall) {
-          const isPreferencial =
-            lastCall.type === "preferencial" || lastCall.type === "preferential";
-          if (isPreferencial) {
-            priorityCurrent = lastCall.number_int;
-          } else {
-            normalCurrent = lastCall.number_int;
-          }
-        }
-
-        saveQueueState({
-          ...prev,
-          [sector]: {
-            ...queue,
-            normalCurrent,
-            priorityCurrent,
-            history: [], // sempre inicia vazio
-          },
-        });
-      } catch (err) {
-        console.error("Erro ao carregar histórico:", err);
-      }
-    }
-
-    fetchInitialHistory();
-
-    const channel = db
-      .channel(`realtime-monitor-${sector}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "queue_calls",
-          filter: `sector_id=eq.${sector}`,
-        },
-        (payload) => {
-          const call = payload.new;
-          if (!call?.number_int) return;
-
-          const callKey = `${call.id || call.number_int}-${call.type}`;
-          if (lastSpokenCallId === callKey) return;
-          lastSpokenCallId = callKey;
-
-          const prev = getQueueSnapshot() || monitorServerSnapshot;
-          const queue = prev[sector] || {};
-          const callType =
-            call.type === "preferential" || call.type === "preferencial"
-              ? "preferencial"
-              : "normal";
-          const field =
-            callType === "preferencial" ? "priorityCurrent" : "normalCurrent";
-          const timeStr = new Intl.DateTimeFormat("pt-BR", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }).format(new Date(call.created_at || Date.now()));
-
-          const currentHistory = queue.history || [];
-          const newEntry = {
-            id: call.id,
-            number: call.number_int,
-            type: callType,
-            time: timeStr,
-          };
-
-          saveQueueState({
-            ...prev,
-            [sector]: {
-              ...queue,
-              [field]: call.number_int,
-              history: cleanHistory([newEntry, ...currentHistory]).slice(0, 30),
-            },
-          });
-
-          if (audioEnabledRef.current) {
-            monitorSpeak(call.number_int, callType);
-          }
-        },
-      )
-      .subscribe();
-
-    return () => {
-      db.removeChannel(channel);
+    const currentHistory = queue.history || [];
+    const newEntry = {
+      id: lastCall.id,
+      number: lastCall.number,
+      type: callType,
+      time: lastCall.time,
     };
-  }, [sector]);
+
+    saveQueueState({
+      ...prev,
+      [sector]: {
+        ...queue,
+        [field]: lastCall.number,
+        history: cleanHistory([newEntry, ...currentHistory]).slice(0, 30),
+      },
+    });
+
+    monitorSpeak(lastCall.number, callType);
+  }, [lastCall, sector]);
 
   /* ─── chamar próxima senha (via teclado / passador) ─── */
-  const callNext = useCallback(
-    async (type) => {
-      if (calling) return;
-      setCalling(true);
+  const callNext = useCallback(async (type) => {
+    if (calling) return;
+    setCalling(true);
 
-      await withQueueLock(async () => {
-        let next = null;
-        try {
-          const res = await fetch("/api/queue/call", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ sector, type, attendantId: null }),
-          });
-          const data = await res.json();
-          if (!res.ok) {
-            if (data.useLocal) {
-              const ls = normalizeQueue(readQueueState()[sector]);
-              next =
-                type === "preferencial"
-                  ? nextQueueNumber(ls.priorityCurrent)
-                  : nextQueueNumber(ls.normalCurrent);
-            } else {
-              setCalling(false);
-              return;
-            }
-          } else {
-            next = Number(data.number);
-          }
-        } catch {
-          const ls = normalizeQueue(readQueueState()[sector]);
-          next =
-            type === "preferencial"
-              ? nextQueueNumber(ls.priorityCurrent)
-              : nextQueueNumber(ls.normalCurrent);
-        }
+    const result = await callNextNumber({ sector, type });
 
-        next = Number(next);
-        if (!Number.isInteger(next) || next < 1 || next > 1000) {
-          setCalling(false);
-          return;
-        }
+    if (result.ok) {
+      forceAnnounce(result.next, result.type);
+    }
 
-        // Atualiza só o contador atual para feedback visual imediato.
-        // NÃO adiciona ao histórico — o Realtime é a única fonte de verdade
-        // para o histórico, evitando duplicação em produção.
-        const latest = readQueueState();
-        const q = normalizeQueue(latest[sector]);
-        const field =
-          type === "preferencial" ? "priorityCurrent" : "normalCurrent";
-
-        saveQueueState({
-          ...latest,
-          [sector]: {
-            ...q,
-            [field]: next,
-            // histórico inalterado — Realtime vai inserir
-          },
-        });
-
-        if (audioEnabledRef.current) forceAnnounce(next, type);
-      });
-
-      setCalling(false);
-    },
-    [calling, sector],
-  );
+    setCalling(false);
+  }, [calling, sector]);
 
   /* ─── repetir última senha ─── */
   const reCall = useCallback(() => {
-    const q = normalizeQueue(
-      (getQueueSnapshot() || monitorServerSnapshot)[sector],
-    );
+    const q = normalizeQueue((getQueueSnapshot() || monitorServerSnapshot)[sector]);
     const last = q.history[0];
     if (!last) return;
-    if (audioEnabledRef.current) forceAnnounce(last.number, last.type);
+    forceAnnounce(last.number, last.type);
   }, [sector]);
 
   /* ─── atalhos de teclado ─── */
@@ -437,6 +250,7 @@ export default function MonitorPage({ params }) {
     function onKey(e) {
       if (["INPUT", "TEXTAREA", "SELECT", "BUTTON"].includes(e.target.tagName))
         return;
+
       const k = e.key;
       if (["ArrowRight", "PageDown", "Enter", " "].includes(k)) {
         e.preventDefault();
@@ -491,28 +305,7 @@ export default function MonitorPage({ params }) {
   const info = SECTORS[sector] || SECTORS.farmacia;
   const current = state[sector] || monitorServerSnapshot[sector];
   const validHistory = cleanHistory(current.history || []);
-  
-  // NOVA LÓGICA: Se não há histórico, busca diretamente do localStorage
-  let latest;
-  if (validHistory.length > 0) {
-    latest = validHistory[0];
-  } else {
-    // Se não há histórico, determina a senha atual pelos contadores
-    const freshState = readQueueState();
-    const freshQueue = normalizeQueue(freshState[sector] || {});
-    const normalCurrent = freshQueue.normalCurrent || 0;
-    const priorityCurrent = freshQueue.priorityCurrent || 0;
-    
-    if (normalCurrent === 0 && priorityCurrent === 0) {
-      latest = { number: 0, type: "normal" };
-    } else if (priorityCurrent >= normalCurrent && priorityCurrent > 0) {
-      latest = { number: priorityCurrent, type: "preferencial" };
-    } else {
-      latest = { number: normalCurrent, type: "normal" };
-    }
-  }
-  
-  // As "últimas senhas" são as entradas seguintes (excluindo a atual)
+  const latest = validHistory[0] || { number: current.normalCurrent || 0, type: "normal" };
   const recentCalls = validHistory.slice(1, 5);
   const isPriority = latest.type === "preferencial";
 

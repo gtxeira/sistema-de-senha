@@ -164,7 +164,8 @@
 /* TAG PREFERENCIAL NA LISTA DE ÚLTIMAS SENHAS */
 .priorityTagSmall {
   background-color: #ef4444;
-  color: #000000 !important;
+  /*color: #000000 !important;*/
+  color: #FFFFFF !important;
   padding: 4px 12px;
   border-radius: 8px;
   font-weight: bold;

@@ -1,110 +1,63 @@
-import { createAuthClient, isSupabaseConfigured } from "../../../lib/supabase";
-import {
-  isSupabaseAdminConfigured,
-  supabaseAdmin,
-} from "../../../lib/supabase-admin";
+import { NextResponse } from "next/server";
+import { auth } from "@/lib/repositories";
 
+/* ─────────────────────────────────────────────────
+   GET — lista todos os usuários (deprecated, mantido por compatibilidade)
+   Este endpoint não é mais usado pelo frontend mas mantido para não quebrar
+   possíveis integrações externas
+───────────────────────────────────────────────── */
+export async function GET() {
+  // This endpoint is deprecated but kept for backward compatibility
+  // It now returns empty array as the functionality moved to /api/users
+  return NextResponse.json({ users: [] });
+}
+
+/* ─────────────────────────────────────────────────
+   POST — autentica usuário e retorna perfil
+   Fluxo:
+   1. Valida username (nome.sobrenome) e senha
+   2. Resolve email (via admin lookup se configurado, senão padrão)
+   3. Faz login no Supabase Auth
+   4. Busca perfil no Supabase (via admin se disponível, senão anon)
+   5. Verifica se perfil está ativo
+   6. Retorna dados do usuário
+───────────────────────────────────────────────── */
 export async function POST(request) {
-  if (!isSupabaseConfigured) {
-    return Response.json(
-      { error: "Supabase não está configurado." },
-      { status: 503 },
-    );
-  }
-
-  const supabase = createAuthClient();
-  if (!supabase) {
-    return Response.json(
-      { error: "Supabase não está configurado." },
-      { status: 503 },
-    );
-  }
-
   try {
-    const { login, password } = await request.json();
-    const username = String(login || "").trim().toLowerCase();
+    const body = await request.json();
+    const { login, password } = body;
 
-    if (!/^[a-z0-9]+(?:[._][a-z0-9]+)*$/.test(username)) {
-      return Response.json(
-        { error: "Usuário inválido." },
-        { status: 400 },
+    if (!login || !password) {
+      return NextResponse.json(
+        { error: "Usuário (nome.sobrenome) e senha são obrigatórios" },
+        { status: 400 }
       );
     }
 
-    // Estratégia 1: buscar email pelo username no profiles (via admin)
-    // Estratégia 2: fallback direto com email padrão
-    // Estratégia 3: fallback com username como email local
-    let loginEmail = `${username}@central-atendimento.local`;
-
-    if (isSupabaseAdminConfigured && supabaseAdmin) {
-      try {
-        // Tenta achar o perfil pelo username
-        const { data: profile } = await supabaseAdmin
-          .from("profiles")
-          .select("id")
-          .ilike("username", username)
-          .maybeSingle();
-
-        if (profile?.id) {
-          // Busca o email real no Auth
-          const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(profile.id);
-          if (authUser?.user?.email) {
-            loginEmail = authUser.user.email;
-          }
-        }
-      } catch {
-        // Falha silenciosa — usa o email padrão como fallback
-      }
-    }
-
-    // Tenta login com o email resolvido
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: loginEmail,
-      password,
+    const userData = await auth.login(login, password);
+    
+    return NextResponse.json({
+      id: userData.id,
+      name: userData.name,
+      initials: userData.initials,
+      role: userData.role,
+      sector: userData.sector,
+      guiche: userData.guiche,
     });
-
-    if (error || !data?.user) {
-      return Response.json(
-        { error: "Login ou senha inválidos." },
-        { status: 401 },
+  } catch (err) {
+    // Handle typed errors from repository
+    if (err.status) {
+      return NextResponse.json(
+        { error: err.message },
+        { status: err.status }
       );
     }
-
-    // Busca perfil do usuário autenticado
-    const profileClient = isSupabaseAdminConfigured && supabaseAdmin
-      ? supabaseAdmin
-      : supabase;
-
-    const { data: userProfile, error: profileError } = await profileClient
-      .from("profiles")
-      .select("full_name, role, sector_id, guiche_id, active")
-      .eq("id", data.user.id)
-      .single();
-
-    if (profileError || !userProfile?.active) {
-      return Response.json(
-        { error: "Usuário sem acesso ativo." },
-        { status: 403 },
-      );
-    }
-
-    return Response.json({
-      id: data.user.id,
-      name: userProfile.full_name,
-      initials: userProfile.full_name
-        .split(/\s+/)
-        .map((p) => p[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase(),
-      role: userProfile.role,
-      sector: userProfile.sector_id,
-      guiche: userProfile.guiche_id || "none",
-    });
-  } catch {
-    return Response.json(
+    
+    // Handle unexpected errors
+    console.error("Erro em /api/auth:", err);
+    return NextResponse.json(
       { error: "Não foi possível validar o acesso." },
-      { status: 400 },
+      { status: 400 }
     );
   }
 }

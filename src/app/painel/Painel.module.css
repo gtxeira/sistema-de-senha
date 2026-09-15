@@ -1,0 +1,409 @@
+﻿/* ═══════════════════════════════════════════
+   PAINEL — Estilos específicos da página
+   (Shell, sidebar, header → SidebarLayout)
+   ═══════════════════════════════════════════ */
+
+/* ── Herda classes do SidebarLayout para uso local ── */
+:global(.connection) {}
+:global(.sectorSelect) {}
+:global(.monitorLink) {}
+:global(.headerTime) {}
+
+/* ═══════════════════════════════════════════
+   GRID DE CARDS (senha atual + ações)
+   ═══════════════════════════════════════════ */
+
+.label {
+  color: #7990a1;
+  font-size: 10px;
+  letter-spacing: 1.25px;
+  font-weight: 800;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.currentCard {
+  background: #fff;
+  border: 1px solid #dde9ed;
+  border-radius: 14px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cardTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.sectorName {
+  font-size: 15px;
+  font-weight: 800;
+  color: #23445b;
+  margin-top: 4px;
+}
+
+.live {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #159883;
+}
+
+.live i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #159883;
+  display: inline-block;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.queueNumber {
+  font-size: 64px;
+  font-weight: 900;
+  color: #0b3555;
+  letter-spacing: 2px;
+  line-height: 1;
+}
+
+.callType {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: #7990a1;
+}
+
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #eaf7ef;
+  border: 1px solid #a8dbb9;
+  border-radius: 8px;
+  color: #1a6b3a;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ── Card: ações de chamada ── */
+.actionsCard {
+  background: #fff;
+  border: 1px solid #dde9ed;
+  border-radius: 14px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.counter {
+  font-size: 11px;
+  font-weight: 800;
+  color: #7990a1;
+  background: #f0f6f9;
+  padding: 5px 10px;
+  border-radius: 6px;
+}
+
+.normalButton,
+.priorityButton {
+  border: 0;
+  border-radius: 10px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-weight: 800;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+
+.normalButton:hover:not(:disabled),
+.priorityButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+.normalButton:disabled,
+.priorityButton:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.normalButton {
+  background: #0b3555;
+  color: #fff;
+}
+
+.normalButton span {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+}
+
+.normalButton small {
+  font-weight: 600;
+  opacity: 0.8;
+  font-size: 12px;
+}
+
+.priorityButton {
+  background: #d97706;
+  color: #fff;
+}
+
+.priorityButton span {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+}
+
+.priorityButton small {
+  font-weight: 600;
+  opacity: 0.8;
+  font-size: 12px;
+}
+
+.recallButton {
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 12px 20px;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-weight: 700;
+  background-color: #f8fafc;
+  color: #0b3555;
+  transition: transform 0.12s, box-shadow 0.12s, background-color 0.12s, border-color 0.12s;
+}
+
+.recallButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  background-color: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.recallButton:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.recallButton:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.recallButton span {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+}
+
+.recallButton small {
+  font-weight: 600;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.helper {
+  font-size: 11px;
+  color: #9ab0bc;
+  text-align: center;
+}
+
+/* ═══════════════════════════════════════════
+   SEÇÃO: ÚLTIMAS CHAMADAS (tabela)
+   ═══════════════════════════════════════════ */
+
+.recent {
+  margin-top: 32px;
+  background: #fff;
+  border: 1px solid #dde9ed;
+  border-radius: 14px;
+  padding: 28px;
+}
+
+.sectionHeading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.sectionHeading a {
+  color: #236681;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.sectionHeading a:hover {
+  text-decoration: underline;
+}
+
+.table {
+  display: flex;
+  flex-direction: column;
+}
+
+.tableHead {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr 1fr 1fr;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #f0f6f9;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #7a9aad;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.tableRow {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr 1fr 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border-bottom: 1px solid #edf2f5;
+  font-size: 12px;
+  color: #5a7a8a;
+}
+
+.tableRow strong {
+  font-size: 17px;
+  font-weight: 800;
+  color: #163b52;
+  letter-spacing: 1px;
+}
+
+.priorityTag {
+  display: inline-block;
+  background: #fff3e0;
+  color: #b85c00;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.normalTag {
+  display: inline-block;
+  background: #e6f4f9;
+  color: #1678a0;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.called {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #159883;
+  font-weight: 700;
+}
+
+/* ── Paginação ── */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #edf2f5;
+}
+
+.pageBtn {
+  border: 1px solid #cfdee8;
+  border-radius: 6px;
+  padding: 8px 14px;
+  background: #fff;
+  color: #3a6a80;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.pageBtn:hover:not(:disabled) {
+  background: #f0f6f9;
+  border-color: #1678a0;
+}
+
+.pageBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pageInfo {
+  font-size: 12px;
+  color: #7a9aad;
+  font-weight: 600;
+}
+
+.emptyHistory {
+  font-size: 13px;
+  color: #9ab0bc;
+  text-align: center;
+  padding: 24px;
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVO
+   ═══════════════════════════════════════════ */
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .tableHead span:nth-child(3),
+  .tableRow span:nth-child(3) {
+    display: none;
+  }
+
+  .tableHead,
+  .tableRow {
+    grid-template-columns: 1fr 1.4fr 1fr;
+  }
+
+  .currentCard,
+  .actionsCard,
+  .recent {
+    padding: 21px 17px;
+  }
+}

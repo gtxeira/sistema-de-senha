@@ -69,7 +69,7 @@ export function getInitialState() {
   };
 }
 
-function clearHistoryFromNewDay(state) {
+export function clearHistoryFromNewDay(state) {
   const today = localDateKey();
   let changed = false;
   const nextState = Object.fromEntries(
@@ -217,4 +217,51 @@ export function getSessionSnapshot() {
 
 export function getServerSessionSnapshot() {
   return null;
+}
+
+export async function callNextNumber({ sector, type }) {
+  return withQueueLock(async () => {
+    let next = null;
+    try {
+      const res = await fetch("/api/queue/call", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sector, type }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.useLocal) {
+          const ls = normalizeQueue(readQueueState()[sector]);
+          next = type === "preferencial"
+            ? nextQueueNumber(ls.priorityCurrent)
+            : nextQueueNumber(ls.normalCurrent);
+        } else {
+          return { ok: false, error: data.error || "Erro ao conectar à sequência central." };
+        }
+      } else {
+        next = Number(data.number);
+      }
+    } catch {
+      const ls = normalizeQueue(readQueueState()[sector]);
+      next = type === "preferencial"
+        ? nextQueueNumber(ls.priorityCurrent)
+        : nextQueueNumber(ls.normalCurrent);
+    }
+
+    next = Number(next);
+    if (!Number.isInteger(next) || next < 0 || next > 999) {
+      return { ok: false, error: "Número de senha inválido." };
+    }
+
+    const latest = readQueueState();
+    const q = normalizeQueue(latest[sector]);
+    const field = type === "preferencial" ? "priorityCurrent" : "normalCurrent";
+
+    saveQueueState({
+      ...latest,
+      [sector]: { ...q, [field]: next },
+    });
+
+    return { ok: true, next, type };
+  });
 }

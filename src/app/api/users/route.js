@@ -1,121 +1,33 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+import { users } from "@/lib/repositories";
 
 /* ─────────────────────────────────────────────────
-   GET — lista todos os usuários Supabase
+   GET — lista todos os usuários
 ───────────────────────────────────────────────── */
 export async function GET() {
-  if (!supabaseUrl || !supabaseServiceKey) {
-    return NextResponse.json(
-      { error: "Supabase não configurado" },
-      { status: 503 },
-    );
-  }
-
   try {
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("id, username, full_name, role, sector_id")
-      .order("created_at", { ascending: false });
-
-    if (error) throw error;
-
-    return NextResponse.json({ users: data || [] });
+    const userList = await users.list();
+    return NextResponse.json({ users: userList });
   } catch (err) {
-    console.error("Erro ao listar usuários:", err);
     return NextResponse.json(
       { error: err.message || "Erro ao listar usuários" },
-      { status: 500 },
+      { status: err.status || 500 }
     );
   }
 }
 
 /* ─────────────────────────────────────────────────
-   POST — cria novo usuário no Supabase Auth + Profile
+   POST — cria novo usuário
 ───────────────────────────────────────────────── */
 export async function POST(request) {
-  if (!supabaseUrl || !supabaseServiceKey) {
-    return NextResponse.json(
-      { error: "Supabase não configurado" },
-      { status: 503 },
-    );
-  }
-
   try {
     const body = await request.json();
-    const {
-      username: rawUsername,
-      password,
-      full_name,
-      role,
-      sector_id,
-    } = body;
-    const username = String(rawUsername || "")
-      .trim()
-      .toLowerCase();
-
-    if (
-      !/^[a-z0-9]+(?:[._][a-z0-9]+)*$/.test(username) ||
-      !password ||
-      !full_name
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            "Usuário (nome.sobrenome), senha e nome completo são obrigatórios",
-        },
-        { status: 400 },
-      );
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const email = `${username}@central-atendimento.local`;
-
-    // Cria usuário no Auth
-    const { data: authData, error: authError } =
-      await supabase.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
-      });
-
-    if (authError) throw authError;
-
-    // Cria profile
-    const { error: profileError } = await supabase.from("profiles").insert({
-      id: authData.user.id,
-      username,
-      full_name,
-      role: role || "attendant",
-      sector_id: sector_id || null,
-    });
-
-    if (profileError) {
-      // Rollback: deleta o usuário do auth
-      await supabase.auth.admin.deleteUser(authData.user.id);
-      throw profileError;
-    }
-
-    return NextResponse.json({
-      success: true,
-      user: {
-        id: authData.user.id,
-        username,
-        full_name,
-        role: role || "attendant",
-        sector_id,
-      },
-    });
+    const result = await users.create(body);
+    return NextResponse.json(result);
   } catch (err) {
-    console.error("Erro ao criar usuário:", err);
     return NextResponse.json(
       { error: err.message || "Erro ao criar usuário" },
-      { status: 500 },
+      { status: err.status || 500 }
     );
   }
 }
@@ -124,45 +36,23 @@ export async function POST(request) {
    DELETE — remove usuário do Auth e Profile
 ───────────────────────────────────────────────── */
 export async function DELETE(request) {
-  if (!supabaseUrl || !supabaseServiceKey) {
-    return NextResponse.json(
-      { error: "Supabase não configurado" },
-      { status: 503 },
-    );
-  }
-
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("id");
+    const id = searchParams.get("id");
 
-    if (!userId) {
+    if (!id) {
       return NextResponse.json(
         { error: "ID do usuário é obrigatório" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Remove profile
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .delete()
-      .eq("id", userId);
-
-    if (profileError) throw profileError;
-
-    // Remove do auth
-    const { error: authError } = await supabase.auth.admin.deleteUser(userId);
-
-    if (authError) throw authError;
-
+    await users.remove(id);
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error("Erro ao excluir usuário:", err);
     return NextResponse.json(
       { error: err.message || "Erro ao excluir usuário" },
-      { status: 500 },
+      { status: err.status || 500 }
     );
   }
 }

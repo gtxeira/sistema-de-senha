@@ -77,3 +77,4 @@ ON CONFLICT (id) DO NOTHING;
 -- Para alterar a senha de um usuário:
 -- 1. Use a interface do admin para deletar e recriar
 -- 2. Ou use o Supabase Dashboard → Authentication → Users → ⋯ → Reset Password
+-- 3. Ou use uma query diretamente via SQL Editor: UPDATE auth.users SET encrypted_password = crypt('COLOQUE_A_NOVA_SENHA_AQUI', gen_salt('bf', 10)) WHERE email = 'email-do-usuario@dominio.com';

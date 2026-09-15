@@ -4,7 +4,7 @@ const supabaseUrl    = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // Aceita JWT clássico (eyJ...) E novo formato sb_secret_*
-function isValidServiceKey(key) {
+export function isValidServiceKey(key) {
   if (!key) return false;
   // Novo formato Supabase 2025
   if (/^sb_secret_[A-Za-z0-9_-]{20,}$/.test(key)) return true;
