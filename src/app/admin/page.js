@@ -306,6 +306,9 @@ export default function AdminPage() {
           </div>
         </section>
 
+        {/* ── Sincronizar senhas ── */}
+        <SyncSection />
+
         {/* ── Notícias do monitor ── */}
         <section className={styles.section}>
           <div className={styles.sectionTitle}>
@@ -566,7 +569,7 @@ function UsersSection() {
         {loading && <p className={styles.loadingMsg}>Carregando…</p>}
         {!loading && users.length === 0 && (
           <p className={styles.emptyMsg}>
-            Nenhum usuário cadastrado. Clique em "+ Novo usuário" para criar o
+            Nenhum usuário cadastrado. Clique em &quot;+ Novo usuário&quot; para criar o
             primeiro administrador.
           </p>
         )}
@@ -618,6 +621,119 @@ function UsersSection() {
           </table>
         )}
       </div>
+    </section>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SEÇÃO DE SINCRONIZAÇÃO DE SENHAS
+═══════════════════════════════════════════════════════════ */
+function SyncSection() {
+  const [syncSector, setSyncSector] = useState("farmacia");
+  const [syncType, setSyncType] = useState("normal");
+  const [syncNumber, setSyncNumber] = useState("");
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState("");
+
+  async function handleSync(e) {
+    e.preventDefault();
+    setSyncMessage("");
+    setSyncing(true);
+
+    try {
+      const num = parseInt(syncNumber, 10);
+      if (!num || num < 1 || num > 999) {
+        setSyncMessage("Use um número entre 1 e 999.");
+        return;
+      }
+
+      const res = await fetch("/api/queue/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sector: syncSector,
+          type: syncType,
+          nextNumber: num,
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error);
+
+      setSyncMessage(data.message || `Próxima senha: ${data.numberStr}`);
+      setSyncNumber("");
+    } catch (err) {
+      setSyncMessage(err.message || "Erro ao sincronizar senha.");
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  return (
+    <section className={styles.section}>
+      <div className={styles.sectionTitle}>
+        <div>
+          <p>CONTROLE</p>
+          <h2>Sincronizar senhas</h2>
+        </div>
+      </div>
+
+      <p className={styles.syncInfo}>
+        Pule para um número específico de senha. Útil quando senhas são perdidas
+        ou não aparecem nos monitores.
+      </p>
+
+      {syncMessage && <div className={styles.alertBox}>{syncMessage}</div>}
+
+      <form className={styles.syncForm} onSubmit={handleSync}>
+        <div className={styles.syncRow}>
+          <label>
+            Setor
+            <select
+              value={syncSector}
+              onChange={(e) => setSyncSector(e.target.value)}
+            >
+              <option value="farmacia">Farmácia</option>
+              <option value="recepcao">Recepção Saúde</option>
+            </select>
+          </label>
+
+          <label>
+            Tipo
+            <select
+              value={syncType}
+              onChange={(e) => setSyncType(e.target.value)}
+            >
+              <option value="normal">Normal</option>
+              <option value="preferencial">Preferencial</option>
+            </select>
+          </label>
+
+          <label>
+            Próximo número
+            <input
+              type="number"
+              min="1"
+              max="999"
+              value={syncNumber}
+              onChange={(e) => setSyncNumber(e.target.value)}
+              placeholder="Ex: 045"
+              required
+            />
+          </label>
+
+          <label>
+            &nbsp;
+            <button
+              type="submit"
+              className={styles.syncButton}
+              disabled={syncing || !syncNumber}
+            >
+              {syncing ? "Sincronizando…" : "Sincronizar"}
+            </button>
+          </label>
+        </div>
+      </form>
     </section>
   );
 }

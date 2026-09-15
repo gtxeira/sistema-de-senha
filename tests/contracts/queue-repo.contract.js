@@ -127,5 +127,46 @@ export function queueRepoContract(createRepo) {
         expect(p).toBe(1);
       });
     });
+
+    describe("setNextNumber()", () => {
+      it("define o próximo número para farmácia normal", async () => {
+        await repo.setNextNumber("farmacia", "normal", 45);
+        const next = await repo.nextNumber("farmacia", "normal");
+        expect(next).toBe(45);
+      });
+
+      it("define o próximo número para recepção preferencial", async () => {
+        await repo.setNextNumber("recepcao", "preferencial", 100);
+        const next = await repo.nextNumber("recepcao", "preferencial");
+        expect(next).toBe(100);
+      });
+
+      it("reseta sequência existente para número específico", async () => {
+        await repo.nextNumber("farmacia", "normal");
+        await repo.nextNumber("farmacia", "normal");
+        await repo.setNextNumber("farmacia", "normal", 10);
+        const next = await repo.nextNumber("farmacia", "normal");
+        expect(next).toBe(10);
+      });
+
+      it("mantém sequências independentes por setor/tipo", async () => {
+        await repo.setNextNumber("farmacia", "normal", 50);
+        await repo.setNextNumber("recepcao", "normal", 25);
+        const f = await repo.nextNumber("farmacia", "normal");
+        const r = await repo.nextNumber("recepcao", "normal");
+        expect(f).toBe(50);
+        expect(r).toBe(25);
+      });
+
+      it("lança erro com número < 1", async () => {
+        await expect(repo.setNextNumber("farmacia", "normal", 0))
+          .rejects.toThrow();
+      });
+
+      it("lança erro com número > 999", async () => {
+        await expect(repo.setNextNumber("farmacia", "normal", 1000))
+          .rejects.toThrow();
+      });
+    });
   });
 }

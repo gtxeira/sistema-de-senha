@@ -32,6 +32,16 @@ export class InMemoryQueueRepository {
     }
   }
 
+  async setNextNumber(sector, type, nextNumber) {
+    const num = Number(nextNumber);
+    if (!Number.isInteger(num) || num < 1 || num > 999) {
+      throw new Error("Número inválido. Use um valor entre 1 e 999.");
+    }
+    // Store nextNumber - 1 because nextNumber() increments before returning
+    const key = `${sector}:${type}`;
+    this.#sequences.set(key, num - 1);
+  }
+
   // --- Test helpers (not part of the interface) ---
 
   /** Get all saved calls. */

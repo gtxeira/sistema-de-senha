@@ -266,4 +266,56 @@ export class QueueRepository {
 
     if (legacyReset.error) throw currentNumberReset.error;
   }
+
+  /**
+   * Set next number for sector and type (sync/reset to specific value)
+   * The next call to nextNumber() will return this value.
+   * @param {'farmacia'|'recepcao'} sector
+   * @param {'normal'|'preferencial'} type
+   * @param {number} nextNumber - The next number to return (1-999)
+   * @returns {Promise<void>}
+   */
+  async setNextNumber(sector, type, nextNumber) {
+    const db = getQueueDb();
+    if (!db) {
+      throw new Error("Database not configured");
+    }
+
+    const { sequenceType } = normalizeCallType(type);
+    const num = Number(nextNumber);
+
+    if (!Number.isInteger(num) || num < 1 || num > 999) {
+      throw new Error("Número inválido. Use um valor entre 1 e 999.");
+    }
+
+    // Store nextNumber - 1 because nextNumber() increments before returning
+    const currentNumber = num - 1;
+    const now = new Date().toISOString();
+
+    // Try primary column first
+    const { error: primaryError } = await db
+      .from("queue_sequences")
+      .update({
+        current_number: currentNumber,
+        updated_at: now,
+      })
+      .eq("sector_id", sector)
+      .eq("call_type", sequenceType);
+
+    if (!primaryError) return;
+
+    // Fallback to legacy columns
+    const field =
+      sequenceType === "preferencial" ? "priority_current" : "normal_current";
+    const { error: legacyError } = await db
+      .from("queue_sequences")
+      .update({
+        [field]: currentNumber,
+        call_type: sequenceType,
+        updated_at: now,
+      })
+      .eq("sector_id", sector);
+
+    if (legacyError) throw primaryError;
+  }
 }

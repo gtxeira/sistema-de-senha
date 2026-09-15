@@ -132,6 +132,44 @@ export class QueueRepository {
   }
 
   /**
+   * Set next number for sector and type (sync/reset to specific value)
+   * The next call to nextNumber() will return this value.
+   * @param {'farmacia'|'recepcao'} sector
+   * @param {'normal'|'preferencial'} type
+   * @param {number} nextNumber - The next number to return (1-999)
+   * @returns {Promise<void>}
+   */
+  async setNextNumber(sector, type, nextNumber) {
+    const { sequenceType } = normalizeCallType(type);
+    const num = Number(nextNumber);
+
+    if (!Number.isInteger(num) || num < 1 || num > 999) {
+      throw new Error("Número inválido. Use um valor entre 1 e 999.");
+    }
+
+    // Store nextNumber - 1 because nextNumber() increments before returning
+    const currentNumber = num - 1;
+
+    await prisma.queue_sequences.upsert({
+      where: {
+        sector_id_call_type: {
+          sector_id: sector,
+          call_type: sequenceType,
+        },
+      },
+      update: {
+        current_number: currentNumber,
+        updated_at: new Date(),
+      },
+      create: {
+        sector_id: sector,
+        call_type: sequenceType,
+        current_number: currentNumber,
+      },
+    });
+  }
+
+  /**
    * Get recent calls for a sector (for monitor history)
    * @param {'farmacia'|'recepcao'} sector
    * @param {number} limit
