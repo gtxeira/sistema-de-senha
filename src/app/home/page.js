@@ -3,12 +3,9 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signOut } from "next-auth/react";
-import { LogOut, Monitor, Settings2, Headphones } from "lucide-react";
-import { getSessionSnapshot, SESSION_KEY, SECTORS } from "../../lib/queue";
+import { Monitor, Settings2, Headphones } from "lucide-react";
+import { getSessionSnapshot, SECTORS } from "../../lib/queue";
 import styles from "./Home.module.css";
-import Image from 'next/image';
-import brandIcon from '@/app/icon.jpeg';
 import { SidebarLayout } from "@/components/SidebarLayout/SidebarLayout";
 
 export default function HomePage() {
@@ -20,11 +17,6 @@ export default function HomePage() {
 
   const session = getSessionSnapshot();
   if (!session) return null;
-
-  function logout() {
-    window.localStorage.removeItem(SESSION_KEY);
-    signOut({ callbackUrl: "/login" });
-  }
 
   return (
     <SidebarLayout

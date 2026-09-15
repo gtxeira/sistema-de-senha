@@ -41,12 +41,12 @@
 .heroMark {
   width: 64px;
   height: 64px;
-  border-radius: 18px;
-  background: #1678a0;
-  display: grid;
-  place-items: center;
-  margin-bottom: 32px;
-  box-shadow: 0 8px 28px rgba(22, 120, 160, 0.45);
+  /*border-radius: 18px;*/
+  /*background: #1678a0;*/
+  /*display: grid;*/
+  /*place-items: center;*/
+  margin-bottom: 15px;
+  /*box-shadow: 0 8px 28px rgba(22, 120, 160, 0.45);*/
   overflow: hidden;
 }
 
