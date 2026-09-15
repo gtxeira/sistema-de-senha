@@ -22,6 +22,15 @@ class EventManager extends EventEmitter {
   }
 
   /**
+   * Emit a queue recall event for a sector.
+   * @param {'farmacia'|'recepcao'} sector
+   * @param {{ id:string, number:number, type:string, time:string }} call
+   */
+  emitQueueRecall(sector, call) {
+    this.emit(`queue:recall:${sector}`, call);
+  }
+
+  /**
    * Subscribe to queue calls for a sector.
    * @param {'farmacia'|'recepcao'} sector
    * @param {(call: { id:string, number:number, type:string, time:string }) => void} callback
@@ -36,12 +45,35 @@ class EventManager extends EventEmitter {
   }
 
   /**
+   * Subscribe to queue recall events for a sector.
+   * @param {'farmacia'|'recepcao'} sector
+   * @param {(call: { id:string, number:number, type:string, time:string }) => void} callback
+   * @returns {() => void} unsubscribe function
+   */
+  subscribeToRecall(sector, callback) {
+    const handler = (call) => callback(call);
+    this.on(`queue:recall:${sector}`, handler);
+    return () => {
+      this.off(`queue:recall:${sector}`, handler);
+    };
+  }
+
+  /**
    * Get the number of active listeners for a sector (for testing/debugging).
    * @param {'farmacia'|'recepcao'} sector
    * @returns {number}
    */
   getSubscriberCount(sector) {
     return this.listenerCount(`queue:${sector}`);
+  }
+
+  /**
+   * Get the number of active recall listeners for a sector (for testing/debugging).
+   * @param {'farmacia'|'recepcao'} sector
+   * @returns {number}
+   */
+  getRecallSubscriberCount(sector) {
+    return this.listenerCount(`queue:recall:${sector}`);
   }
 }
 

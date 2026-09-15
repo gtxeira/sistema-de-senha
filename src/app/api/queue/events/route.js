@@ -17,7 +17,8 @@ export async function GET(request) {
     });
   }
 
-  let unsubscribe;
+  let unsubscribeCalls;
+  let unsubscribeRecalls;
   let keepaliveTimer;
 
   const stream = new ReadableStream({
@@ -35,10 +36,20 @@ export async function GET(request) {
         }
       }, KEEPALIVE_INTERVAL);
 
-      // Subscribe to queue events for this sector
-      unsubscribe = eventManager.subscribeToQueue(sector, (call) => {
+      // Subscribe to queue calls for this sector
+      unsubscribeCalls = eventManager.subscribeToQueue(sector, (call) => {
         try {
           const data = JSON.stringify({ type: "call", call });
+          controller.enqueue(`data: ${data}\n\n`);
+        } catch {
+          // Controller may be closed
+        }
+      });
+
+      // Subscribe to queue recalls for this sector
+      unsubscribeRecalls = eventManager.subscribeToRecall(sector, (call) => {
+        try {
+          const data = JSON.stringify({ type: "recall", call });
           controller.enqueue(`data: ${data}\n\n`);
         } catch {
           // Controller may be closed
@@ -48,14 +59,16 @@ export async function GET(request) {
     cancel() {
       // Cleanup when client disconnects
       clearInterval(keepaliveTimer);
-      unsubscribe?.();
+      unsubscribeCalls?.();
+      unsubscribeRecalls?.();
     },
   });
 
   // Handle client disconnect via abort signal
   request.signal.addEventListener("abort", () => {
     clearInterval(keepaliveTimer);
-    unsubscribe?.();
+    unsubscribeCalls?.();
+    unsubscribeRecalls?.();
   });
 
   return new Response(stream, {

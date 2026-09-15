@@ -6,6 +6,8 @@ import { signIn } from "next-auth/react";
 import { LockKeyhole } from "lucide-react";
 import { SESSION_KEY } from "../../lib/queue";
 import styles from "./Login.module.css";
+import brandIcon from "@/app/favicon.ico";
+import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -61,7 +63,13 @@ export default function LoginPage() {
       {/* ── Hero ── */}
       <div className={styles.hero}>
         <div className={styles.heroContent}>
-          <div className={styles.heroMark}>S</div>
+          <div className={styles.heroMark}>
+            <Image
+              src={brandIcon}
+              alt="Logo"
+              priority
+            />
+          </div>
           <h1>
             Sistema de
             <br />

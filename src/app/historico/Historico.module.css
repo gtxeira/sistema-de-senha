@@ -1,0 +1,299 @@
+/* ═══════════════════════════════════════════
+   HISTÓRICO — Estilos específicos da página
+   (Shell, sidebar, header → SidebarLayout)
+   ═══════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════
+   FILTROS
+   ═══════════════════════════════════════════ */
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-top: 28px;
+  padding: 18px 20px;
+  background: #fff;
+  border: 1px solid #dde9ed;
+  border-radius: 12px;
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 140px;
+}
+
+.filterGroup label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #7a9aad;
+  text-transform: uppercase;
+}
+
+.filterGroup select {
+  border: 1px solid #cddde5;
+  border-radius: 6px;
+  padding: 9px 10px;
+  font-size: 13px;
+  color: #1a3d55;
+  background: #fff;
+  outline-color: #1678a0;
+}
+
+.filterBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #1678a0;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  padding: 10px 18px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  align-self: flex-end;
+  transition: background 0.15s;
+}
+
+.filterBtn:hover {
+  background: #1389b8;
+}
+
+/* ═══════════════════════════════════════════
+   STATS CARDS
+   ═══════════════════════════════════════════ */
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-top: 24px;
+}
+
+.statCard {
+  background: #fff;
+  border: 1px solid #dde9ed;
+  border-radius: 10px;
+  padding: 18px 20px;
+}
+
+.statCard strong {
+  display: block;
+  font-size: 32px;
+  font-weight: 900;
+  color: #0d5e7e;
+  line-height: 1;
+}
+
+.statCard span {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #7a9aad;
+  text-transform: uppercase;
+}
+
+.statCardNormal strong { color: #1678a0; }
+.statCardPref strong   { color: #b85c00; }
+
+/* ═══════════════════════════════════════════
+   TABELA DE HISTÓRICO
+   ═══════════════════════════════════════════ */
+
+.historySection {
+  margin-top: 24px;
+  background: #fff;
+  border: 1px solid #dde9ed;
+  border-radius: 14px;
+  padding: 28px;
+}
+
+.sectionHeading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.sectionHeading h2 {
+  font-size: 18px;
+  margin-top: 7px;
+}
+
+.label {
+  color: #7990a1;
+  font-size: 10px;
+  letter-spacing: 1.25px;
+  font-weight: 800;
+}
+
+.table {
+  display: flex;
+  flex-direction: column;
+}
+
+.tableHead {
+  display: grid;
+  grid-template-columns: 0.7fr 1fr 1.2fr 1fr;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #f0f6f9;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #7a9aad;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.tableRow {
+  display: grid;
+  grid-template-columns: 0.7fr 1fr 1.2fr 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border-bottom: 1px solid #edf2f5;
+  font-size: 12px;
+  color: #5a7a8a;
+}
+
+.tableRow strong {
+  font-size: 17px;
+  font-weight: 800;
+  color: #163b52;
+  letter-spacing: 1px;
+}
+
+.priorityTag {
+  display: inline-block;
+  background: #fff3e0;
+  color: #b85c00;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.normalTag {
+  display: inline-block;
+  background: #e6f4f9;
+  color: #1678a0;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.sectorTag {
+  display: inline-block;
+  background: #f0f6f9;
+  color: #4a6a7a;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 4px;
+}
+
+/* ── Paginação ── */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #edf2f5;
+}
+
+.pageBtn {
+  border: 1px solid #cfdee8;
+  border-radius: 6px;
+  padding: 8px 14px;
+  background: #fff;
+  color: #3a6a80;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.pageBtn:hover:not(:disabled) {
+  background: #f0f6f9;
+  border-color: #1678a0;
+}
+
+.pageBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pageInfo {
+  font-size: 12px;
+  color: #7a9aad;
+  font-weight: 600;
+}
+
+.emptyMsg {
+  font-size: 13px;
+  color: #9ab0bc;
+  text-align: center;
+  padding: 32px;
+}
+
+.loadingMsg {
+  font-size: 13px;
+  color: #7a9aad;
+  text-align: center;
+  padding: 32px;
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVO
+   ═══════════════════════════════════════════ */
+
+@media (max-width: 900px) {
+  .statsGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filterGroup {
+    min-width: unset;
+    width: 100%;
+  }
+
+  .filterBtn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .tableHead,
+  .tableRow {
+    grid-template-columns: 0.7fr 1fr 1fr;
+  }
+
+  .tableHead span:nth-child(4),
+  .tableRow span:nth-child(4) {
+    display: none;
+  }
+}

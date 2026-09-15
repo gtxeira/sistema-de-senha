@@ -31,6 +31,7 @@ const serverQueueSnapshot = {
 
 let clientQueueSnapshot = null;
 let clientQueueRaw = null;
+let hasClientQueueSnapshot = false;
 let clientSessionSnapshot = null;
 let clientSessionRaw = null;
 
@@ -43,12 +44,12 @@ function localDateKey() {
 
 export function nextQueueNumber(current = 0) {
   const next = Number(current) + 1;
-  return next > 1000 ? 1 : next;
+  return next > 999 ? 0 : next;
 }
 
 export function formatQueueNumber(number, type = "normal") {
   const prefix = type === "preferencial" || type === "preferential" ? "P" : "N";
-  return `${prefix}${Number(number) === 1000 ? "1000" : String(Number(number) || 0).padStart(3, "0")}`;
+  return `${prefix}${String(Number(number) || 0).padStart(3, "0")}`;
 }
 
 export function getInitialState() {
@@ -79,9 +80,11 @@ export function clearHistoryFromNewDay(state) {
         sector,
         {
           ...queue,
+          // PRESERVA os contadores — nunca zera ao mudar de dia
           normalCurrent:
-            queue.normalCurrent ?? (queue.historyDate ? queue.current : 0),
+            queue.normalCurrent ?? queue.current ?? 0,
           priorityCurrent: queue.priorityCurrent ?? 0,
+          // Limpa apenas o histórico visual
           history: [],
           historyDate: today,
         },
@@ -185,9 +188,12 @@ export function subscribeQueue(callback) {
 
 export function getQueueSnapshot() {
   const raw = window.localStorage.getItem(QUEUE_KEY);
-  if (raw === clientQueueRaw && clientQueueSnapshot) return clientQueueSnapshot;
-  clientQueueRaw = raw;
+  if (raw === clientQueueRaw && hasClientQueueSnapshot)
+    return clientQueueSnapshot;
   clientQueueSnapshot = readQueueState();
+  // readQueueState pode normalizar o estado do dia e atualizar o localStorage.
+  clientQueueRaw = window.localStorage.getItem(QUEUE_KEY);
+  hasClientQueueSnapshot = true;
   return clientQueueSnapshot;
 }
 
@@ -211,4 +217,51 @@ export function getSessionSnapshot() {
 
 export function getServerSessionSnapshot() {
   return null;
+}
+
+export async function callNextNumber({ sector, type }) {
+  return withQueueLock(async () => {
+    let next = null;
+    try {
+      const res = await fetch("/api/queue/call", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sector, type }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.useLocal) {
+          const ls = normalizeQueue(readQueueState()[sector]);
+          next = type === "preferencial"
+            ? nextQueueNumber(ls.priorityCurrent)
+            : nextQueueNumber(ls.normalCurrent);
+        } else {
+          return { ok: false, error: data.error || "Erro ao conectar à sequência central." };
+        }
+      } else {
+        next = Number(data.number);
+      }
+    } catch {
+      const ls = normalizeQueue(readQueueState()[sector]);
+      next = type === "preferencial"
+        ? nextQueueNumber(ls.priorityCurrent)
+        : nextQueueNumber(ls.normalCurrent);
+    }
+
+    next = Number(next);
+    if (!Number.isInteger(next) || next < 0 || next > 999) {
+      return { ok: false, error: "Número de senha inválido." };
+    }
+
+    const latest = readQueueState();
+    const q = normalizeQueue(latest[sector]);
+    const field = type === "preferencial" ? "priorityCurrent" : "normalCurrent";
+
+    saveQueueState({
+      ...latest,
+      [sector]: { ...q, [field]: next },
+    });
+
+    return { ok: true, next, type };
+  });
 }

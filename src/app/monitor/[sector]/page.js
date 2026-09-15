@@ -4,22 +4,18 @@ import {
   use,
   useCallback,
   useEffect,
-  useRef,
   useState,
   useSyncExternalStore,
   memo,
 } from "react";
 import { Clock3 } from "lucide-react";
 import {
-  formatQueueNumber,
+  callNextNumber,
   getQueueSnapshot,
-  nextQueueNumber,
   normalizeQueue,
-  readQueueState,
   saveQueueState,
   SECTORS,
   subscribeQueue,
-  withQueueLock,
 } from "../../../lib/queue";
 import { useQueueEvents } from "../../../lib/hooks/useQueueEvents";
 import {
@@ -54,8 +50,7 @@ function subscribeNews(cb) {
 }
 
 function formatMonitorNumber(number) {
-  const n = Number(number) || 0;
-  return n === 1000 ? "1000" : String(n).padStart(3, "0");
+  return String(Number(number) || 0).padStart(3, "0");
 }
 
 function cleanHistory(history = []) {
@@ -73,7 +68,11 @@ function cleanHistory(history = []) {
 
 /* ─── carrossel de notícias isolado (evita re-render da voz) ─── */
 const NewsCarousel = memo(function NewsCarousel() {
-  const news = useSyncExternalStore(subscribeNews, getNewsSnapshot, () => serverNewsSnapshot);
+  const news = useSyncExternalStore(
+    subscribeNews,
+    getNewsSnapshot,
+    () => serverNewsSnapshot,
+  );
   const [newsIndex, setNewsIndex] = useState(0);
 
   useEffect(() => {
@@ -89,7 +88,10 @@ const NewsCarousel = memo(function NewsCarousel() {
 
   useEffect(() => {
     if (!news?.length) return;
-    const t = setInterval(() => setNewsIndex((p) => (p + 1) % news.length), 5000);
+    const t = setInterval(
+      () => setNewsIndex((p) => (p + 1) % news.length),
+      5000,
+    );
     return () => clearInterval(t);
   }, [news]);
 
@@ -109,7 +111,13 @@ const NewsCarousel = memo(function NewsCarousel() {
         <img
           src={item.image}
           alt={item.title || ""}
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+          }}
         />
       )}
       <div className={styles.newsCaption}>
@@ -131,7 +139,11 @@ export default function MonitorPage({ params }) {
   const resolvedParams = params ? (params.then ? use(params) : params) : {};
   const sector = resolvedParams?.sector || "farmacia";
 
-  const state = useSyncExternalStore(subscribeQueue, getQueueSnapshot, () => monitorServerSnapshot);
+  const state = useSyncExternalStore(
+    subscribeQueue,
+    getQueueSnapshot,
+    () => monitorServerSnapshot,
+  );
 
   // Realtime events via SSE with polling fallback
   const { connected, lastCall } = useQueueEvents(sector);
@@ -140,16 +152,15 @@ export default function MonitorPage({ params }) {
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [calling, setCalling] = useState(false);
 
-  const audioEnabledRef = useRef(false);
-  audioEnabledRef.current = audioEnabled;
-
   /* relógio */
   useEffect(() => {
     const t = setInterval(() => {
       setTime(
         new Intl.DateTimeFormat("pt-BR", {
-          hour: "2-digit", minute: "2-digit", second: "2-digit",
-        }).format(new Date())
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        }).format(new Date()),
       );
     }, 1000);
     return () => clearInterval(t);
@@ -182,8 +193,9 @@ export default function MonitorPage({ params }) {
   useEffect(() => {
     if (!lastCall || !sector) return;
 
+    const isRecall = lastCall.isRecall === true;
     const callKey = `${lastCall.id || lastCall.number}-${lastCall.type}`;
-    if (lastSpokenCallId === callKey) return;
+    if (!isRecall && lastSpokenCallId === callKey) return;
     lastSpokenCallId = callKey;
 
     const prev = getQueueSnapshot() || monitorServerSnapshot;
@@ -208,9 +220,7 @@ export default function MonitorPage({ params }) {
       },
     });
 
-    if (audioEnabledRef.current) {
-      monitorSpeak(lastCall.number, callType);
-    }
+    monitorSpeak(lastCall.number, callType);
   }, [lastCall, sector]);
 
   /* ─── chamar próxima senha (via teclado / passador) ─── */
@@ -218,59 +228,11 @@ export default function MonitorPage({ params }) {
     if (calling) return;
     setCalling(true);
 
-    await withQueueLock(async () => {
-      let next = null;
-      try {
-        const res = await fetch("/api/queue/call", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sector, type, attendantId: null }),
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          if (data.useLocal) {
-            const ls = normalizeQueue(readQueueState()[sector]);
-            next = type === "preferencial"
-              ? nextQueueNumber(ls.priorityCurrent)
-              : nextQueueNumber(ls.normalCurrent);
-          } else {
-            setCalling(false);
-            return;
-          }
-        } else {
-          next = Number(data.number);
-        }
-      } catch {
-        const ls = normalizeQueue(readQueueState()[sector]);
-        next = type === "preferencial"
-          ? nextQueueNumber(ls.priorityCurrent)
-          : nextQueueNumber(ls.normalCurrent);
-      }
+    const result = await callNextNumber({ sector, type });
 
-      next = Number(next);
-      if (!Number.isInteger(next) || next < 1 || next > 1000) {
-        setCalling(false);
-        return;
-      }
-
-      // Atualiza só o contador atual para feedback visual imediato.
-      // NÃO adiciona ao histórico — o Realtime é a única fonte de verdade
-      // para o histórico, evitando duplicação em produção.
-      const latest = readQueueState();
-      const q = normalizeQueue(latest[sector]);
-      const field = type === "preferencial" ? "priorityCurrent" : "normalCurrent";
-
-      saveQueueState({
-        ...latest,
-        [sector]: {
-          ...q,
-          [field]: next,
-          // histórico inalterado — Realtime vai inserir
-        },
-      });
-
-      if (audioEnabledRef.current) forceAnnounce(next, type);
-    });
+    if (result.ok) {
+      forceAnnounce(result.next, result.type);
+    }
 
     setCalling(false);
   }, [calling, sector]);
@@ -280,17 +242,26 @@ export default function MonitorPage({ params }) {
     const q = normalizeQueue((getQueueSnapshot() || monitorServerSnapshot)[sector]);
     const last = q.history[0];
     if (!last) return;
-    if (audioEnabledRef.current) forceAnnounce(last.number, last.type);
+    forceAnnounce(last.number, last.type);
   }, [sector]);
 
   /* ─── atalhos de teclado ─── */
   useEffect(() => {
     function onKey(e) {
-      if (["INPUT", "TEXTAREA", "SELECT", "BUTTON"].includes(e.target.tagName)) return;
+      if (["INPUT", "TEXTAREA", "SELECT", "BUTTON"].includes(e.target.tagName))
+        return;
+
       const k = e.key;
-      if (k === "ArrowRight")  { e.preventDefault(); callNext("normal"); }
-      else if (k === "ArrowLeft")  { e.preventDefault(); callNext("preferencial"); }
-      else if (k === "ArrowUp")    { e.preventDefault(); reCall(); }
+      if (["ArrowRight", "PageDown", "Enter", " "].includes(k)) {
+        e.preventDefault();
+        callNext("normal");
+      } else if (["ArrowLeft", "PageUp"].includes(k)) {
+        e.preventDefault();
+        callNext("preferencial");
+      } else if (["ArrowUp", "Home"].includes(k)) {
+        e.preventDefault();
+        reCall();
+      }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -301,8 +272,13 @@ export default function MonitorPage({ params }) {
     function onMouseDown(e) {
       // ignora cliques em botões/links
       if (e.target.closest("a, button, input, select, textarea")) return;
-      if (e.button === 0) { e.preventDefault(); callNext("normal"); }
-      else if (e.button === 2) { e.preventDefault(); callNext("preferencial"); }
+      if (e.button === 0) {
+        e.preventDefault();
+        callNext("normal");
+      } else if (e.button === 2) {
+        e.preventDefault();
+        callNext("preferencial");
+      }
     }
     function onWheel(e) {
       if (e.target.closest("a, button, input, select, textarea")) return;
@@ -347,37 +323,62 @@ export default function MonitorPage({ params }) {
           </div>
           <div className={styles.date}>
             {new Intl.DateTimeFormat("pt-BR", {
-              weekday: "long", day: "2-digit", month: "long", year: "numeric",
-            }).format(new Date()).toUpperCase()}
+              weekday: "long",
+              day: "2-digit",
+              month: "long",
+              year: "numeric",
+            })
+              .format(new Date())
+              .toUpperCase()}
           </div>
         </div>
       </header>
 
       <div className={styles.content}>
         <section className={styles.leftColumn}>
-
-          <section className={`${styles.featured} ${isPriority ? styles.featuredPriority : ""}`}>
+          <section
+            className={`${styles.featured} ${isPriority ? styles.featuredPriority : ""}`}
+          >
             <p>SENHA</p>
-            <strong>{formatMonitorNumber(latest.number)}</strong>
-            {isPriority
-              ? <span className={styles.priorityTag}>ATENDIMENTO PREFERENCIAL</span>
-              : <span>ATENDIMENTO</span>}
+            <strong>{formatMonitorNumber(latest?.number || 0)}</strong>
+            {isPriority ? (
+              <span className={styles.priorityTag}>
+                ATENDIMENTO PREFERENCIAL
+              </span>
+            ) : (
+              <span>ATENDIMENTO</span>
+            )}
             <small>Dirija-se ao balcão de atendimento</small>
           </section>
 
           <section className={styles.recent}>
             <p className={styles.kicker}>ÚLTIMAS SENHAS</p>
-            {recentCalls.length > 0 ? recentCalls.map((item, i) => (
-              <div className={styles.historyItem} key={`${item.id || item.number}-${item.type}-${i}`}>
-                <strong className={item.type === "preferencial" ? styles.priorityNumber : styles.normalNumber}>
-                  {formatMonitorNumber(item.number)}
-                </strong>
-                {item.type === "preferencial"
-                  ? <span className={styles.priorityTagSmall}>PREFERENCIAL</span>
-                  : <span className={styles.normal}>ATENDIMENTO</span>}
-                <time>{item.time}</time>
-              </div>
-            )) : (
+            {recentCalls.length > 0 ? (
+              recentCalls.map((item, i) => (
+                <div
+                  className={styles.historyItem}
+                  key={`${item.id || item.number}-${item.type}-${i}`}
+                >
+                  <strong
+                    className={
+                      item.type === "preferencial"
+                        ? styles.priorityNumber
+                        : styles.normalNumber
+                    }
+                  >
+                    {formatMonitorNumber(item?.number || 0)}
+                  </strong>
+                  {item.type === "preferencial" ? (
+                    <span className={styles.priorityTagSmall}>
+                      PREFERENCIAL
+                    </span>
+                  ) : (
+                    <span className={styles.normal}>ATENDIMENTO</span>
+                  )}
+                  <time>{item.time}</time>
+                </div>
+              ))
+            ) : (
               <p style={{ fontSize: "14px", color: "#888", marginTop: "12px" }}>
                 Aguardando chamadas anteriores...
               </p>
