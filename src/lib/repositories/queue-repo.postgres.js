@@ -1,6 +1,12 @@
 import { prisma } from "../prisma-client.js";
-import { normalizeCallType, formatNumberString } from "./utils.js";
-import { MAX_QUEUE_NUMBER, MIN_QUEUE_NUMBER, LOCALE, DEFAULT_RECENT_LIMIT } from "../constants.js";
+import { normalizeCallType } from "./utils.js";
+import {
+  DEFAULT_QUEUE_NUMBER,
+  DEFAULT_RECENT_LIMIT,
+  LOCALE,
+  MAX_QUEUE_NUMBER,
+  MIN_QUEUE_NUMBER
+} from "../constants.js";
 
 /**
  * Format time for display (HH:mm)
@@ -17,7 +23,7 @@ function formatTime(date) {
 export class QueueRepository {
   /**
    * Get next number for sector and type (normal/preferencial)
-   * Uses atomic transaction with upsert + wraparound at 1000.
+   * Uses atomic transaction with upsert + wraparound at `MAX_QUEUE_NUMBER`.
    * @param {'farmacia'|'recepcao'} sector
    * @param {'normal'|'preferencial'} type
    * @returns {Promise<number>}
@@ -25,7 +31,7 @@ export class QueueRepository {
   async nextNumber(sector, type) {
     const { sequenceType } = normalizeCallType(type);
 
-    const result = await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async (tx) => {
       // Upsert the sequence row, incrementing the counter atomically
       const seq = await tx.queue_sequences.upsert({
         where: {
@@ -41,12 +47,12 @@ export class QueueRepository {
         create: {
           sector_id: sector,
           call_type: sequenceType,
-          current_number: 1,
+          current_number: DEFAULT_QUEUE_NUMBER,
         },
       });
 
       // Handle wraparound
-      if (seq.current_number >= MAX_QUEUE_NUMBER + 1) {
+      if (seq.current_number > MAX_QUEUE_NUMBER) {
         await tx.queue_sequences.update({
           where: {
             sector_id_call_type: {
@@ -55,17 +61,15 @@ export class QueueRepository {
             },
           },
           data: {
-            current_number: 1,
+            current_number: MIN_QUEUE_NUMBER,
             updated_at: new Date(),
           },
         });
-        return 1;
+        return MIN_QUEUE_NUMBER;
       }
 
       return seq.current_number;
     });
-
-    return result;
   }
 
   /**
@@ -116,7 +120,7 @@ export class QueueRepository {
         sector_id: sector,
       },
       data: {
-        current_number: 0,
+        current_number: MIN_QUEUE_NUMBER,
         updated_at: new Date(),
       },
     });
@@ -127,7 +131,7 @@ export class QueueRepository {
    * The next call to nextNumber() will return this value.
    * @param {'farmacia'|'recepcao'} sector
    * @param {'normal'|'preferencial'} type
-   * @param {number} nextNumber - The next number to return (1-999)
+   * @param {number} nextNumber - The next number to return
    * @returns {Promise<void>}
    */
   async setNextNumber(sector, type, nextNumber) {
@@ -135,7 +139,7 @@ export class QueueRepository {
     const num = Number(nextNumber);
 
     if (!Number.isInteger(num) || num < MIN_QUEUE_NUMBER || num > MAX_QUEUE_NUMBER) {
-      throw new Error(`Número inválido. Use um valor entre ${MIN_QUEUE_NUMBER} e ${MAX_QUEUE_NUMBER}.`);
+      throw new Error(`Número inválido ("${num}"). Use um valor entre ${MIN_QUEUE_NUMBER} e ${MAX_QUEUE_NUMBER}.`);
     }
 
     // Store nextNumber - 1 because nextNumber() increments before returning

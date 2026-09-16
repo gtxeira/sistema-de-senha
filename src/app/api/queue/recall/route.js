@@ -8,8 +8,13 @@ import { SECTORS, LOCALE } from "@/lib/constants.js";
    POST — repete a última senha chamada de um setor
    Emite evento SSE para os monitores reproduzirem o áudio.
 ───────────────────────────────────────────────── */
-export const POST = auth(async function POST(request) {
+export async function POST(request) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { sector } = body;
 
@@ -53,4 +58,4 @@ export const POST = auth(async function POST(request) {
       { status: err.status || 500 }
     );
   }
-});
+}

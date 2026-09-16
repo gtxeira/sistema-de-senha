@@ -5,10 +5,6 @@ import {
   prisma,
 } from "../../../postgres-setup.js";
 
-vi.mock("@/auth", () => ({
-  auth: (fn) => fn,
-}));
-
 async function importRoute() {
   return import("@/app/api/queue/sync/route.js");
 }
@@ -44,11 +40,11 @@ describe("/api/queue/sync — integration", () => {
       expect(res.status).toBe(400);
     });
 
-    it("retorna 400 com número < 1", async () => {
+    it("retorna 400 com número < 0", async () => {
       const { POST } = await importRoute();
       const req = {
         json: () =>
-          Promise.resolve({ sector: "farmacia", type: "normal", nextNumber: 0 }),
+          Promise.resolve({ sector: "farmacia", type: "normal", nextNumber: -1 }),
       };
       const res = await POST(req);
 

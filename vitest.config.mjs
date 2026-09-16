@@ -17,11 +17,18 @@ export default defineConfig(({ mode }) => {
       environment: "happy-dom",
       globals: true,
       include: ["tests/**/*.test.{js,jsx}"],
-      setupFiles: ["./tests/setup.js"],
+      setupFiles: ["./tests/setup.js", "./tests/integration/setup.js"],
       fileParallelism: false,
+
       env: {
         DATABASE_URL: env.DATABASE_URL_TEST,
         NEWS_DIR: join(root, "tests", "fixtures", "news"),
+      },
+
+      server: {
+        deps: {
+          inline: ["next-auth", "next"],
+        },
       },
 
       // Override environment for integration tests (need Node.js for Supabase client)

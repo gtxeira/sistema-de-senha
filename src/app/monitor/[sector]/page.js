@@ -16,7 +16,10 @@ import {
   saveQueueState,
   subscribeQueue,
 } from "../../../lib/queue";
-import { SECTORS, DEFAULT_SECTOR, CALL_TYPES, TYPE_FIELDS, NEWS_CAROUSEL_INTERVAL, CLOCK_INTERVAL, HISTORY_LIMITS } from "../../../lib/constants.js";
+import {
+  SECTORS, DEFAULT_SECTOR, CALL_TYPES, TYPE_FIELDS, NEWS_CAROUSEL_INTERVAL, CLOCK_INTERVAL, HISTORY_LIMITS,
+  DEFAULT_QUEUE_NUMBER
+} from "../../../lib/constants.js";
 import { useQueueEvents } from "../../../lib/hooks/useQueueEvents";
 import {
   forceAnnounce,
@@ -31,7 +34,7 @@ import styles from "./Monitor.module.css";
 let newsSnapshot = [];
 const serverNewsSnapshot = [];
 const monitorServerSnapshot = Object.fromEntries(
-  Object.keys(SECTORS).map((key) => [key, { normalCurrent: 0, priorityCurrent: 0, history: [] }]),
+  Object.keys(SECTORS).map((key) => [key, { normalCurrent: DEFAULT_QUEUE_NUMBER, priorityCurrent: DEFAULT_QUEUE_NUMBER, history: [] }]),
 );
 let lastSpokenCallId = null;
 
@@ -49,7 +52,7 @@ function subscribeNews(cb) {
 }
 
 function formatMonitorNumber(number) {
-  return String(Number(number) || 0).padStart(3, "0");
+  return String(Number(number) ?? DEFAULT_QUEUE_NUMBER).padStart(3, "0");
 }
 
 function cleanHistory(history = []) {
@@ -304,7 +307,7 @@ export default function MonitorPage({ params }) {
   const info = SECTORS[sector] || SECTORS[DEFAULT_SECTOR];
   const current = state[sector] || monitorServerSnapshot[sector];
   const validHistory = cleanHistory(current.history || []);
-  const latest = validHistory[0] || { number: current.normalCurrent || 0, type: CALL_TYPES.NORMAL };
+  const latest = validHistory[0] || { number: current.normalCurrent || DEFAULT_QUEUE_NUMBER, type: CALL_TYPES.NORMAL };
   const recentCalls = validHistory.slice(1, 5);
   const isPriority = latest.type === CALL_TYPES.PREFERENCIAL;
 
@@ -339,7 +342,7 @@ export default function MonitorPage({ params }) {
             className={`${styles.featured} ${isPriority ? styles.featuredPriority : ""}`}
           >
             <p>SENHA</p>
-            <strong>{formatMonitorNumber(latest?.number || 0)}</strong>
+            <strong>{formatMonitorNumber(latest?.number || DEFAULT_QUEUE_NUMBER)}</strong>
             {isPriority ? (
               <span className={styles.priorityTag}>
                 ATENDIMENTO PREFERENCIAL
@@ -365,7 +368,7 @@ export default function MonitorPage({ params }) {
                         : styles.normalNumber
                     }
                   >
-                    {formatMonitorNumber(item?.number || 0)}
+                    {formatMonitorNumber(item?.number || DEFAULT_QUEUE_NUMBER)}
                   </strong>
                   {item.type === "preferencial" ? (
                     <span className={styles.priorityTagSmall}>

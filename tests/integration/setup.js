@@ -1,3 +1,17 @@
+import { vi } from 'vitest';
+
+vi.mock('@/auth', () => ({
+  auth: vi.fn().mockResolvedValue({
+    user: {
+      id: 'c0f4795e-f467-4695-b479-5ef467c695a6',
+      name: 'Dev Teste',
+      email: 'dev@teste.com',
+      role: 'admin',
+    },
+    expires: new Date(Date.now() + 2 * 86400000).toISOString(),
+  }),
+}));
+
 /**
  * Integration test setup — cleanup and seed helpers for Supabase.
  *

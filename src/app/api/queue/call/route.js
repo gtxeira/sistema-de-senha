@@ -14,8 +14,13 @@ import { SECTORS, LOCALE } from "@/lib/constants.js";
    4. Salva chamada no banco
    5. Retorna número e tipo
 ───────────────────────────────────────────────── */
-export const POST = auth(async function POST (request) {
+export async function POST(request) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { sector, type } = body;
 
@@ -34,7 +39,7 @@ export const POST = auth(async function POST (request) {
     const nextNum = await queue.nextNumber(sector, sequenceType);
     const numberStr = formatNumberString(nextNum, sequenceType);
 
-    const attendantId = request.auth.user.id;
+    const attendantId = session.user.id;
 
     // Save the call
     const saved = await queue.saveCall({
@@ -76,4 +81,4 @@ export const POST = auth(async function POST (request) {
       { status: err.status || 500 }
     );
   }
-});
+}

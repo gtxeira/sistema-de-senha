@@ -273,7 +273,7 @@ export class QueueRepository {
    * The next call to nextNumber() will return this value.
    * @param {'farmacia'|'recepcao'} sector
    * @param {'normal'|'preferencial'} type
-   * @param {number} nextNumber - The next number to return (1-999)
+   * @param {number} nextNumber - The next number to return
    * @returns {Promise<void>}
    */
   async setNextNumber(sector, type, nextNumber) {

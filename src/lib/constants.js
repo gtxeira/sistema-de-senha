@@ -29,9 +29,9 @@ export const TYPE_LABELS = {
 export const TYPE_PREFIXES = { preferencial: "P", preferential: "P", normal: "N" };
 
 // ── Fila ──
-export const MIN_QUEUE_NUMBER = 1;
+export const MIN_QUEUE_NUMBER = 0;
 export const MAX_QUEUE_NUMBER = 999;
-export const DEFAULT_QUEUE_NUMBER = 0;
+export const DEFAULT_QUEUE_NUMBER = MIN_QUEUE_NUMBER;
 export const DEFAULT_RECENT_LIMIT = 30;
 
 // ── Estatísticas ──
