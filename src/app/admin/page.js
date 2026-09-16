@@ -12,10 +12,19 @@ import {
   getSessionSnapshot,
   normalizeQueue,
   saveQueueState,
-  SECTORS,
   subscribeQueue,
   subscribeSession,
 } from "../../lib/queue";
+import {
+  SECTORS,
+  ROLES,
+  DEFAULT_SECTOR,
+  CALL_TYPES,
+  MAX_QUEUE_NUMBER,
+  DRAFT_PREFIX,
+  USERNAME_REGEX,
+  USERNAME_REGEX_LABEL,
+} from "../../lib/constants.js";
 import styles from "./Admin.module.css";
 import { SidebarLayout } from "@/components/SidebarLayout/SidebarLayout";
 
@@ -71,7 +80,7 @@ export default function AdminPage() {
   /* segurança: só admin */
   useEffect(() => {
     const storedSession = getSessionSnapshot();
-    if (!storedSession || storedSession.role !== "admin") { router.push("/login"); }
+    if (!storedSession || storedSession.role !== ROLES.ADMIN) { router.push("/login"); }
   }, [router]);
 
   /* notícias */
@@ -392,7 +401,7 @@ function UsersSection() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [role, setRole] = useState("attendant");
+  const [role, setRole] = useState(ROLES.ATTENDANT);
   const [sectorId, setSectorId] = useState("");
 
   useEffect(() => {
@@ -437,7 +446,7 @@ function UsersSection() {
       setUsername("");
       setPassword("");
       setFullName("");
-      setRole("attendant");
+      setRole(ROLES.ATTENDANT);
       setSectorId("");
       setShowForm(false);
       await loadUsers();
@@ -503,8 +512,8 @@ function UsersSection() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="nome.sobrenome"
-                pattern="[a-zA-Z0-9]+([._][a-zA-Z0-9]+)*"
-                title="Use o formato nome.sobrenome"
+                pattern={USERNAME_REGEX}
+                title={USERNAME_REGEX_LABEL}
                 required
               />
             </label>
@@ -536,8 +545,8 @@ function UsersSection() {
             <label>
               Função
               <select value={role} onChange={(e) => setRole(e.target.value)}>
-                <option value="attendant">Atendente</option>
-                <option value="admin">Administrador</option>
+                <option value={ROLES.ATTENDANT}>Atendente</option>
+                <option value={ROLES.ADMIN}>Administrador</option>
               </select>
             </label>
 
@@ -592,12 +601,12 @@ function UsersSection() {
                 <td>
                     <span
                       className={
-                        u.role === "admin"
+                        u.role === ROLES.ADMIN
                           ? styles.badgeAdmin
                           : styles.badgeAttendant
                       }
                     >
-                      {u.role === "admin" ? "Administrador" : "Atendente"}
+                      {u.role === ROLES.ADMIN ? "Administrador" : "Atendente"}
                     </span>
                 </td>
                 <td>
@@ -629,8 +638,8 @@ function UsersSection() {
    SEÇÃO DE SINCRONIZAÇÃO DE SENHAS
 ═══════════════════════════════════════════════════════════ */
 function SyncSection() {
-  const [syncSector, setSyncSector] = useState("farmacia");
-  const [syncType, setSyncType] = useState("normal");
+  const [syncSector, setSyncSector] = useState(DEFAULT_SECTOR);
+  const [syncType, setSyncType] = useState(CALL_TYPES.NORMAL);
   const [syncNumber, setSyncNumber] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
@@ -642,7 +651,7 @@ function SyncSection() {
 
     try {
       const num = parseInt(syncNumber, 10);
-      if (!num || num < 1 || num > 999) {
+      if (!num || num < 1 || num > MAX_QUEUE_NUMBER) {
         setSyncMessage("Use um número entre 1 e 999.");
         return;
       }
@@ -693,8 +702,11 @@ function SyncSection() {
               value={syncSector}
               onChange={(e) => setSyncSector(e.target.value)}
             >
-              <option value="farmacia">Farmácia</option>
-              <option value="recepcao">Recepção Saúde</option>
+              {Object.values(SECTORS).map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
             </select>
           </label>
 
@@ -704,8 +716,8 @@ function SyncSection() {
               value={syncType}
               onChange={(e) => setSyncType(e.target.value)}
             >
-              <option value="normal">Normal</option>
-              <option value="preferencial">Preferencial</option>
+              <option value={CALL_TYPES.NORMAL}>Normal</option>
+              <option value={CALL_TYPES.PREFERENCIAL}>Preferencial</option>
             </select>
           </label>
 

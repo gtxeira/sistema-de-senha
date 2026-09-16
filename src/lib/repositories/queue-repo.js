@@ -1,6 +1,7 @@
 import { isSupabaseAdminConfigured, supabaseAdmin } from "../supabase-admin";
 import { isSupabaseConfigured, supabase } from "../supabase";
 import { normalizeCallType, formatNumberString, isInvalidApiKeyError } from "./utils";
+import { MAX_QUEUE_NUMBER, MIN_QUEUE_NUMBER, LOCALE, DEFAULT_RECENT_LIMIT } from "../constants.js";
 
 /**
  * Get the appropriate database client
@@ -115,13 +116,13 @@ async function incrementLegacyColumns(db, sector, sequenceType) {
 }
 
 /**
- * Get next value with wraparound at 1000
+ * Get next value with wraparound
  * @param {number} current
  * @returns {number}
  */
 function nextValue(current) {
   const value = Number(current) || 0;
-  return value >= 1000 ? 1 : value + 1;
+  return value >= MAX_QUEUE_NUMBER + 1 ? MIN_QUEUE_NUMBER : value + 1;
 }
 
 /**
@@ -135,7 +136,7 @@ function nextValue(current) {
    *   time: string
  * }>>}
  */
-export async function getRecentCalls(sector, limit = 30) {
+export async function getRecentCalls(sector, limit = DEFAULT_RECENT_LIMIT) {
   const db = getQueueDb();
   if (!db) return [];
   try {
@@ -150,7 +151,7 @@ export async function getRecentCalls(sector, limit = 30) {
       id: String(call.id),
       number: call.number_int,
       type: call.type === "preferential" || call.type === "preferencial" ? "preferencial" : "normal",
-      time: new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" })
+      time: new Intl.DateTimeFormat(LOCALE, { hour: "2-digit", minute: "2-digit" })
         .format(new Date(call.created_at || Date.now())),
     }));
   } catch (err) {
@@ -284,8 +285,8 @@ export class QueueRepository {
     const { sequenceType } = normalizeCallType(type);
     const num = Number(nextNumber);
 
-    if (!Number.isInteger(num) || num < 1 || num > 999) {
-      throw new Error("Número inválido. Use um valor entre 1 e 999.");
+    if (!Number.isInteger(num) || num < MIN_QUEUE_NUMBER || num > MAX_QUEUE_NUMBER) {
+      throw new Error(`Número inválido. Use um valor entre ${MIN_QUEUE_NUMBER} e ${MAX_QUEUE_NUMBER}.`);
     }
 
     // Store nextNumber - 1 because nextNumber() increments before returning

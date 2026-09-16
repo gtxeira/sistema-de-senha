@@ -1,4 +1,5 @@
 import { isSupabaseConfigured, getRealtimeClient } from "../supabase";
+import { LOCALE, CALL_TYPES } from "../constants.js";
 
 export class RealtimeRepository {
   /**
@@ -33,8 +34,8 @@ export class RealtimeRepository {
         const formattedCall = {
           id: call.id || call.number_int.toString(),
           number: call.number_int,
-          type: call.type === "preferential" || call.type === "preferencial" ? "preferencial" : "normal",
-          time: new Intl.DateTimeFormat("pt-BR", {
+          type: call.type === CALL_TYPES.PREFERENTIAL || call.type === CALL_TYPES.PREFERENCIAL ? CALL_TYPES.PREFERENCIAL : CALL_TYPES.NORMAL,
+          time: new Intl.DateTimeFormat(LOCALE, {
             hour: "2-digit",
             minute: "2-digit",
           }).format(new Date(call.created_at || Date.now())),

@@ -14,9 +14,9 @@ import {
   getQueueSnapshot,
   normalizeQueue,
   saveQueueState,
-  SECTORS,
   subscribeQueue,
 } from "../../../lib/queue";
+import { SECTORS, DEFAULT_SECTOR, CALL_TYPES, TYPE_FIELDS, NEWS_CAROUSEL_INTERVAL, CLOCK_INTERVAL, HISTORY_LIMITS } from "../../../lib/constants.js";
 import { useQueueEvents } from "../../../lib/hooks/useQueueEvents";
 import {
   forceAnnounce,
@@ -30,10 +30,9 @@ import styles from "./Monitor.module.css";
 /* ─── notícias ─── */
 let newsSnapshot = [];
 const serverNewsSnapshot = [];
-const monitorServerSnapshot = {
-  farmacia: { normalCurrent: 0, priorityCurrent: 0, history: [] },
-  recepcao: { normalCurrent: 0, priorityCurrent: 0, history: [] },
-};
+const monitorServerSnapshot = Object.fromEntries(
+  Object.keys(SECTORS).map((key) => [key, { normalCurrent: 0, priorityCurrent: 0, history: [] }]),
+);
 let lastSpokenCallId = null;
 
 function getNewsSnapshot() {
@@ -90,7 +89,7 @@ const NewsCarousel = memo(function NewsCarousel() {
     if (!news?.length) return;
     const t = setInterval(
       () => setNewsIndex((p) => (p + 1) % news.length),
-      5000,
+      NEWS_CAROUSEL_INTERVAL,
     );
     return () => clearInterval(t);
   }, [news]);
@@ -137,7 +136,7 @@ const NewsCarousel = memo(function NewsCarousel() {
 ══════════════════════════════════════════════ */
 export default function MonitorPage({ params }) {
   const resolvedParams = params ? (params.then ? use(params) : params) : {};
-  const sector = resolvedParams?.sector || "farmacia";
+  const sector = resolvedParams?.sector || DEFAULT_SECTOR;
 
   const state = useSyncExternalStore(
     subscribeQueue,
@@ -162,7 +161,7 @@ export default function MonitorPage({ params }) {
           second: "2-digit",
         }).format(new Date()),
       );
-    }, 1000);
+    }, CLOCK_INTERVAL);
     return () => clearInterval(t);
   }, []);
 
@@ -200,8 +199,8 @@ export default function MonitorPage({ params }) {
 
     const prev = getQueueSnapshot() || monitorServerSnapshot;
     const queue = prev[sector] || {};
-    const callType = lastCall.type === "preferencial" ? "preferencial" : "normal";
-    const field = callType === "preferencial" ? "priorityCurrent" : "normalCurrent";
+    const callType = lastCall.type === CALL_TYPES.PREFERENCIAL ? CALL_TYPES.PREFERENCIAL : CALL_TYPES.NORMAL;
+    const field = callType === CALL_TYPES.PREFERENCIAL ? TYPE_FIELDS.preferencial : TYPE_FIELDS.normal;
 
     const currentHistory = queue.history || [];
     const newEntry = {
@@ -216,7 +215,7 @@ export default function MonitorPage({ params }) {
       [sector]: {
         ...queue,
         [field]: lastCall.number,
-        history: cleanHistory([newEntry, ...currentHistory]).slice(0, 30),
+        history: cleanHistory([newEntry, ...currentHistory]).slice(0, HISTORY_LIMITS.monitor),
       },
     });
 
@@ -254,10 +253,10 @@ export default function MonitorPage({ params }) {
       const k = e.key;
       if (["ArrowRight", "PageDown", "Enter", " "].includes(k)) {
         e.preventDefault();
-        callNext("normal");
+        callNext(CALL_TYPES.NORMAL);
       } else if (["ArrowLeft", "PageUp"].includes(k)) {
         e.preventDefault();
-        callNext("preferencial");
+        callNext(CALL_TYPES.PREFERENCIAL);
       } else if (["ArrowUp", "Home"].includes(k)) {
         e.preventDefault();
         reCall();
@@ -274,10 +273,10 @@ export default function MonitorPage({ params }) {
       if (e.target.closest("a, button, input, select, textarea")) return;
       if (e.button === 0) {
         e.preventDefault();
-        callNext("normal");
+        callNext(CALL_TYPES.NORMAL);
       } else if (e.button === 2) {
         e.preventDefault();
-        callNext("preferencial");
+        callNext(CALL_TYPES.PREFERENCIAL);
       }
     }
     function onWheel(e) {
@@ -302,12 +301,12 @@ export default function MonitorPage({ params }) {
   }, [callNext, reCall]);
 
   /* ─── render ─── */
-  const info = SECTORS[sector] || SECTORS.farmacia;
+  const info = SECTORS[sector] || SECTORS[DEFAULT_SECTOR];
   const current = state[sector] || monitorServerSnapshot[sector];
   const validHistory = cleanHistory(current.history || []);
-  const latest = validHistory[0] || { number: current.normalCurrent || 0, type: "normal" };
+  const latest = validHistory[0] || { number: current.normalCurrent || 0, type: CALL_TYPES.NORMAL };
   const recentCalls = validHistory.slice(1, 5);
-  const isPriority = latest.type === "preferencial";
+  const isPriority = latest.type === CALL_TYPES.PREFERENCIAL;
 
   return (
     <main className={styles.monitor}>
@@ -361,7 +360,7 @@ export default function MonitorPage({ params }) {
                 >
                   <strong
                     className={
-                      item.type === "preferencial"
+                      item.type === CALL_TYPES.PREFERENCIAL
                         ? styles.priorityNumber
                         : styles.normalNumber
                     }

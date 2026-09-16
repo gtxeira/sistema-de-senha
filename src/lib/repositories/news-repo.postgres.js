@@ -1,39 +1,10 @@
 import { writeFile, unlink, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { prisma } from "../prisma-client.js";
+import { routeError, isAllowedImageType, isValidFileSize } from "./utils.js";
+import { NEWS_DIR as DEFAULT_NEWS_DIR, NEWS_MAX_ACTIVE } from "../constants.js";
 
-const NEWS_DIR = process.env.NEWS_DIR || join(process.cwd(), "public", "news");
-
-/**
- * Create typed error with status
- * @param {number} status
- * @param {string} message
- * @returns {Error & { status: number }}
- */
-function routeError(status, message) {
-  const err = new Error(message);
-  err.status = status;
-  return err;
-}
-
-/**
- * Validate allowed image types
- * @param {string} type
- * @returns {boolean}
- */
-function isAllowedImageType(type) {
-  const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"];
-  return allowedTypes.includes(type);
-}
-
-/**
- * Validate file size (max 5MB)
- * @param {number} size
- * @returns {boolean}
- */
-function isValidFileSize(size) {
-  return size <= 5 * 1024 * 1024;
-}
+const NEWS_DIR = process.env.NEWS_DIR || join(process.cwd(), DEFAULT_NEWS_DIR);
 
 /**
  * Ensure the news image directory exists
@@ -143,7 +114,7 @@ export class NewsRepository {
         where: { active: true },
         select: { id: true, title: true, image_url: true },
         orderBy: { created_at: "desc" },
-        take: 10,
+        take: NEWS_MAX_ACTIVE,
       });
 
       return rows.map((row) => ({

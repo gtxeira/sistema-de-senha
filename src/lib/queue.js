@@ -1,18 +1,32 @@
-export const SECTORS = {
-  farmacia: { id: "farmacia", name: "Farmácia", shortName: "FARMÁCIA" },
-  recepcao: { id: "recepcao", name: "Recepção Saúde", shortName: "RECEPÇÃO" },
+import {
+  SECTORS,
+  GUICHES,
+  QUEUE_KEY,
+  SESSION_KEY,
+  DEFAULT_SECTOR,
+  ALL_SECTORS,
+  MAX_QUEUE_NUMBER,
+  MIN_QUEUE_NUMBER,
+  CALL_TYPES,
+  TYPE_FIELDS,
+  TYPE_LABELS,
+  TYPE_PREFIXES,
+} from "./constants.js";
+
+export {
+  SECTORS,
+  GUICHES,
+  QUEUE_KEY,
+  SESSION_KEY,
+  DEFAULT_SECTOR,
+  ALL_SECTORS,
+  MAX_QUEUE_NUMBER,
+  MIN_QUEUE_NUMBER,
+  CALL_TYPES,
+  TYPE_FIELDS,
+  TYPE_LABELS,
+  TYPE_PREFIXES,
 };
-
-export const GUICHES = [
-  { id: "none", name: "Sem guichê" },
-  { id: "guiche-1", name: "Guichê 1" },
-  { id: "guiche-2", name: "Guichê 2" },
-  { id: "guiche-3", name: "Guichê 3" },
-  { id: "guiche-4", name: "Guichê 4" },
-];
-
-export const QUEUE_KEY = "saude-queue-state";
-export const SESSION_KEY = "saude-attendant-session";
 
 const serverQueueSnapshot = {
   farmacia: {
@@ -44,11 +58,14 @@ function localDateKey() {
 
 export function nextQueueNumber(current = 0) {
   const next = Number(current) + 1;
-  return next > 999 ? 0 : next;
+  return next > MAX_QUEUE_NUMBER ? MIN_QUEUE_NUMBER : next;
 }
 
 export function formatQueueNumber(number, type = "normal") {
-  const prefix = type === "preferencial" || type === "preferential" ? "P" : "N";
+  const prefix =
+    type === "preferencial" || type === "preferential"
+      ? TYPE_PREFIXES.preferencial
+      : TYPE_PREFIXES.normal;
   return `${prefix}${String(Number(number) || 0).padStart(3, "0")}`;
 }
 
@@ -249,7 +266,7 @@ export async function callNextNumber({ sector, type }) {
     }
 
     next = Number(next);
-    if (!Number.isInteger(next) || next < 0 || next > 999) {
+    if (!Number.isInteger(next) || next < MIN_QUEUE_NUMBER || next > MAX_QUEUE_NUMBER) {
       return { ok: false, error: "Número de senha inválido." };
     }
 

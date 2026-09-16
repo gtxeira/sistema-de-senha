@@ -114,11 +114,11 @@ begin
   end;
 
   insert into public.queue_sequences (sector_id, call_type, current_number, updated_at)
-  values (p_sector_id, normalized, 0, now())
+  values (p_sector_id, normalized, 1, now())
   on conflict (sector_id, call_type)
   do update set
     current_number = case
-      when public.queue_sequences.current_number >= 999 then 0
+      when public.queue_sequences.current_number >= 1000 then 1
       else public.queue_sequences.current_number + 1
     end,
     updated_at = now()

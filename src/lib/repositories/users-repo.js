@@ -1,4 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
+import { isValidUsername, routeError, generateEmail } from "./utils.js";
+import { SUPABASE_AUTH_OPTIONS, DEFAULT_ROLE } from "../constants.js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -9,30 +11,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
  */
 function getAdminClient() {
   if (!supabaseUrl || !supabaseServiceKey) return null;
-  return createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-}
-
-/**
- * Validate username format (nome.sobrenome)
- * @param {string} username
- * @returns {boolean}
- */
-function isValidUsername(username) {
-  return /^[a-z0-9]+(?:[._][a-z0-9]+)*$/.test(username);
-}
-
-/**
- * Create typed error with status
- * @param {number} status
- * @param {string} message
- * @returns {{ status: number, message: string }}
- */
-function routeError(status, message) {
-  const err = new Error(message);
-  err.status = status;
-  return err;
+  return createClient(supabaseUrl, supabaseServiceKey, SUPABASE_AUTH_OPTIONS);
 }
 
 export class UsersRepository {
@@ -103,7 +82,7 @@ export class UsersRepository {
 
     try {
       // Create user in Auth
-      const email = `${username}@central-atendimento.local`;
+      const email = generateEmail(username);
       const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
         email,
         password,
@@ -117,7 +96,7 @@ export class UsersRepository {
         id: authData.user.id,
         username,
         full_name,
-        role: role || "attendant",
+          role: role || DEFAULT_ROLE,
         sector_id: sector_id || null,
       });
 
@@ -133,7 +112,7 @@ export class UsersRepository {
           id: authData.user.id,
           username,
           full_name,
-          role: role || "attendant",
+        role: role || DEFAULT_ROLE,
           sector_id,
         },
       };

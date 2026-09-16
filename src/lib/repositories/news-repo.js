@@ -1,5 +1,6 @@
 import { isSupabaseConfigured, supabase } from "../supabase";
 import { isSupabaseAdminConfigured, supabaseAdmin } from "../supabase-admin";
+import { NEWS_BUCKET, NEWS_ALLOWED_TYPES, NEWS_MAX_FILE_SIZE, NEWS_MAX_ACTIVE } from "../constants.js";
 
 /**
  * Get appropriate database client (prefer admin for writes that need service role)
@@ -37,7 +38,6 @@ function getStorageJwtCandidates() {
  */
 async function uploadToStorage(fileName, buffer, contentType) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const BUCKET = "news-images";
   const candidates = getStorageJwtCandidates();
   if (!supabaseUrl || candidates.length === 0) {
     throw new Error("Nenhuma chave JWT disponível para o Storage.");
@@ -45,7 +45,7 @@ async function uploadToStorage(fileName, buffer, contentType) {
   let lastError = "";
   for (const jwt of candidates) {
     const res = await fetch(
-      `${supabaseUrl}/storage/v1/object/${BUCKET}/${fileName}`,
+      `${supabaseUrl}/storage/v1/object/${NEWS_BUCKET}/${fileName}`,
       {
         method: "POST",
         headers: {
@@ -58,7 +58,7 @@ async function uploadToStorage(fileName, buffer, contentType) {
       }
     );
     if (res.ok) {
-      return `${supabaseUrl}/storage/v1/object/public/${BUCKET}/${fileName}`;
+      return `${supabaseUrl}/storage/v1/object/public/${NEWS_BUCKET}/${fileName}`;
     }
     lastError = await res.text().catch(() => res.statusText);
     // If not an auth problem, don't try next key
@@ -73,12 +73,11 @@ async function uploadToStorage(fileName, buffer, contentType) {
  */
 async function deleteFromStorage(filePath) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const BUCKET = "news-images";
   const candidates = getStorageJwtCandidates();
   if (!supabaseUrl || candidates.length === 0) return;
   for (const jwt of candidates) {
     const res = await fetch(
-      `${supabaseUrl}/storage/v1/object/${BUCKET}/${filePath}`,
+      `${supabaseUrl}/storage/v1/object/${NEWS_BUCKET}/${filePath}`,
       {
         method: "DELETE",
         headers: { apikey: jwt, Authorization: `Bearer ${jwt}` },
@@ -94,17 +93,16 @@ async function deleteFromStorage(filePath) {
  * @returns {boolean}
  */
 function isAllowedImageType(type) {
-  const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"];
-  return allowedTypes.includes(type);
+  return NEWS_ALLOWED_TYPES.includes(type);
 }
 
 /**
- * Validate file size (max 5MB)
+ * Validate file size
  * @param {number} size
  * @returns {boolean}
  */
 function isValidFileSize(size) {
-  return size <= 5 * 1024 * 1024;
+  return size <= NEWS_MAX_FILE_SIZE;
 }
 
 export class NewsRepository {
@@ -239,7 +237,7 @@ export class NewsRepository {
         .select("id, title, image_url")
         .eq("active", true)
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(NEWS_MAX_ACTIVE);
 
       if (error) {
         // If table doesn't exist (42P01), return empty array

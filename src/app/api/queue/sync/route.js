@@ -3,6 +3,7 @@ import { queue } from "@/lib/repositories";
 import { eventManager } from "@/lib/event-manager";
 import { formatNumberString, normalizeCallType } from "@/lib/repositories/utils";
 import { auth } from "@/auth";
+import { SECTORS, MIN_QUEUE_NUMBER, MAX_QUEUE_NUMBER } from "@/lib/constants.js";
 
 /* ─────────────────────────────────────────────────
    POST — sincroniza a fila para um número específico
@@ -14,7 +15,7 @@ export const POST = auth(async function POST(request) {
     const { sector, type, nextNumber } = body;
 
     // Validate sector
-    if (!sector || !["farmacia", "recepcao"].includes(sector)) {
+    if (!sector || !Object.hasOwn(SECTORS, sector)) {
       return NextResponse.json(
         { error: "Setor não informado." },
         { status: 400 }
@@ -26,9 +27,9 @@ export const POST = auth(async function POST(request) {
 
     // Validate nextNumber
     const num = Number(nextNumber);
-    if (!Number.isInteger(num) || num < 1 || num > 999) {
+    if (!Number.isInteger(num) || num < MIN_QUEUE_NUMBER || num > MAX_QUEUE_NUMBER) {
       return NextResponse.json(
-        { error: "Número inválido. Use um valor entre 1 e 999." },
+        { error: `Número inválido. Use um valor entre ${MIN_QUEUE_NUMBER} e ${MAX_QUEUE_NUMBER}.` },
         { status: 400 }
       );
     }
@@ -45,7 +46,7 @@ export const POST = auth(async function POST(request) {
       type: sequenceType,
       nextNumber: num,
       numberStr,
-      message: `Próxima senha de ${sector === "farmacia" ? "Farmácia" : "Recepção"}: ${numberStr}`,
+      message: `Próxima senha de ${SECTORS[sector]?.name || sector}: ${numberStr}`,
     });
   } catch (err) {
     return NextResponse.json(

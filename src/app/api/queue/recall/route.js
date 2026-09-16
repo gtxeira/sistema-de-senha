@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { queue } from "@/lib/repositories";
 import { eventManager } from "@/lib/event-manager";
 import { auth } from "@/auth";
+import { SECTORS, LOCALE } from "@/lib/constants.js";
 
 /* ─────────────────────────────────────────────────
    POST — repete a última senha chamada de um setor
@@ -12,7 +13,7 @@ export const POST = auth(async function POST(request) {
     const body = await request.json();
     const { sector } = body;
 
-    if (!sector || !["farmacia", "recepcao"].includes(sector)) {
+    if (!sector || !Object.hasOwn(SECTORS, sector)) {
       return NextResponse.json(
         { error: "Setor não informado." },
         { status: 400 }
@@ -33,7 +34,7 @@ export const POST = auth(async function POST(request) {
       id: last.id,
       number: last.number,
       type: last.type,
-      time: new Intl.DateTimeFormat("pt-BR", {
+      time: new Intl.DateTimeFormat(LOCALE, {
         hour: "2-digit",
         minute: "2-digit",
       }).format(new Date()),

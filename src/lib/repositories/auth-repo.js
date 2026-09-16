@@ -1,4 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
+import { isValidUsername, routeError, initials, generateEmail, getDefaultGuiche } from "./utils.js";
+import { SUPABASE_AUTH_OPTIONS } from "../constants.js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -9,44 +11,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
  */
 function getAdminClient() {
   if (!supabaseUrl || !supabaseServiceKey) return null;
-  return createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-}
-
-/**
- * Validate username format (nome.sobrenome)
- * @param {string} username
- * @returns {boolean}
- */
-function isValidUsername(username) {
-  return /^[a-z0-9]+(?:[._][a-z0-9]+)*$/.test(username);
-}
-
-/**
- * Create typed error with status for the route to translate
- * @param {number} status
- * @param {string} message
- * @returns {{ status: number, message: string }}
- */
-function routeError(status, message) {
-  const err = new Error(message);
-  err.status = status;
-  return err;
-}
-
-/**
- * Generate initials from full name (max 2 chars)
- * @param {string} fullName
- * @returns {string}
- */
-function initials(fullName) {
-  return fullName
-    .split(/\s+/)
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+  return createClient(supabaseUrl, supabaseServiceKey, SUPABASE_AUTH_OPTIONS);
 }
 
 export class AuthRepository {
@@ -84,7 +49,7 @@ export class AuthRepository {
     }
 
     // Fallback: use default email pattern
-    return `${username}@central-atendimento.local`;
+    return generateEmail(username);
   }
 
   /**
@@ -114,9 +79,7 @@ export class AuthRepository {
       throw routeError(503, "Supabase não configurado");
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, SUPABASE_AUTH_OPTIONS);
 
     try {
       // Resolve email (tries admin lookup, falls back to default pattern)
@@ -150,7 +113,7 @@ export class AuthRepository {
         initials: initials(profile.full_name),
         role: profile.role,
         sector: profile.sector_id,
-        guiche: profile.guiche_id || "none",
+        guiche: profile.guiche_id || getDefaultGuiche(),
       };
     } catch (err) {
       // Already a typed error (has .status)

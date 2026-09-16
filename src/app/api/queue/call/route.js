@@ -3,6 +3,7 @@ import { queue } from "@/lib/repositories";
 import { eventManager } from "@/lib/event-manager";
 import { formatNumberString, normalizeCallType } from "@/lib/repositories/utils";
 import { auth } from "@/auth";
+import { SECTORS, LOCALE } from "@/lib/constants.js";
 
 /* ─────────────────────────────────────────────────
    POST — chama próxima senha de um setor
@@ -19,7 +20,7 @@ export const POST = auth(async function POST (request) {
     const { sector, type } = body;
 
     // Validate sector
-    if (!sector || !["farmacia", "recepcao"].includes(sector)) {
+    if (!sector || !Object.hasOwn(SECTORS, sector)) {
       return NextResponse.json(
         { error: "Setor não informado." },
         { status: 400 }
@@ -50,7 +51,7 @@ export const POST = auth(async function POST (request) {
       id: saved.id,
       number: nextNum,
       type: sequenceType,
-      time: new Intl.DateTimeFormat("pt-BR", {
+      time: new Intl.DateTimeFormat(LOCALE, {
         hour: "2-digit",
         minute: "2-digit",
       }).format(new Date()),

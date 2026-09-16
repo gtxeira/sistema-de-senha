@@ -49,10 +49,10 @@ describe("nextQueueNumber", () => {
     expect(nextQueueNumber(5)).toBe(6);
   });
 
-  it("volta para 0 após 999", () => {
+  it("volta para 1 após 999", () => {
     expect(nextQueueNumber(998)).toBe(999);
-    expect(nextQueueNumber(999)).toBe(0);
-    expect(nextQueueNumber(1000)).toBe(0);
+    expect(nextQueueNumber(999)).toBe(1);
+    expect(nextQueueNumber(1000)).toBe(1);
   });
 
   it("trata valor ausente como 0", () => {

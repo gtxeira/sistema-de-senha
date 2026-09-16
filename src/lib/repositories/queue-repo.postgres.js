@@ -1,15 +1,6 @@
 import { prisma } from "../prisma-client.js";
 import { normalizeCallType, formatNumberString } from "./utils.js";
-
-/**
- * Get next value with wraparound at 1000
- * @param {number} current
- * @returns {number}
- */
-function nextValue(current) {
-  const value = Number(current) || 0;
-  return value >= 1000 ? 1 : value + 1;
-}
+import { MAX_QUEUE_NUMBER, MIN_QUEUE_NUMBER, LOCALE, DEFAULT_RECENT_LIMIT } from "../constants.js";
 
 /**
  * Format time for display (HH:mm)
@@ -17,7 +8,7 @@ function nextValue(current) {
  * @returns {string}
  */
 function formatTime(date) {
-  return new Intl.DateTimeFormat("pt-BR", {
+  return new Intl.DateTimeFormat(LOCALE, {
     hour: "2-digit",
     minute: "2-digit",
   }).format(date);
@@ -54,8 +45,8 @@ export class QueueRepository {
         },
       });
 
-      // Handle wraparound at 1000
-      if (seq.current_number > 1000) {
+      // Handle wraparound
+      if (seq.current_number >= MAX_QUEUE_NUMBER + 1) {
         await tx.queue_sequences.update({
           where: {
             sector_id_call_type: {
@@ -143,8 +134,8 @@ export class QueueRepository {
     const { sequenceType } = normalizeCallType(type);
     const num = Number(nextNumber);
 
-    if (!Number.isInteger(num) || num < 1 || num > 999) {
-      throw new Error("Número inválido. Use um valor entre 1 e 999.");
+    if (!Number.isInteger(num) || num < MIN_QUEUE_NUMBER || num > MAX_QUEUE_NUMBER) {
+      throw new Error(`Número inválido. Use um valor entre ${MIN_QUEUE_NUMBER} e ${MAX_QUEUE_NUMBER}.`);
     }
 
     // Store nextNumber - 1 because nextNumber() increments before returning
@@ -180,7 +171,7 @@ export class QueueRepository {
    *   time: string
    * }>>}
    */
-  async getRecentCalls(sector, limit = 30) {
+  async getRecentCalls(sector, limit = DEFAULT_RECENT_LIMIT) {
     try {
       const calls = await prisma.queue_calls.findMany({
         where: {

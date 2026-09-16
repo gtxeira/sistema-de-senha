@@ -13,7 +13,7 @@ import {
   Monitor,
   Settings2,
 } from "lucide-react";
-import { SECTORS, SESSION_KEY } from "../../lib/queue";
+import { SECTORS, SESSION_KEY } from "../../lib/constants.js";
 import styles from "./SidebarLayout.module.css";
 
 export { styles as sidebarStyles };
