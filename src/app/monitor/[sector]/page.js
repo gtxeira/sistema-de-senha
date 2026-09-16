@@ -59,7 +59,7 @@ function cleanHistory(history = []) {
   if (!Array.isArray(history)) return [];
   const seen = new Set();
   return history.filter((item) => {
-    if (!item?.number) return false;
+    if (item?.number == null) return false;
     // Deduplica por número+tipo (ignora id pois itens locais não têm id ainda)
     const key = `${item.number}-${item.type}`;
     if (seen.has(key)) return false;
@@ -307,7 +307,7 @@ export default function MonitorPage({ params }) {
   const info = SECTORS[sector] || SECTORS[DEFAULT_SECTOR];
   const current = state[sector] || monitorServerSnapshot[sector];
   const validHistory = cleanHistory(current.history || []);
-  const latest = validHistory[0] || { number: current.normalCurrent || DEFAULT_QUEUE_NUMBER, type: CALL_TYPES.NORMAL };
+  const latest = validHistory[0] || { number: current.normalCurrent ?? DEFAULT_QUEUE_NUMBER, type: CALL_TYPES.NORMAL };
   const recentCalls = validHistory.slice(1, 5);
   const isPriority = latest.type === CALL_TYPES.PREFERENCIAL;
 
@@ -342,7 +342,7 @@ export default function MonitorPage({ params }) {
             className={`${styles.featured} ${isPriority ? styles.featuredPriority : ""}`}
           >
             <p>SENHA</p>
-            <strong>{formatMonitorNumber(latest?.number || DEFAULT_QUEUE_NUMBER)}</strong>
+            <strong>{formatMonitorNumber(latest?.number ?? DEFAULT_QUEUE_NUMBER)}</strong>
             {isPriority ? (
               <span className={styles.priorityTag}>
                 ATENDIMENTO PREFERENCIAL
@@ -368,7 +368,7 @@ export default function MonitorPage({ params }) {
                         : styles.normalNumber
                     }
                   >
-                    {formatMonitorNumber(item?.number || DEFAULT_QUEUE_NUMBER)}
+                    {formatMonitorNumber(item?.number ?? DEFAULT_QUEUE_NUMBER)}
                   </strong>
                   {item.type === "preferencial" ? (
                     <span className={styles.priorityTagSmall}>

@@ -95,7 +95,7 @@ export default function PainelPage() {
           ...latestState,
           [activeSector]: {
             ...latest,
-            [field]: calls[0]?.number || latest[field],
+            [field]: calls[0]?.number ?? latest[field],
             history: calls.slice(0, HISTORY_LIMIT),
           },
         });

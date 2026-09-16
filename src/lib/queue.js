@@ -74,7 +74,7 @@ export function formatQueueNumber(number, type = "normal") {
     type === "preferencial" || type === "preferential"
       ? TYPE_PREFIXES.preferencial
       : TYPE_PREFIXES.normal;
-  return `${prefix}${String(Number(number) || DEFAULT_QUEUE_NUMBER).padStart(3, "0")}`;
+  return `${prefix}${String(Number(number) ?? DEFAULT_QUEUE_NUMBER).padStart(3, "0")}`;
 }
 
 export function getInitialState() {
