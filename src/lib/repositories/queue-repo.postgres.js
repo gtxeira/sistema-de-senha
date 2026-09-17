@@ -24,15 +24,19 @@ export class QueueRepository {
   /**
    * Get next number for sector and type (normal/preferencial)
    * Uses atomic transaction with upsert + wraparound at `MAX_QUEUE_NUMBER`.
+   * Returns { number, wraparound } — wraparound is true when 999→000 occurs.
    * @param {'farmacia'|'recepcao'} sector
    * @param {'normal'|'preferencial'} type
-   * @returns {Promise<number>}
+   * @returns {Promise<{ number: number, wraparound: boolean }>}
    */
   async nextNumber(sector, type) {
     const { sequenceType } = normalizeCallType(type);
 
     return await prisma.$transaction(async (tx) => {
-      // Upsert the sequence row, incrementing the counter atomically
+      // Upsert the sequence row, incrementing the counter atomically.
+      // New rows start at 0 (first password = 000). Prisma's upsert applies
+      // the increment only to existing rows, so a newly created row returns
+      // the create value (0) directly.
       const seq = await tx.queue_sequences.upsert({
         where: {
           sector_id_call_type: {
@@ -47,11 +51,11 @@ export class QueueRepository {
         create: {
           sector_id: sector,
           call_type: sequenceType,
-          current_number: DEFAULT_QUEUE_NUMBER,
+          current_number: 0,
         },
       });
 
-      // Handle wraparound
+      // Handle wraparound: if counter exceeded MAX, reset to -1 and return 0
       if (seq.current_number > MAX_QUEUE_NUMBER) {
         await tx.queue_sequences.update({
           where: {
@@ -61,14 +65,14 @@ export class QueueRepository {
             },
           },
           data: {
-            current_number: MIN_QUEUE_NUMBER,
+            current_number: MIN_QUEUE_NUMBER - 1,
             updated_at: new Date(),
           },
         });
-        return MIN_QUEUE_NUMBER;
+        return { number: MIN_QUEUE_NUMBER, wraparound: true };
       }
 
-      return seq.current_number;
+      return { number: seq.current_number, wraparound: false };
     });
   }
 
@@ -110,7 +114,8 @@ export class QueueRepository {
   }
 
   /**
-   * Reset sequence for sector
+   * Reset sequence for sector.
+   * Sets counter to -1 so the next call returns 0 (first password = 000).
    * @param {'farmacia'|'recepcao'} sector
    * @returns {Promise<void>}
    */
@@ -120,7 +125,7 @@ export class QueueRepository {
         sector_id: sector,
       },
       data: {
-        current_number: MIN_QUEUE_NUMBER,
+        current_number: MIN_QUEUE_NUMBER - 1,
         updated_at: new Date(),
       },
     });

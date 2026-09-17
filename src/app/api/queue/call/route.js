@@ -36,7 +36,9 @@ export async function POST(request) {
     const { sequenceType, callType } = normalizeCallType(type);
 
     // Get next number
-    const nextNum = await queue.nextNumber(sector, sequenceType);
+    const nextResult = await queue.nextNumber(sector, sequenceType);
+    const nextNum = nextResult.number;
+    const isWraparound = nextResult.wraparound || false;
     const numberStr = formatNumberString(nextNum, sequenceType);
 
     const attendantId = session.user.id;
@@ -56,6 +58,7 @@ export async function POST(request) {
       id: saved.id,
       number: nextNum,
       type: sequenceType,
+      wraparound: isWraparound,
       time: new Intl.DateTimeFormat(LOCALE, {
         hour: "2-digit",
         minute: "2-digit",
@@ -68,6 +71,7 @@ export async function POST(request) {
       number: nextNum,
       numberStr,
       type: sequenceType,
+      wraparound: isWraparound,
     });
   } catch (err) {
     if (err.status === 503 || err.message.includes("not configured") || err.message.includes("Não configurado")) {

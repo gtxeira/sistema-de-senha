@@ -157,7 +157,7 @@ export function useQueueEvents(sector) {
         const data = await res.json();
         if (data.calls?.length && mountedRef.current) {
           lastCallIdRef.current = data.calls[0].id;
-          setLastCall(data.calls[0]);
+          setLastCall({ ...data.calls[0], _source: "initial" });
         }
       } catch {
         // Ignore initial sync errors

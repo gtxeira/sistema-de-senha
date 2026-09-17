@@ -10,7 +10,9 @@ import {
   CALL_TYPES,
   TYPE_FIELDS,
   TYPE_LABELS,
-  TYPE_PREFIXES, DEFAULT_QUEUE_NUMBER,
+  TYPE_PREFIXES,
+  DEFAULT_QUEUE_NUMBER,
+  NO_PASSWORD,
 } from "./constants.js";
 
 export {
@@ -26,18 +28,19 @@ export {
   TYPE_FIELDS,
   TYPE_LABELS,
   TYPE_PREFIXES,
+  NO_PASSWORD,
 };
 
 const serverQueueSnapshot = {
   farmacia: {
-    normalCurrent: DEFAULT_QUEUE_NUMBER,
-    priorityCurrent: DEFAULT_QUEUE_NUMBER,
+    normalCurrent: NO_PASSWORD,
+    priorityCurrent: NO_PASSWORD,
     history: [],
     historyDate: "",
   },
   recepcao: {
-    normalCurrent: DEFAULT_QUEUE_NUMBER,
-    priorityCurrent: DEFAULT_QUEUE_NUMBER,
+    normalCurrent: NO_PASSWORD,
+    priorityCurrent: NO_PASSWORD,
     history: [],
     historyDate: "",
   },
@@ -57,11 +60,11 @@ function localDateKey() {
 }
 
 /**
- * @param {number | undefined} current
+ * @param {number | undefined | null} current
  * @returns {number}
  */
 export function nextQueueNumber(current = undefined) {
-  if (current === undefined) {
+  if (current === undefined || current === null) {
     return MIN_QUEUE_NUMBER;
   }
 
@@ -74,20 +77,21 @@ export function formatQueueNumber(number, type = "normal") {
     type === "preferencial" || type === "preferential"
       ? TYPE_PREFIXES.preferencial
       : TYPE_PREFIXES.normal;
-  return `${prefix}${String(Number(number) ?? DEFAULT_QUEUE_NUMBER).padStart(3, "0")}`;
+  if (number === null || number === undefined) return `${prefix}---`;
+  return `${prefix}${String(Number(number)).padStart(3, "0")}`;
 }
 
 export function getInitialState() {
   return {
     farmacia: {
-      normalCurrent: DEFAULT_QUEUE_NUMBER,
-      priorityCurrent: DEFAULT_QUEUE_NUMBER,
+      normalCurrent: NO_PASSWORD,
+      priorityCurrent: NO_PASSWORD,
       history: [],
       historyDate: localDateKey(),
     },
     recepcao: {
-      normalCurrent: DEFAULT_QUEUE_NUMBER,
-      priorityCurrent: DEFAULT_QUEUE_NUMBER,
+      normalCurrent: NO_PASSWORD,
+      priorityCurrent: NO_PASSWORD,
       history: [],
       historyDate: localDateKey(),
     },
@@ -107,8 +111,8 @@ export function clearHistoryFromNewDay(state) {
           ...queue,
           // PRESERVA os contadores — nunca zera ao mudar de dia
           normalCurrent:
-            queue.normalCurrent ?? queue.current ?? DEFAULT_QUEUE_NUMBER,
-          priorityCurrent: queue.priorityCurrent ?? DEFAULT_QUEUE_NUMBER,
+            queue.normalCurrent ?? queue.current ?? NO_PASSWORD,
+          priorityCurrent: queue.priorityCurrent ?? NO_PASSWORD,
           // Limpa apenas o histórico visual
           history: [],
           historyDate: today,
@@ -164,8 +168,8 @@ export function readSession() {
 
 export function normalizeQueue(queue) {
   return {
-    normalCurrent: queue?.normalCurrent ?? queue?.current ?? DEFAULT_QUEUE_NUMBER,
-    priorityCurrent: queue?.priorityCurrent ?? DEFAULT_QUEUE_NUMBER,
+    normalCurrent: queue?.normalCurrent ?? queue?.current ?? NO_PASSWORD,
+    priorityCurrent: queue?.priorityCurrent ?? NO_PASSWORD,
     history: queue?.history ?? [],
     historyDate: queue?.historyDate ?? localDateKey(),
   };

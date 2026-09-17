@@ -151,9 +151,9 @@ describe("/api/queue/sync — integration", () => {
       await syncPost(syncReq);
 
       const { queue } = await import("@/lib/repositories");
-      const num = await queue.nextNumber("farmacia", "normal");
+      const result = await queue.nextNumber("farmacia", "normal");
 
-      expect(num).toBe(45);
+      expect(result.number).toBe(45);
     });
   });
 });

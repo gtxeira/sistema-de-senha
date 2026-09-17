@@ -41,11 +41,12 @@ async function incrementViaRpc(db, sector, sequenceType) {
 }
 
 /**
- * Helper to increment current number in queue_sequences table
+ * Helper to increment current number in queue_sequences table.
+ * Returns { number, wraparound }.
  * @param {any} db - Supabase client
  * @param {'farmacia'|'recepcao'} sector
  * @param {'normal'|'preferencial'} sequenceType
- * @returns {Promise<number>}
+ * @returns {Promise<{ number: number, wraparound: boolean }>}
  */
 async function incrementCurrentNumber(db, sector, sequenceType) {
   const { data: seq, error } = await db
@@ -60,7 +61,9 @@ async function incrementCurrentNumber(db, sector, sequenceType) {
   }
 
   if (seq && Object.prototype.hasOwnProperty.call(seq, "current_number")) {
-    const nextNum = nextValue(seq.current_number);
+    const prev = Number(seq.current_number) || 0;
+    const nextNum = nextValue(prev);
+    const wraparound = nextNum < prev;
     const { error: updateError } = await db
       .from("queue_sequences")
       .update({
@@ -70,24 +73,26 @@ async function incrementCurrentNumber(db, sector, sequenceType) {
       .eq("sector_id", sector)
       .eq("call_type", sequenceType);
     if (updateError) throw updateError;
-    return nextNum;
+    return { number: nextNum, wraparound };
   }
 
+  // New row: start at 0 (first password = 000)
   const { error: insertError } = await db.from("queue_sequences").insert({
     sector_id: sector,
     call_type: sequenceType,
-    current_number: 1,
+    current_number: 0,
   });
   if (insertError) throw insertError;
-  return 1;
+  return { number: 0, wraparound: false };
 }
 
 /**
- * Helper to increment legacy columns (priority_current/normal_current)
+ * Helper to increment legacy columns (priority_current/normal_current).
+ * Returns { number, wraparound }.
  * @param {any} db - Supabase client
  * @param {'farmacia'|'recepcao'} sector
  * @param {'normal'|'preferencial'} sequenceType
- * @returns {Promise<number|null>}
+ * @returns {Promise<{ number: number, wraparound: boolean } | null>}
  */
 async function incrementLegacyColumns(db, sector, sequenceType) {
   const field =
@@ -102,7 +107,9 @@ async function incrementLegacyColumns(db, sector, sequenceType) {
   const seqData = rows?.[0];
   if (!seqData || !(field in seqData)) return null;
 
-  const nextNum = nextValue(seqData[field]);
+  const prev = Number(seqData[field]) || 0;
+  const nextNum = nextValue(prev);
+  const wraparound = nextNum < prev;
   const { error: updateError } = await db
     .from("queue_sequences")
     .update({
@@ -112,7 +119,7 @@ async function incrementLegacyColumns(db, sector, sequenceType) {
     })
     .eq("sector_id", sector);
   if (updateError) throw updateError;
-  return nextNum;
+  return { number: nextNum, wraparound };
 }
 
 /**
@@ -162,9 +169,10 @@ export async function getRecentCalls(sector, limit = DEFAULT_RECENT_LIMIT) {
 export class QueueRepository {
   /**
    * Get next number for sector and type (normal/preferencial)
+   * Returns { number, wraparound }.
    * @param {'farmacia'|'recepcao'} sector
    * @param {'normal'|'preferencial'} type
-   * @returns {Promise<number>}
+   * @returns {Promise<{ number: number, wraparound: boolean }>}
    */
   async nextNumber(sector, type) {
     const db = getQueueDb();
@@ -176,7 +184,10 @@ export class QueueRepository {
     
     // Try RPC first
     const fromRpc = await incrementViaRpc(db, sector, sequenceType);
-    if (fromRpc) return fromRpc;
+    if (fromRpc) {
+      const num = Number(fromRpc);
+      return { number: num, wraparound: num === MIN_QUEUE_NUMBER };
+    }
 
     // Fallback to direct table access
     try {
@@ -238,7 +249,8 @@ export class QueueRepository {
   }
 
   /**
-   * Reset sequence for sector
+   * Reset sequence for sector.
+   * Sets counter to -1 so the next call returns 0 (first password = 000).
    * @param {'farmacia'|'recepcao'} sector
    * @returns {Promise<void>}
    */
@@ -251,7 +263,7 @@ export class QueueRepository {
     const now = new Date().toISOString();
     const currentNumberReset = await db
       .from("queue_sequences")
-      .update({ current_number: 0, updated_at: now })
+      .update({ current_number: MIN_QUEUE_NUMBER - 1, updated_at: now })
       .eq("sector_id", sector);
 
     if (!currentNumberReset.error) return;
@@ -259,8 +271,8 @@ export class QueueRepository {
     const legacyReset = await db
       .from("queue_sequences")
       .update({
-        normal_current: 0,
-        priority_current: 0,
+        normal_current: MIN_QUEUE_NUMBER - 1,
+        priority_current: MIN_QUEUE_NUMBER - 1,
         updated_at: now,
       })
       .eq("sector_id", sector);

@@ -32,6 +32,7 @@ export const TYPE_PREFIXES = { preferencial: "P", preferential: "P", normal: "N"
 export const MIN_QUEUE_NUMBER = 0;
 export const MAX_QUEUE_NUMBER = 999;
 export const DEFAULT_QUEUE_NUMBER = MIN_QUEUE_NUMBER;
+export const NO_PASSWORD = null;
 export const DEFAULT_RECENT_LIMIT = 30;
 
 // ── Estatísticas ──

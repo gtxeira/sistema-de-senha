@@ -9,7 +9,7 @@ import {
   getQueueSnapshot,
   getServerQueueSnapshot,
   getServerSessionSnapshot,
-  getSessionSnapshot,
+  getSessionSnapshot, MIN_QUEUE_NUMBER,
   normalizeQueue,
   saveQueueState,
   subscribeQueue,
@@ -24,6 +24,7 @@ import {
   DRAFT_PREFIX,
   USERNAME_REGEX,
   USERNAME_REGEX_LABEL,
+  NO_PASSWORD,
 } from "../../lib/constants.js";
 import styles from "./Admin.module.css";
 import { SidebarLayout } from "@/components/SidebarLayout/SidebarLayout";
@@ -108,8 +109,8 @@ export default function AdminPage() {
       : SECTORS[sectorId]?.name || sectorId;
 
     const msg = isAll
-      ? `ATENÇÃO\n\nIsso vai zerar as senhas de ${label}.\n\nA numeração voltará para 001. Esta ação não pode ser desfeita.\n\nDeseja continuar?`
-      : `Zerar as senhas do setor "${label}"?\n\nA numeração voltará para 001.`;
+      ? `ATENÇÃO\n\nIsso vai zerar as senhas de ${label}.\n\nA numeração voltará para ${MIN_QUEUE_NUMBER.toString().padStart(3, "0")}. Esta ação não pode ser desfeita.\n\nDeseja continuar?`
+      : `Zerar as senhas do setor "${label}"?\n\nA numeração voltará para ${MIN_QUEUE_NUMBER.toString().padStart(3, "0")}.`;
 
     if (!window.confirm(msg)) return;
 
@@ -127,8 +128,8 @@ export default function AdminPage() {
       sectorsToReset.forEach((s) => {
         next[s] = {
           ...normalizeQueue(currentState[s]),
-          normalCurrent: 0,
-          priorityCurrent: 0,
+          normalCurrent: NO_PASSWORD,
+          priorityCurrent: NO_PASSWORD,
           history: [],
         };
       });
@@ -147,8 +148,8 @@ export default function AdminPage() {
       }
       setMessage(
         isAll
-          ? "Todas as senhas foram resetadas. Numeração reinicia em 001."
-          : `Senhas de "${label}" zeradas. Numeração reinicia em 001.`,
+          ? `Todas as senhas foram resetadas. Numeração reinicia em ${MIN_QUEUE_NUMBER.toString().padStart(3, "0")}.`
+          : `Senhas de "${label}" zeradas. Numeração reinicia em ${MIN_QUEUE_NUMBER.toString().padStart(3, "0")}.`,
       );
     } catch {
       setMessage("Erro ao zerar os contadores.");
@@ -269,9 +270,12 @@ export default function AdminPage() {
                   <div>
                     <strong>{item.name}</strong>
                     <small>
-                      Normal: N{String(queue.normalCurrent).padStart(3, "0")} ·
-                      Preferencial: P
-                      {String(queue.priorityCurrent).padStart(3, "0")}
+                      Normal: {queue.normalCurrent === null || queue.normalCurrent === undefined
+                        ? "N---"
+                        : `N${String(queue.normalCurrent).padStart(3, "0")}`} ·
+                      Preferencial: {queue.priorityCurrent === null || queue.priorityCurrent === undefined
+                        ? "P---"
+                        : `P${String(queue.priorityCurrent).padStart(3, "0")}`}
                     </small>
                   </div>
                   <div className={styles.cardActions}>
@@ -297,7 +301,7 @@ export default function AdminPage() {
             <div className={styles.resetAllInfo}>
               <AlertTriangle size={16}/>
               <span>
-                Resetar todos os setores de uma vez — numeração volta para 001
+                Resetar todos os setores de uma vez — numeração volta para {MIN_QUEUE_NUMBER.toString().padStart(3, "0")}
                 em todos.
               </span>
             </div>

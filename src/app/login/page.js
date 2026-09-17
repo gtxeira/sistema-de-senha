@@ -110,8 +110,6 @@ export default function LoginPage() {
                 value={login}
                 onChange={(e) => setLogin(e.target.value)}
                 placeholder="nome.sobrenome"
-                pattern={USERNAME_REGEX}
-                title={USERNAME_REGEX_LABEL}
                 autoComplete="username"
                 autoFocus
                 required

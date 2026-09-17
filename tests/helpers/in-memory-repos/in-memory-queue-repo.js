@@ -8,16 +8,18 @@ export class InMemoryQueueRepository {
 
   async nextNumber(sector, type) {
     const key = `${sector}:${type}`;
-    const current = this.#sequences.get(key);
-
-    if (current === undefined || current >= 999) {
-      this.#sequences.set(key, 0);
-      return 0;
-    }
+    const current = this.#sequences.has(key) ? this.#sequences.get(key) : -1;
 
     const next = current + 1;
+    const wraparound = next > 999;
+
+    if (wraparound) {
+      this.#sequences.set(key, 0);
+      return { number: 0, wraparound: true };
+    }
+
     this.#sequences.set(key, next);
-    return next;
+    return { number: next, wraparound: false };
   }
 
   async saveCall(call) {
@@ -33,8 +35,7 @@ export class InMemoryQueueRepository {
   async resetSector(sector) {
     for (const key of this.#sequences.keys()) {
       if (key.startsWith(`${sector}:`)) {
-        this.#sequences.set(key, 0);
-        break
+        this.#sequences.set(key, -1);
       }
     }
   }
@@ -58,6 +59,6 @@ export class InMemoryQueueRepository {
 
   /** Get current sequence value for a sector+type. */
   getSequence(sector, type) {
-    return this.#sequences.get(`${sector}:${type}`) || 0;
+    return this.#sequences.get(`${sector}:${type}`) ?? -1;
   }
 }

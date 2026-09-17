@@ -4,6 +4,7 @@ import {
   use,
   useCallback,
   useEffect,
+  useRef,
   useState,
   useSyncExternalStore,
   memo,
@@ -18,7 +19,7 @@ import {
 } from "../../../lib/queue";
 import {
   SECTORS, DEFAULT_SECTOR, CALL_TYPES, TYPE_FIELDS, NEWS_CAROUSEL_INTERVAL, CLOCK_INTERVAL, HISTORY_LIMITS,
-  DEFAULT_QUEUE_NUMBER
+  NO_PASSWORD
 } from "../../../lib/constants.js";
 import { useQueueEvents } from "../../../lib/hooks/useQueueEvents";
 import {
@@ -34,7 +35,7 @@ import styles from "./Monitor.module.css";
 let newsSnapshot = [];
 const serverNewsSnapshot = [];
 const monitorServerSnapshot = Object.fromEntries(
-  Object.keys(SECTORS).map((key) => [key, { normalCurrent: DEFAULT_QUEUE_NUMBER, priorityCurrent: DEFAULT_QUEUE_NUMBER, history: [] }]),
+  Object.keys(SECTORS).map((key) => [key, { normalCurrent: NO_PASSWORD, priorityCurrent: NO_PASSWORD, history: [] }]),
 );
 let lastSpokenCallId = null;
 
@@ -52,7 +53,8 @@ function subscribeNews(cb) {
 }
 
 function formatMonitorNumber(number) {
-  return String(Number(number) ?? DEFAULT_QUEUE_NUMBER).padStart(3, "0");
+  if (number === null || number === undefined) return "---";
+  return String(Number(number)).padStart(3, "0");
 }
 
 function cleanHistory(history = []) {
@@ -202,6 +204,13 @@ export default function MonitorPage({ params }) {
 
     const prev = getQueueSnapshot() || monitorServerSnapshot;
     const queue = prev[sector] || {};
+
+    // Skip stale initial fetch when queue is in "no password" state (post-reset).
+    // Initial calls from the API are old DB rows that were not cleared on reset.
+    if (lastCall._source === "initial" && queue.normalCurrent === NO_PASSWORD && queue.priorityCurrent === NO_PASSWORD) {
+      return;
+    }
+
     const callType = lastCall.type === CALL_TYPES.PREFERENCIAL ? CALL_TYPES.PREFERENCIAL : CALL_TYPES.NORMAL;
     const field = callType === CALL_TYPES.PREFERENCIAL ? TYPE_FIELDS.preferencial : TYPE_FIELDS.normal;
 
@@ -223,7 +232,7 @@ export default function MonitorPage({ params }) {
     });
 
     monitorSpeak(lastCall.number, callType);
-  }, [lastCall, sector]);
+  }, [lastCall, sector, audioEnabled]);
 
   /* ─── chamar próxima senha (via teclado / passador) ─── */
   const callNext = useCallback(async (type) => {
@@ -307,9 +316,10 @@ export default function MonitorPage({ params }) {
   const info = SECTORS[sector] || SECTORS[DEFAULT_SECTOR];
   const current = state[sector] || monitorServerSnapshot[sector];
   const validHistory = cleanHistory(current.history || []);
-  const latest = validHistory[0] || { number: current.normalCurrent ?? DEFAULT_QUEUE_NUMBER, type: CALL_TYPES.NORMAL };
+  const latest = validHistory[0] || { number: current.normalCurrent ?? NO_PASSWORD, type: CALL_TYPES.NORMAL };
   const recentCalls = validHistory.slice(1, 5);
   const isPriority = latest.type === CALL_TYPES.PREFERENCIAL;
+  const hasNoPassword = latest.number === null || latest.number === undefined;
 
   return (
     <main className={styles.monitor}>
@@ -342,15 +352,19 @@ export default function MonitorPage({ params }) {
             className={`${styles.featured} ${isPriority ? styles.featuredPriority : ""}`}
           >
             <p>SENHA</p>
-            <strong>{formatMonitorNumber(latest?.number ?? DEFAULT_QUEUE_NUMBER)}</strong>
-            {isPriority ? (
+            <strong className={hasNoPassword ? styles.noPassword : ""}>
+              {formatMonitorNumber(latest?.number ?? NO_PASSWORD)}
+            </strong>
+            {hasNoPassword ? (
+              <span>NENHUMA SENHA CHAMADA</span>
+            ) : isPriority ? (
               <span className={styles.priorityTag}>
                 ATENDIMENTO PREFERENCIAL
               </span>
             ) : (
               <span>ATENDIMENTO</span>
             )}
-            <small>Dirija-se ao balcão de atendimento</small>
+            <small>{hasNoPassword ? "Aguardando primeiras chamadas" : "Dirija-se ao balcão de atendimento"}</small>
           </section>
 
           <section className={styles.recent}>
@@ -368,7 +382,7 @@ export default function MonitorPage({ params }) {
                         : styles.normalNumber
                     }
                   >
-                    {formatMonitorNumber(item?.number ?? DEFAULT_QUEUE_NUMBER)}
+                    {formatMonitorNumber(item?.number ?? NO_PASSWORD)}
                   </strong>
                   {item.type === "preferencial" ? (
                     <span className={styles.priorityTagSmall}>
@@ -382,7 +396,7 @@ export default function MonitorPage({ params }) {
               ))
             ) : (
               <p style={{ fontSize: "14px", color: "#888", marginTop: "12px" }}>
-                Aguardando chamadas anteriores...
+                Nenhuma senha chamada ainda neste setor.
               </p>
             )}
           </section>

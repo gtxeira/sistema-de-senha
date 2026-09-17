@@ -226,7 +226,7 @@ export default function PainelPage() {
           <div className={styles.queueNumber}>
             {current.history[0]
               ? formatQueueNumber(current.history[0].number, current.history[0].type)
-              : "N000"}
+              : formatQueueNumber(null, "normal")}
           </div>
           <p className={styles.callType}>
             {current.history[0]?.type === CALL_TYPES.PREFERENCIAL
