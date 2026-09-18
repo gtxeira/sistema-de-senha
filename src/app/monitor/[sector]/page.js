@@ -18,10 +18,11 @@ import {
   subscribeQueue,
 } from "../../../lib/queue";
 import {
-  SECTORS, DEFAULT_SECTOR, CALL_TYPES, TYPE_FIELDS, NEWS_CAROUSEL_INTERVAL, CLOCK_INTERVAL, HISTORY_LIMITS,
+  SECTORS, DEFAULT_SECTOR, CALL_TYPES, TYPE_FIELDS, NEWS_CAROUSEL_INTERVAL, HISTORY_LIMITS,
   NO_PASSWORD
 } from "../../../lib/constants.js";
 import { useQueueEvents } from "../../../lib/hooks/useQueueEvents";
+import { useServerClock } from "../../../lib/hooks/useServerClock.js";
 import {
   forceAnnounce,
   monitorSpeak,
@@ -152,23 +153,9 @@ export default function MonitorPage({ params }) {
   // Realtime events via SSE with polling fallback
   const { connected, lastCall } = useQueueEvents(sector);
 
-  const [time, setTime] = useState("");
+  const { timeString, dateString } = useServerClock();
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [calling, setCalling] = useState(false);
-
-  /* relógio */
-  useEffect(() => {
-    const t = setInterval(() => {
-      setTime(
-        new Intl.DateTimeFormat("pt-BR", {
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-        }).format(new Date()),
-      );
-    }, CLOCK_INTERVAL);
-    return () => clearInterval(t);
-  }, []);
 
   /* desbloqueia áudio no primeiro clique/tecla */
   useEffect(() => {
@@ -331,17 +318,10 @@ export default function MonitorPage({ params }) {
         <div className={styles.headerMeta}>
           <div className={styles.clock}>
             <Clock3 size={18} />
-            {time}
+            {timeString}
           </div>
           <div className={styles.date}>
-            {new Intl.DateTimeFormat("pt-BR", {
-              weekday: "long",
-              day: "2-digit",
-              month: "long",
-              year: "numeric",
-            })
-              .format(new Date())
-              .toUpperCase()}
+            {dateString}
           </div>
         </div>
       </header>

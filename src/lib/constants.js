@@ -81,8 +81,10 @@ export const NEWS_BUCKET = "news-images";
 export const NEWS_DIR = "public/news";
 export const NEWS_MAX_ACTIVE = 10;
 
-// ── Locale ──
+// ── Locale / Timezone ──
 export const LOCALE = "pt-BR";
+export const APP_TIMEZONE = "America/Sao_Paulo";
+export const SERVER_TIME_SYNC_INTERVAL = 60000; // 60s entre sincronizações com servidor
 
 // ── Draft ──
 export const DRAFT_PREFIX = "draft-";
@@ -116,6 +118,7 @@ export const API_ROUTES = {
   AUTH: "/api/auth",
   LOGIN: "/login",
   HOME: "/home",
+  TIME: "/api/time",
 };
 
 // ── Navegação ──
