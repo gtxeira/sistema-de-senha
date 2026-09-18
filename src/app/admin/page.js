@@ -301,8 +301,7 @@ export default function AdminPage() {
             <div className={styles.resetAllInfo}>
               <AlertTriangle size={16}/>
               <span>
-                Resetar todos os setores de uma vez — numeração volta para {MIN_QUEUE_NUMBER.toString().padStart(3, "0")}
-                em todos.
+                Resetar todos os setores de uma vez — numeração volta para {MIN_QUEUE_NUMBER.toString().padStart(3, "0")} em todos.
               </span>
             </div>
             <button
