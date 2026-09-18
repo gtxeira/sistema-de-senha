@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => {
       environment: "happy-dom",
       globals: true,
       include: ["tests/**/*.test.{js,jsx}"],
-      setupFiles: ["./tests/setup.js", "./tests/integration/setup.js"],
+      setupFiles: ["./tests/setup.js"],
       fileParallelism: false,
 
       env: {
@@ -37,18 +37,11 @@ export default defineConfig(({ mode }) => {
         },
       },
 
-      // Override environment for integration tests (need Node.js for Supabase client)
-      environmentMatchGlobs: [
-        ["tests/integration/**", "node"],
-      ],
-
       coverage: {
         provider: "v8",
         include: [
           "src/lib/repositories/**/*.js",
           "src/lib/queue-server.js",
-          "src/lib/supabase.js",
-          "src/lib/supabase-admin.js",
           "src/lib/prisma-client.js",
           "src/lib/event-manager.js",
           "src/lib/hooks/**/*.js",

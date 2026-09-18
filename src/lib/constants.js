@@ -105,11 +105,6 @@ export const TTS_POST_BEEP_BUFFER = 100;
 export const TTS_SPEAK_DELAY = 100;
 export const TTS_PRE_SPEECH_PAUSE = 250;
 
-// ── Supabase ──
-export const SUPABASE_AUTH_OPTIONS = {
-  auth: { persistSession: false, autoRefreshToken: false },
-};
-
 // ── Rotas ──
 export const API_ROUTES = {
   QUEUE_CALL: "/api/queue/call",
