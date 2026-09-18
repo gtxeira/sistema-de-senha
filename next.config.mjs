@@ -6,6 +6,13 @@ const nextConfig = {
   images: {
     remotePatterns: [
       {
+        // Garage / S3 compatível local
+        protocol: "http",
+        hostname: "localhost",
+        port: "3900",
+        pathname: "/**",
+      },
+      {
         // Projeto de DEV
         protocol: "https",
         hostname: "nrjbkcniuyvdailmqcta.supabase.co",

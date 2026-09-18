@@ -23,6 +23,12 @@ export default defineConfig(({ mode }) => {
       env: {
         DATABASE_URL: env.DATABASE_URL_TEST,
         NEWS_DIR: join(root, "tests", "fixtures", "news"),
+        S3_ENDPOINT: env.S3_ENDPOINT_TEST,
+        S3_REGION: env.S3_REGION_TEST,
+        S3_ACCESS_KEY: env.S3_ACCESS_KEY_TEST,
+        S3_SECRET_KEY: env.S3_SECRET_KEY_TEST,
+        S3_BUCKET: env.S3_BUCKET_TEST,
+        S3_PUBLIC_URL: env.S3_PUBLIC_URL_TEST,
       },
 
       server: {

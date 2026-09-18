@@ -1,5 +1,9 @@
 import { beforeEach, vi } from "vitest";
 
+if (typeof window === "undefined") {
+  // Skip DOM-only setup in node environment (e.g. integration tests)
+} else {
+
 function makeLocalStorage() {
   const store = new Map();
   return {
@@ -86,3 +90,5 @@ beforeEach(() => {
 });
 
 global.__localStorage = localStorage;
+
+} // end else (window defined)
