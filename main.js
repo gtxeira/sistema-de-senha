@@ -9,7 +9,7 @@ function createWindow() {
     height: 800,
     title: "Sistema de Atendimento",
     autoHideMenuBar: true,
-    icon: path.join(__dirname, "public/favicon.ico"),
+    icon: path.join(__dirname, "src/app/icon.ico"),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,

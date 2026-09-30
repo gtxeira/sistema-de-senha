@@ -21,6 +21,7 @@ tests/fixtures/news/*
 
 # production
 /build
+/dist
 
 # misc
 .DS_Store
