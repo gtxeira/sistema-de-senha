@@ -30,7 +30,7 @@ function req(url, extra = {}) {
 /**
  * Matriz de autorização das rotas de API.
  *
- * `middleware.js` libera todo `/api`, então cada handler precisa se proteger
+ * `proxy.js` libera todo `/api`, então cada handler precisa se proteger
  * sozinho — esta é a rede de segurança contra regressões nessa barreira.
  */
 describe("Autorização das rotas de API", () => {

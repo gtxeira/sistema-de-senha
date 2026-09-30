@@ -11,8 +11,8 @@ vi.mock("@/auth", () => ({
   },
 }));
 
-// Import the default export (auth-wrapped middleware)
-const { default: middleware } = await import("@/middleware");
+// Import the default export (auth-wrapped proxy)
+const { default: proxy } = await import("@/proxy");
 
 function makeRequest(pathname, cookieValue) {
   const url = `http://localhost${pathname}`;
@@ -33,52 +33,52 @@ function locationHeader(res) {
   return res.headers.get("location");
 }
 
-describe("middleware", () => {
+describe("proxy", () => {
   it("redireciona raiz para /login", () => {
-    const res = middleware(makeRequest("/"));
+    const res = proxy(makeRequest("/"));
     expect(res.status).toBe(307);
     expect(locationHeader(res)).toMatch(/\/login$/);
   });
 
   it("ignora rotas estáticas e _next", () => {
-    const res = middleware(makeRequest("/_next/static/chunk.js"));
+    const res = proxy(makeRequest("/_next/static/chunk.js"));
     expect(locationHeader(res)).toBeNull();
 
-    const api = middleware(makeRequest("/api/anything"));
+    const api = proxy(makeRequest("/api/anything"));
     expect(locationHeader(api)).toBeNull();
   });
 
   it("ignora qualquer pathname que contenha ponto (estáticos)", () => {
     for (const p of ["/logo.png", "/favicon.ico", "/manifest.json", "/home/arquivo.css"]) {
-      const res = middleware(makeRequest(p));
+      const res = proxy(makeRequest(p));
       expect(locationHeader(res)).toBeNull();
     }
   });
 
   it("deixa rotas públicas passarem", () => {
-    const res = middleware(makeRequest("/login"));
+    const res = proxy(makeRequest("/login"));
     expect(locationHeader(res)).toBeNull();
   });
 
   it("permite rota protegida com sessão autenticada", () => {
-    const res = middleware(makeRequest("/home", "valid-token"));
+    const res = proxy(makeRequest("/home", "valid-token"));
     expect(locationHeader(res)).toBeNull();
   });
 
   it("redireciona rota protegida sem sessão para /login", () => {
-    const res = middleware(makeRequest("/home"));
+    const res = proxy(makeRequest("/home"));
     expect(res.status).toBe(307);
     expect(locationHeader(res)).toMatch(/\/login$/);
   });
 
   it("redireciona rotas desconhecidas para /login", () => {
-    const res = middleware(makeRequest("/qualquer-outra", "valid-token"));
+    const res = proxy(makeRequest("/qualquer-outra", "valid-token"));
     expect(locationHeader(res)).toMatch(/\/login$/);
   });
 
   it("protege /admin e /monitor", () => {
     for (const p of ["/admin", "/monitor/farmacia"]) {
-      const res = middleware(makeRequest(p));
+      const res = proxy(makeRequest(p));
       expect(locationHeader(res)).toMatch(/\/login$/);
     }
   });

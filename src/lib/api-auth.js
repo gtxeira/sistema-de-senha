@@ -5,7 +5,7 @@ import { ROLES } from "./constants.js";
 /**
  * Authorization helpers for route handlers.
  *
- * `middleware.js` skips every `/api` path, so these are the only barrier for
+ * `proxy.js` skips every `/api` path, so these are the only barrier for
  * API routes — each handler must call one of these explicitly.
  *
  * `auth()` in a route decodes the session from the session cookie; there is no

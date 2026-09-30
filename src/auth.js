@@ -4,12 +4,14 @@ import bcrypt from "bcryptjs";
 import { USERNAME_REGEX, DEFAULT_GUICHE } from "./lib/constants.js";
 import { initials } from "./lib/repositories/utils.js";
 
-// O client gerado pelo Prisma 7 importa `node:path`/`node:url`, que só existem no
-// runtime Node — e `src/middleware.js` importa este módulo, rodando no Edge Runtime
-// do Next, onde eles não são suportados (todo request retornaria 500).
-// O middleware apenas decodifica o cookie de sessão e nunca consulta o banco, então
-// o Prisma é carregado sob demanda em `authorize()`, que só é chamado na rota de
-// login (runtime Node). O cache evita recriar o client a cada tentativa de login.
+// O client gerado pelo Prisma 7 importa `node:path`/`node:url`, que não existem no
+// Edge Runtime. `src/proxy.js` importa este módulo antes de cada request: aqui dentro
+// ele nunca é usado — o proxy só decodifica o cookie de sessão, e consultar o banco
+// ali seria desnecessário. Carregá-lo sob demanda em `authorize()` (único ponto que
+// usa o banco, chamado só na rota de login) também evita avaliar o client em qualquer
+// runtime que não seja o Node: foi exatamente isso que devolveu 500 em toda a
+// aplicação antes da migração `middleware` -> `proxy`.
+// O cache evita recriar o client a cada tentativa de login.
 let prismaPromise;
 function getPrisma() {
   prismaPromise ??= Promise.all([

@@ -46,7 +46,7 @@ export default defineConfig(({ mode }) => {
           "src/lib/event-manager.js",
           "src/lib/hooks/**/*.js",
           "src/app/api/**/*.js",
-          "src/middleware.js",
+          "src/proxy.js",
         ],
         exclude: [
           "tests/**",
