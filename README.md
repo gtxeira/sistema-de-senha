@@ -2,19 +2,54 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+First, install dependencies and run the development server:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
+bun install
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Docker
+
+A segmentação de ambiente usa 3 arquivos no padrão moderno do Compose:
+
+| Arquivo | Papel |
+|---|---|
+| `compose.yaml` | Base comum (Postgres, Garage, app) — porta 3000, sem portas de infra publicadas |
+| `compose.override.yaml` | Dev — **carregado automaticamente** pelo `docker compose up` local |
+| `compose.prod.yaml` | Produção — só entra com `-f` explícito |
+
+### Dev (local)
+
+```bash
+docker compose up -d --build   # ou: bun run docker:up
+```
+
+- Aplicação (hot reload via bind mount): http://localhost:3001
+- Postgres: `localhost:5432` · Garage S3: `http://localhost:3900` (API) / `http://localhost:3902` (público)
+
+Se estiver desenvolvendo no Windows (sem WSL) ou Mac, defina um arquivo compose.local.yaml na raiz do projeto e adicione a configuração abaixo para isolar as pastas dentro do contêiner:
+
+```yaml
+services:
+  app:
+    volumes:
+      - .:/app
+      - app_dev_node_modules:/app/node_modules
+      - app_dev_next:/app/.next
+```
+
+### Produção (servidor)
+
+```bash
+docker compose -f compose.yaml -f compose.prod.yaml up -d --build   # ou: bun run docker:up:prod
+```
+
+> ⚠️ **Nunca rode `docker compose up` sem `-f` no servidor** — o `compose.override.yaml` (dev) seria carregado junto.
+
+Migrations do Prisma rodam automaticamente na inicialização do container da aplicação (`docker-entrypoint.sh`); para pulá-las, defina `SKIP_MIGRATES=1`. Fora do container: `bun run db:migrate:deploy`.
+
+Imagem de produção: tag `sistema-de-senha` (a de dev usa `sistema-de-senha-app`).
 
 ## Supabase
 
@@ -30,15 +65,15 @@ Copy `.env.example` to `.env.local` and fill in the URL, anon key and service ro
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: chave publicável/anon do projeto de produção.
    - `SUPABASE_SERVICE_ROLE_KEY`: chave secreta/service role do projeto de produção, sem o prefixo `NEXT_PUBLIC_`.
 
-3. Faça o deploy com Node.js 22 ou superior:
+3. Faça o deploy com Bun (ou Node.js 22+):
 
    ```bash
-   npm ci
-   npm run build
-   npm start
+   bun install --frozen-lockfile
+   bun run build
+   bun start
    ```
 
-   Em Vercel, use `npm run build` como Build Command; o Start Command é gerenciado pela plataforma. Em outro servidor, mantenha `npm start` em execução e encaminhe a porta definida por `PORT`.
+   Em Vercel, use `bun run build` como Build Command; o Start Command é gerenciado pela plataforma. Em outro servidor, mantenha `bun start` em execução e encaminhe a porta definida por `PORT`. As migrations de banco não rodam no build: use `bun run db:migrate:deploy` (ou o container Docker, que as executa no startup).
 
 4. Crie os usuários no projeto de produção e confira o login, chamada de senha, monitoramento e upload de notícia. As variáveis `NEXT_PUBLIC_*` são incorporadas durante o build, portanto uma alteração nelas exige um novo deploy.
 

@@ -1,0 +1,26 @@
+services:
+  app:
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-sistemadesenha}?schema=public
+      S3_ENDPOINT: http://garage:3900
+      AUTH_TRUST_HOST: ${AUTH_TRUST_HOST:-true}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      garage:
+        condition: service_started
+    healthcheck:
+      test: [
+        "CMD",
+        "bun", "-e",
+        "fetch('http://localhost:3000').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s

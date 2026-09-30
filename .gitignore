@@ -48,4 +48,5 @@ next-env.d.ts
 /.idea/php.xml
 /.idea/sistemadesenha.iml
 /.idea/vcs.xml
-/bun.lock
+
+compose.local.*

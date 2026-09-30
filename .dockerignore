@@ -20,6 +20,11 @@ pnpm-debug.log*
 .idea
 .DS_Store
 
+tests
+garage
+compose*.yaml
+Dockerfile
+
 tmp
 temp
 data

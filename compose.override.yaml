@@ -1,15 +1,27 @@
 services:
+  app:
+    build:
+      context: .
+      target: dev
+    volumes:
+      - .:/app
+
   postgres:
     image: postgres:18-alpine
     restart: unless-stopped
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-sistemadesenha}
+      POSTGRES_DB: ${POSTGRES_DB:-sistema_de_senha}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
       - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-sistema_de_senha}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   garage:
     image: dxflrs/garage:v2.4.1
@@ -28,6 +40,9 @@ services:
       - garage-data:/var/lib/garage/data
 
 volumes:
+  app_dev_node_modules:
+  app_dev_next:
   pgdata:
   garage-meta:
   garage-data:
+
