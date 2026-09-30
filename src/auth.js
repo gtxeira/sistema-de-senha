@@ -1,11 +1,28 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { USERNAME_REGEX, DEFAULT_GUICHE } from "./lib/constants.js";
 import { initials } from "./lib/repositories/utils.js";
 
-const prisma = new PrismaClient();
+// O client gerado pelo Prisma 7 importa `node:path`/`node:url`, que só existem no
+// runtime Node — e `src/middleware.js` importa este módulo, rodando no Edge Runtime
+// do Next, onde eles não são suportados (todo request retornaria 500).
+// O middleware apenas decodifica o cookie de sessão e nunca consulta o banco, então
+// o Prisma é carregado sob demanda em `authorize()`, que só é chamado na rota de
+// login (runtime Node). O cache evita recriar o client a cada tentativa de login.
+let prismaPromise;
+function getPrisma() {
+  prismaPromise ??= Promise.all([
+    import("./generated/prisma/client"),
+    import("@prisma/adapter-pg"),
+  ]).then(
+    ([{ PrismaClient }, { PrismaPg }]) =>
+      new PrismaClient({
+        adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+      })
+  );
+  return prismaPromise;
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: {
@@ -25,6 +42,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!USERNAME_REGEX.test(username) || !password) return null;
 
+        const prisma = await getPrisma();
         const user = await prisma.users.findUnique({
           where: { username },
         });

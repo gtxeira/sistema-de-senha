@@ -32,6 +32,7 @@ COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile --production
 
 # Client do Prisma gerado para o schema versionado (migrations rodam no startup)
+COPY prisma.config.mjs ./
 COPY prisma ./prisma
 RUN bunx prisma generate
 

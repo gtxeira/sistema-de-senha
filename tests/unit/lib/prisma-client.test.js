@@ -1,10 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@prisma/client", () => ({
+// O client gerado (prisma-client) importa o runtime real do Prisma; o adapter
+// também é substituído para o teste não depender de um DATABASE_URL válido.
+vi.mock("@/generated/prisma/client", () => ({
   PrismaClient: vi.fn(),
 }));
 
-import { PrismaClient } from "@prisma/client";
+vi.mock("@prisma/adapter-pg", () => ({
+  // função comum (não arrow): o código real instancia com `new`
+  PrismaPg: vi.fn(function PrismaPg() {
+    return { __adapter: true };
+  }),
+}));
+
+import { PrismaClient } from "@/generated/prisma/client";
 
 beforeEach(() => {
   PrismaClient.mockReset();

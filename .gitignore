@@ -23,6 +23,9 @@ tests/fixtures/news/*
 /build
 /dist
 
+# prisma-client gerado (prisma generate)
+/src/generated/
+
 # misc
 .DS_Store
 *.pem

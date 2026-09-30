@@ -18,13 +18,13 @@
     "test:all": "vitest run",
     "electron:dev": "electron .",
     "dist": "electron-builder --win nsis",
-    "db:migrate": "prisma migrate dev",
+    "db:migrate": "prisma migrate dev && prisma generate",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
-    "db:reset": "prisma migrate reset --force",
-    "db:migrate:test": "dotenv -e .env.test -- prisma migrate dev",
+    "db:reset": "prisma migrate reset --force && prisma db seed",
+    "db:migrate:test": "dotenv -e .env.test -- prisma migrate dev && prisma generate",
     "db:seed:test": "dotenv -e .env.test -- prisma db seed",
-    "db:reset:test": "dotenv -e .env.test -- prisma migrate reset --force",
+    "db:reset:test": "dotenv -e .env.test -- prisma migrate reset --force && dotenv -e .env.test -- prisma db seed",
     "docker:up": "docker compose up -d --build",
     "docker:down": "docker compose down",
     "docker:up:prod": "docker compose -f compose.yaml -f compose.prod.yaml up -d --build",
@@ -32,12 +32,13 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1144.0",
-    "@prisma/client": "^5.22.0",
+    "@prisma/adapter-pg": "7.10.0",
+    "@prisma/client": "7.10.0",
     "bcryptjs": "^3.0.3",
     "lucide-react": "^1.49.0",
     "next": "^16.3.8",
     "next-auth": "^5.0.0-beta.32",
-    "prisma": "^5.22.0",
+    "prisma": "7.10.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
@@ -69,8 +70,5 @@
       ],
       "icon": "assets/icon.svg"
     }
-  },
-  "prisma": {
-    "seed": "bun prisma/seed.js"
   }
 }
