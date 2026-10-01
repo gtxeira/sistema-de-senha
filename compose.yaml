@@ -9,11 +9,6 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-sistemadesenha}
       S3_ENDPOINT: http://garage:3900
       AUTH_TRUST_HOST: ${AUTH_TRUST_HOST:-true}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      garage:
-        condition: service_started
     healthcheck:
       test: [
         "CMD",

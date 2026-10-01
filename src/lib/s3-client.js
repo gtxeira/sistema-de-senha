@@ -2,14 +2,12 @@ import {
   S3Client,
   PutObjectCommand,
   DeleteObjectCommand,
-  ListObjectsV2Command,
-  CreateBucketCommand, HeadObjectCommand,
+  HeadObjectCommand,
 } from "@aws-sdk/client-s3";
 
 const getEnv = () => process.env;
 
 let client = null;
-let bucketEnsured = false;
 
 function getS3Client() {
   if (client) return client;
@@ -35,41 +33,6 @@ function getS3Client() {
   return client;
 }
 
-/**
- * Ensure the configured bucket exists, creating it if necessary.
- * Uses ListObjectsV2 instead of HeadBucket for reliable 404 detection
- * across S3-compatible services (HeadBucket returns 403 for non-existent
- * buckets in many implementations).
- * Runs once per process — subsequent calls are no-ops.
- */
-async function ensureBucketExists() {
-  if (bucketEnsured) return;
-
-  const s3 = getS3Client();
-  const bucket = getEnv().S3_BUCKET || "news-images";
-
-  try {
-    await s3.send(new ListObjectsV2Command({ Bucket: bucket, MaxKeys: 1 }));
-  } catch (err) {
-    const status = err.$metadata?.httpStatusCode;
-    if (status === 404) {
-      try {
-        await s3.send(new CreateBucketCommand({ Bucket: bucket }));
-      } catch (createErr) {
-        console.warn(
-          `[s3] Não foi possível criar o bucket "${bucket}": ${createErr.message}`
-        );
-      }
-    } else {
-      console.warn(
-        `[s3] Erro ao verificar bucket "${bucket}" (HTTP ${status}): ${err.message}`
-      );
-    }
-  }
-
-  bucketEnsured = true;
-}
-
 function getS3Bucket() {
   return getEnv().S3_BUCKET || "news-images";
 }
@@ -86,7 +49,6 @@ function getS3PublicUrl() {
  * @returns {Promise<void>}
  */
 export async function uploadToS3(key, buffer, contentType) {
-  await ensureBucketExists();
   const s3 = getS3Client();
   await s3.send(
     new PutObjectCommand({

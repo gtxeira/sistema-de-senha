@@ -4,7 +4,7 @@
   "private": true,
   "main": "main.js",
   "scripts": {
-    "dev": "next dev",
+    "dev": "bun --inspect=0.0.0.0:9229 --bun ./node_modules/next/dist/bin/next dev",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint .",
@@ -28,7 +28,8 @@
     "docker:up": "docker compose up -d --build",
     "docker:down": "docker compose down",
     "docker:up:prod": "docker compose -f compose.yaml -f compose.prod.yaml up -d --build",
-    "docker:down:prod": "docker compose -f compose.yaml -f compose.prod.yaml down"
+    "docker:down:prod": "docker compose -f compose.yaml -f compose.prod.yaml down",
+    "setup:garage": "bun ./garage/setup-garage.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1144.0",

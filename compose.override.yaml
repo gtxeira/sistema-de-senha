@@ -3,8 +3,17 @@ services:
     build:
       context: .
       target: dev
+    ports:
+      - "9229:9229"
+    environment:
+      - NODE_OPTIONS=--inspect=0.0.0.0:9229
     volumes:
       - .:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      garage:
+        condition: service_started
 
   postgres:
     image: postgres:18-alpine
