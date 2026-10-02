@@ -4,17 +4,17 @@ db_engine = "sqlite"
 
 replication_factor = 1
 
-rpc_bind_addr = "[::]:3901"
-rpc_public_addr = "127.0.0.1:3901"
+rpc_bind_addr = "0.0.0.0:3901"
+rpc_public_addr = "0.0.0.0:3901"
 rpc_secret = "da54ee0ea5aefb5a0bfcced36c13e513725ee00b4e66172aff5acc40e561ba97"
 
 [s3_api]
 s3_region = "garage"
-api_bind_addr = "[::]:3900"
-root_domain = ".s3.garage.localhost"
+api_bind_addr = "0.0.0.0:3900"
+root_domain = ".localhost"
 
 [s3_web]
-bind_addr = "[::]:3902"
+bind_addr = "0.0.0.0:3902"
 root_domain = ".localhost"
 index = "index.html"
 

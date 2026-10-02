@@ -25,7 +25,7 @@ function getS3Client() {
 
   client = new S3Client({
     endpoint,
-    region: env.S3_REGION || "garage",
+    region: env.S3_REGION || "us-east-1",
     forcePathStyle: true,
     credentials: { accessKeyId, secretAccessKey },
   });

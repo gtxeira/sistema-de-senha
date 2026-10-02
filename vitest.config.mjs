@@ -1,11 +1,18 @@
 import { defineConfig } from "vitest/config";
-import { loadEnv } from "vite";
 import { fileURLToPath, URL } from "node:url";
-import { join } from "node:path";
+import { resolve } from "node:path";
+import { checkIsRunningInDocker } from "./scripts/check-is-running-in-docker.js";
+import { loadEnvFile } from "./scripts/load-env-file.js";
 
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), "");
+export default defineConfig(() => {
   const root = fileURLToPath(new URL(".", import.meta.url));
+  const testEnv = loadEnvFile(resolve(root, ".env.test"));
+
+  const isDocker = checkIsRunningInDocker();
+
+  const s3Endpoint = isDocker
+    ? testEnv.S3_ENDPOINT.replace("localhost", "garage")
+    : testEnv.S3_ENDPOINT;
 
   return {
     resolve: {
@@ -21,14 +28,13 @@ export default defineConfig(({ mode }) => {
       fileParallelism: false,
 
       env: {
-        DATABASE_URL: env.DATABASE_URL_TEST,
-        NEWS_DIR: join(root, "tests", "fixtures", "news"),
-        S3_ENDPOINT: env.S3_ENDPOINT_TEST,
-        S3_REGION: env.S3_REGION_TEST,
-        S3_ACCESS_KEY: env.S3_ACCESS_KEY_TEST,
-        S3_SECRET_KEY: env.S3_SECRET_KEY_TEST,
-        S3_BUCKET: env.S3_BUCKET_TEST,
-        S3_PUBLIC_URL: env.S3_PUBLIC_URL_TEST,
+        DATABASE_URL: testEnv.DATABASE_URL,
+        S3_ENDPOINT: s3Endpoint,
+        S3_REGION: testEnv.S3_REGION,
+        S3_ACCESS_KEY: testEnv.S3_ACCESS_KEY,
+        S3_SECRET_KEY: testEnv.S3_SECRET_KEY,
+        S3_BUCKET: testEnv.S3_BUCKET,
+        S3_PUBLIC_URL: testEnv.S3_PUBLIC_URL,
       },
 
       server: {

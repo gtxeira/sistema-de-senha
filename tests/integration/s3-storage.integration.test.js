@@ -1,12 +1,35 @@
 // @vitest-environment node
 import { afterAll, describe, expect, it } from "vitest";
 import { deleteFromS3, extractKeyFromUrl, getPublicUrl, uploadToS3 } from "@/lib/s3-client.js";
+import { checkIsRunningInDocker } from "../../scripts/check-is-running-in-docker.js";
 
 const TEST_PREFIX = "integration-test/";
 let createdKeys = [];
 
 function makeBuffer(content = "test-binary-data", size = 256) {
   return Buffer.alloc(size, content);
+}
+
+/**
+ Helper para realizar fetch nas URLs públicas do Garage dentro da rede Docker,
+ redirecionando a chamada para o container 'garage' e mantendo o VHost no header Host.
+ */
+async function fetchPublicUrl(url, init = {}) {
+  const publicUrl = new URL(url);
+  const hostHeader = publicUrl.host; // ex: "news-images-test.localhost:3902"
+
+  // Reescreve o hostname para o serviço do container Docker
+  if (checkIsRunningInDocker()) {
+    publicUrl.hostname = "garage";
+  }
+
+  const headers = new Headers(init.headers || {});
+  headers.set("Host", hostHeader);
+
+  return fetch(publicUrl.toString(), {
+    ...init,
+    headers,
+  });
 }
 
 afterAll(async () => {
@@ -29,7 +52,8 @@ describe("S3 storage — integration", () => {
       await uploadToS3(key, buffer, "application/octet-stream");
 
       const url = getPublicUrl(key);
-      const res = await fetch(url);
+      const res = await fetchPublicUrl(url, { method: "GET" });
+
       expect(res.ok).toBe(true);
 
       const body = await res.arrayBuffer();
@@ -44,7 +68,7 @@ describe("S3 storage — integration", () => {
       await uploadToS3(key, buffer, "image/png");
 
       const url = getPublicUrl(key);
-      const res = await fetch(url, { method: "HEAD" });
+      const res = await fetchPublicUrl(url, { method: "HEAD" });
       expect(res.ok).toBe(true);
       expect(res.headers.get("content-type")).toMatch(/image\/png/);
     });
@@ -63,8 +87,8 @@ describe("S3 storage — integration", () => {
       expect(url1).not.toBe(url2);
 
       const [res1, res2] = await Promise.all([
-        fetch(url1),
-        fetch(url2),
+        fetchPublicUrl(url1),
+        fetchPublicUrl(url2),
       ]);
       expect(res1.ok).toBe(true);
       expect(res2.ok).toBe(true);
@@ -78,12 +102,12 @@ describe("S3 storage — integration", () => {
       await uploadToS3(key, buffer, "application/octet-stream");
 
       const urlBefore = getPublicUrl(key);
-      const resBefore = await fetch(urlBefore, { method: "HEAD" });
+      const resBefore = await fetchPublicUrl(urlBefore, { method: "HEAD" });
       expect(resBefore.ok).toBe(true);
 
       await deleteFromS3(key);
 
-      const resAfter = await fetch(urlBefore, { method: "HEAD" });
+      const resAfter = await fetchPublicUrl(urlBefore, { method: "HEAD" });
       expect(resAfter.ok).toBe(false);
     });
 
@@ -128,7 +152,7 @@ describe("S3 storage — integration", () => {
       await uploadToS3(key, makeBuffer(), "image/jpeg");
 
       const url = getPublicUrl(key);
-      const res = await fetch(url, { method: "HEAD" });
+      const res = await fetchPublicUrl(url, { method: "HEAD" });
       expect(res.ok).toBe(true);
       expect(res.headers.get("content-type")).toMatch(/image\/jpeg/);
     });
@@ -140,7 +164,7 @@ describe("S3 storage — integration", () => {
       await uploadToS3(key, makeBuffer(), "image/png");
 
       const url = getPublicUrl(key);
-      const res = await fetch(url, { method: "HEAD" });
+      const res = await fetchPublicUrl(url, { method: "HEAD" });
       expect(res.ok).toBe(true);
       expect(res.headers.get("content-type")).toMatch(/image\/png/);
     });
@@ -152,7 +176,7 @@ describe("S3 storage — integration", () => {
       await uploadToS3(key, makeBuffer(), "image/webp");
 
       const url = getPublicUrl(key);
-      const res = await fetch(url, { method: "HEAD" });
+      const res = await fetchPublicUrl(url, { method: "HEAD" });
       expect(res.ok).toBe(true);
       expect(res.headers.get("content-type")).toMatch(/image\/webp/);
     });

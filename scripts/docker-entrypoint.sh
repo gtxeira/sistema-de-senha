@@ -6,7 +6,7 @@ set -e
 if [ "${SKIP_MIGRATES:-0}" != "1" ]; then
   echo "[entrypoint] Aplicando migrations do Prisma..."
   attempt=1
-  until bunx prisma migrate deploy; do
+  until bun prisma migrate deploy; do
     if [ "$attempt" -ge 5 ]; then
       echo "[entrypoint] Falha ao aplicar migrations após $attempt tentativas." >&2
       exit 1

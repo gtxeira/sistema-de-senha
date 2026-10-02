@@ -31,3 +31,7 @@ data
 uploads
 #public/uploads
 #public/news
+
+dist
+
+src/generated
