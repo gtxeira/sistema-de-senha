@@ -7,13 +7,10 @@
   "scripts": {
     "preinstall": "npx only-allow bun",
     "postinstall": "prisma generate",
-
     "dev": "bun --inspect=0.0.0.0:9229 --bun ./node_modules/next/dist/bin/next dev",
     "build": "prisma generate && next build",
     "start": "next start",
-
     "lint": "eslint .",
-
     "test": "vitest",
     "test:changed": "vitest --changed",
     "test:failed": "vitest --onlyFailed",
@@ -22,10 +19,8 @@
     "test:integration": "vitest run tests/integration/",
     "test:coverage": "vitest run --coverage",
     "test:all": "vitest run",
-
     "electron:dev": "electron .",
     "dist": "electron-builder --win nsis",
-
     "db:migrate": "prisma migrate dev && prisma generate",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
@@ -33,7 +28,6 @@
     "db:migrate:test": "dotenv -e .env.test -o -- prisma migrate dev && prisma generate",
     "db:seed:test": "dotenv -e .env.test -o -- prisma db seed",
     "db:reset:test": "dotenv -e .env.test -o -- prisma migrate reset --force && dotenv -e .env.test -o -- prisma db seed",
-
     "garage:setup": "bun scripts/setup-garage.js",
     "garage:clear": "bun scripts/clear-garage.js"
   },
@@ -56,6 +50,7 @@
     "electron-builder": "26.17.0",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.3.8",
+    "eslint-plugin-no-relative-import-paths": "^1.7.3",
     "happy-dom": "^20.14.5",
     "vitest": "^5.0.3"
   },

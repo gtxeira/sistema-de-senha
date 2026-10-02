@@ -4,8 +4,8 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Monitor, Settings2, Headphones } from "lucide-react";
-import { getSessionSnapshot, SECTORS } from "../../lib/queue";
-import { ROLES } from "../../lib/constants.js";
+import { getSessionSnapshot, SECTORS } from "@/lib/queue";
+import { ROLES } from "@/lib/constants.js";
 import styles from "./Home.module.css";
 import { SidebarLayout } from "@/components/SidebarLayout/SidebarLayout";
 

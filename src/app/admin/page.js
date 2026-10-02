@@ -14,7 +14,7 @@ import {
   saveQueueState,
   subscribeQueue,
   subscribeSession,
-} from "../../lib/queue";
+} from "@/lib/queue";
 import {
   SECTORS,
   ROLES,
@@ -25,7 +25,7 @@ import {
   USERNAME_REGEX,
   USERNAME_REGEX_LABEL,
   NO_PASSWORD,
-} from "../../lib/constants.js";
+} from "@/lib/constants.js";
 import styles from "./Admin.module.css";
 import { SidebarLayout } from "@/components/SidebarLayout/SidebarLayout";
 

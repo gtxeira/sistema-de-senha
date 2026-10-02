@@ -10,9 +10,9 @@ import {
   getServerSessionSnapshot,
   getSessionSnapshot,
   subscribeSession,
-} from "../../lib/queue";
-import { SECTORS, ROLES, CALL_TYPES, PAGE_SIZES, DEFAULT_SECTOR } from "../../lib/constants.js";
-import { SidebarLayout, sidebarStyles } from "../../components/SidebarLayout/SidebarLayout";
+} from "@/lib/queue";
+import { SECTORS, ROLES, CALL_TYPES, PAGE_SIZES, DEFAULT_SECTOR } from "@/lib/constants.js";
+import { SidebarLayout, sidebarStyles } from "@/components/SidebarLayout/SidebarLayout";
 import styles from "./Historico.module.css";
 
 const ITEMS_PER_PAGE = PAGE_SIZES.historico;
@@ -32,7 +32,12 @@ export default function HistoricoPage() {
     getServerSessionSnapshot
   );
 
-  const [activeSector, setActiveSector] = useState(DEFAULT_SECTOR);
+  const initialSector = (session?.role !== ROLES.ADMIN && session?.sector)
+    ? session.sector
+    : DEFAULT_SECTOR;
+
+  const [activeSector, setActiveSector] = useState(initialSector);
+
   const [filterDays, setFilterDays] = useState("30");
   const [filterType, setFilterType] = useState("");
   const [stats, setStats]           = useState(null);
@@ -43,12 +48,6 @@ export default function HistoricoPage() {
     const stored = getSessionSnapshot();
     if (!stored) router.push("/login");
   }, [router]);
-
-  useEffect(() => {
-    if (session?.role !== ROLES.ADMIN && session?.sector) {
-      setActiveSector(session.sector);
-    }
-  }, [session?.role, session?.sector]);
 
   const fetchStats = (overrides = {}) => {
     const days   = overrides.days !== undefined ? overrides.days : filterDays;

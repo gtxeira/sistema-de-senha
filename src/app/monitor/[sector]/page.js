@@ -18,20 +18,20 @@ import {
   reconcileQueueFromCalls,
   saveQueueState,
   subscribeQueue,
-} from "../../../lib/queue";
+} from "@/lib/queue";
 import {
   SECTORS, DEFAULT_SECTOR, CALL_TYPES, TYPE_FIELDS, NEWS_CAROUSEL_INTERVAL, HISTORY_LIMITS,
   NO_PASSWORD
-} from "../../../lib/constants.js";
-import { useQueueEvents } from "../../../lib/hooks/useQueueEvents";
-import { useServerClock } from "../../../lib/hooks/useServerClock.js";
+} from "@/lib/constants.js";
+import { useQueueEvents } from "@/lib/hooks/useQueueEvents";
+import { useServerClock } from "@/lib/hooks/useServerClock.js";
 import {
   forceAnnounce,
   monitorSpeak,
   registerMonitorSpeaker,
   speakText,
   unlockSpeech,
-} from "../../../lib/speech";
+} from "@/lib/speech";
 import styles from "./Monitor.module.css";
 
 /* ─── notícias ─── */

@@ -13,8 +13,8 @@ import {
   Monitor,
   Settings2,
 } from "lucide-react";
-import { SECTORS, SESSION_KEY } from "../../lib/constants.js";
-import { useServerClock } from "../../lib/hooks/useServerClock.js";
+import { SECTORS, SESSION_KEY } from "@/lib/constants.js";
+import { useServerClock } from "@/lib/hooks/useServerClock.js";
 import styles from "./SidebarLayout.module.css";
 
 export { styles as sidebarStyles };

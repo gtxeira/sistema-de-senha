@@ -22,10 +22,10 @@ import {
   saveQueueState,
   subscribeQueue,
   subscribeSession,
-} from "../../lib/queue";
-import { SECTORS, ROLES, CALL_TYPES, TYPE_FIELDS, TYPE_LABELS, HISTORY_LIMITS, PAGE_SIZES, DEFAULT_SECTOR, DEFAULT_NAME, KEYBOARD_SHORTCUTS, API_ROUTES } from "../../lib/constants.js";
-import { useQueueEvents } from "../../lib/hooks/useQueueEvents";
-import { SidebarLayout, sidebarStyles } from "../../components/SidebarLayout/SidebarLayout";
+} from "@/lib/queue";
+import { SECTORS, ROLES, CALL_TYPES, TYPE_FIELDS, TYPE_LABELS, HISTORY_LIMITS, PAGE_SIZES, DEFAULT_SECTOR, DEFAULT_NAME, KEYBOARD_SHORTCUTS, API_ROUTES } from "@/lib/constants.js";
+import { useQueueEvents } from "@/lib/hooks/useQueueEvents";
+import { SidebarLayout, sidebarStyles } from "@/components/SidebarLayout/SidebarLayout";
 import styles from "./Painel.module.css";
 
 const HISTORY_LIMIT = HISTORY_LIMITS.painel;
@@ -53,17 +53,19 @@ export default function PainelPage() {
 
   const [notice, setNotice]       = useState("Pronto para o próximo atendimento");
   const [calling, setCalling]     = useState(false);
-  const [activeSector, setActiveSector] = useState(DEFAULT_SECTOR);
   const [historyPage, setHistoryPage] = useState(1);
 
+  // Deriva o setor inicial diretamente da sessão se o usuário não for ADMIN
+  const initialSector = (session?.role !== ROLES.ADMIN && session?.sector)
+    ? session.sector
+    : DEFAULT_SECTOR;
 
-  useEffect(() => {
-    if (session?.role !== ROLES.ADMIN && session?.sector) {
-      setActiveSector(session.sector);
-    }
-  }, [session?.role, session?.sector]);
+  const [activeSector, setActiveSector] = useState(initialSector);
 
-  useEffect(() => { setHistoryPage(1); }, [activeSector]);
+  const handleSectorChange = (newSector) => {
+    setActiveSector(newSector);
+    setHistoryPage(1); // Mapeia a redefinição da página no evento de troca
+  };
 
   const current    = normalizeQueue(state[activeSector]);
   const sectorInfo = SECTORS[activeSector] || SECTORS.farmacia;
@@ -76,19 +78,11 @@ export default function PainelPage() {
     if (!storedSession) { router.push("/login"); }
   }, [router]);
 
-  // Reconcile against the server's portrait — `useQueueEvents` now performs the
-  // request this component used to make on its own, so there is no second GET
-  // on mount (the old TODO about duplicated calls).
-  // Idempotent and silent: it never announces, it only makes local state agree
-  // with the server. Empty portrait → `---` (post-reset), which is why this
-  // cannot resurrect a pre-reset password the way the live path could.
   useEffect(() => {
     if (!activeSector || calls == null) return;
     reconcileQueueFromCalls(activeSector, calls, { historyLimit: HISTORY_LIMIT });
   }, [calls, activeSector]);
 
-  // Live path: only ever reached by a real event, because `lastCall` is cleared
-  // on reset and when the last subscriber leaves.
   useEffect(() => {
     if (!lastCall || !activeSector) return;
     const callKey = `${lastCall.id || lastCall.number}-${lastCall.type}`;
@@ -157,10 +151,10 @@ export default function PainelPage() {
       const normalCall   = KEYBOARD_SHORTCUTS.NORMAL_CALL.map(k => k.toLowerCase()).includes(key);
       const priorityCall = KEYBOARD_SHORTCUTS.PRIORITY_CALL.map(k => k.toLowerCase()).includes(key);
       const recallCall   = ["b",".",  "f5","escape"].includes(key);
-      if (recallCall)   { event.preventDefault(); reCall(); return; }
+      if (recallCall)   { event.preventDefault(); void reCall(); return; }
       if (!normalCall && !priorityCall) return;
       event.preventDefault();
-      callNext(priorityCall ? "preferencial" : "normal");
+      void callNext(priorityCall ? "preferencial" : "normal");
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
@@ -182,7 +176,7 @@ export default function PainelPage() {
             <select
               className={sidebarStyles.sectorSelect}
               value={activeSector}
-              onChange={(e) => setActiveSector(e.target.value)}
+              onChange={(e) => handleSectorChange(e.target.value)}
             >
               {Object.values(SECTORS).map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
@@ -326,4 +320,4 @@ export default function PainelPage() {
       </section>
     </SidebarLayout>
   );
-}
+};

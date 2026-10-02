@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
-import { prisma } from "../prisma-client.js";
+import { prisma } from "@/lib/prisma-client.js";
 import { isValidUsername, routeError, generateEmail } from "./utils.js";
-import { DEFAULT_ROLE, BCRYPT_SALT_ROUNDS } from "../constants.js";
+import { DEFAULT_ROLE, BCRYPT_SALT_ROUNDS } from "@/lib/constants.js";
 
 export class UsersRepository {
   /**

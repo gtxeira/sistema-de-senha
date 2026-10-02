@@ -1,5 +1,5 @@
-import { prisma } from "../prisma-client.js";
-import { MIN_DAYS, MAX_DAYS, DEFAULT_DAYS, LOCALE, CALL_TYPES } from "../constants.js";
+import { prisma } from "@/lib/prisma-client.js";
+import { MIN_DAYS, MAX_DAYS, DEFAULT_DAYS, LOCALE, CALL_TYPES } from "@/lib/constants.js";
 
 /**
  * Build empty response structure

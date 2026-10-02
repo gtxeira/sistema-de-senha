@@ -1,4 +1,4 @@
-import { prisma } from "../prisma-client.js";
+import { prisma } from "@/lib/prisma-client.js";
 import { normalizeCallType } from "./utils.js";
 import {
   DEFAULT_QUEUE_NUMBER,
@@ -6,7 +6,7 @@ import {
   LOCALE,
   MAX_QUEUE_NUMBER,
   MIN_QUEUE_NUMBER
-} from "../constants.js";
+} from "@/lib/constants.js";
 
 /**
  * Format time for display (HH:mm)

@@ -7,7 +7,7 @@ import {
   CLOCK_INTERVAL,
   SERVER_TIME_SYNC_INTERVAL,
   API_ROUTES,
-} from "../constants.js";
+} from "@/lib/constants.js";
 
 /* ─────────────────────────────────────────────────
    useServerClock — relógio sincronizado com o servidor

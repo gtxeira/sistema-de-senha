@@ -1,4 +1,4 @@
-import { prisma } from "../prisma-client.js";
+import { prisma } from "@/lib/prisma-client.js";
 import { routeError } from "./utils.js";
 
 /**

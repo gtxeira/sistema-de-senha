@@ -1,12 +1,12 @@
-import { prisma } from "../prisma-client.js";
+import { prisma } from "@/lib/prisma-client.js";
 import { routeError, isAllowedImageType, isValidFileSize } from "./utils.js";
-import { NEWS_MAX_ACTIVE } from "../constants.js";
+import { NEWS_MAX_ACTIVE } from "@/lib/constants.js";
 import {
   uploadToS3,
   deleteFromS3,
   getPublicUrl,
   extractKeyFromUrl,
-} from "../s3-client.js";
+} from "@/lib/s3-client.js";
 
 export class NewsRepository {
   /**

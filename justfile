@@ -65,9 +65,17 @@ db-seed:
 # Reseta o banco de dados e roda as seeds novamente
 db-reset:
     {{ _exec_app }} bun prisma migrate reset --force
-    {{ _exec_app }} bun prisma db seed
+    just db-seed
 
-# ── Testes ───────────────────────────────────────────────────────────────────
+# ── Qualidade ───────────────────────────────────────────────────────────────────
+
+# Executa o linter configurado
+lint *args:
+    {{ _exec_app }} bun run lint {{ args }}
+
+# Corrige/faz alterações com o linter configurado
+lint-fix *args:
+    just lint {{ args }}
 
 # Executa todos os testes da aplicação
 test:

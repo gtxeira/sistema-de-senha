@@ -5,7 +5,7 @@ import {
   getQueueEventsSnapshot,
   subscribeQueueEvents,
   subscribeQueueSector,
-} from "../queue-events.js";
+} from "@/lib/queue-events.js";
 
 /**
  * Realtime queue events for a sector, with automatic polling fallback.
