@@ -33,6 +33,7 @@ import {
   unlockSpeech,
 } from "@/lib/speech";
 import styles from "./Monitor.module.css";
+import { convertToBrazilTimeString } from "@/lib/date-utils.js";
 
 /* ─── notícias ─── */
 let newsSnapshot = [];
@@ -298,7 +299,12 @@ export default function MonitorPage({ params }) {
   /* ─── render ─── */
   const info = SECTORS[sector] || SECTORS[DEFAULT_SECTOR];
   const current = state[sector] || monitorServerSnapshot[sector];
-  const validHistory = cleanHistory(current.history || []);
+
+  const validHistory = cleanHistory(current.history || []).map((h) => ({
+    ...h,
+    time: convertToBrazilTimeString(h.time),
+  }));
+
   const latest = validHistory[0] || { number: current.normalCurrent ?? NO_PASSWORD, type: CALL_TYPES.NORMAL };
   const recentCalls = validHistory.slice(1, 5);
   const isPriority = latest.type === CALL_TYPES.PREFERENCIAL;

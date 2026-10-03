@@ -14,6 +14,7 @@ import {
 import { SECTORS, ROLES, CALL_TYPES, PAGE_SIZES, DEFAULT_SECTOR } from "@/lib/constants.js";
 import { SidebarLayout, sidebarStyles } from "@/components/SidebarLayout/SidebarLayout";
 import styles from "./Historico.module.css";
+import { convertToBrazilTimeString } from "@/lib/date-utils.js";
 
 const ITEMS_PER_PAGE = PAGE_SIZES.historico;
 
@@ -72,7 +73,11 @@ export default function HistoricoPage() {
 
   const sectorInfo = SECTORS[activeSector] || SECTORS.farmacia;
 
-  let allCalls = stats?.recent || [];
+  let allCalls = (stats?.recent || []).map((c) => ({
+    ...c,
+    time: convertToBrazilTimeString(c.time),
+  }));
+
   if (filterType) {
     allCalls = allCalls.filter((c) => c.type === filterType);
   }

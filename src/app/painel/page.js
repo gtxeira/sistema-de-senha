@@ -27,6 +27,7 @@ import { SECTORS, ROLES, CALL_TYPES, TYPE_FIELDS, TYPE_LABELS, HISTORY_LIMITS, P
 import { useQueueEvents } from "@/lib/hooks/useQueueEvents";
 import { SidebarLayout, sidebarStyles } from "@/components/SidebarLayout/SidebarLayout";
 import styles from "./Painel.module.css";
+import { convertToBrazilTimeString } from "@/lib/date-utils.js";
 
 const HISTORY_LIMIT = HISTORY_LIMITS.painel;
 const ITEMS_PER_PAGE = PAGE_SIZES.painel;
@@ -68,6 +69,11 @@ export default function PainelPage() {
   };
 
   const current    = normalizeQueue(state[activeSector]);
+  current.history = current.history.map(h => ({
+    ...h,
+    time: convertToBrazilTimeString(h.time),
+  }));
+
   const sectorInfo = SECTORS[activeSector] || SECTORS.farmacia;
 
   const { calls, lastCall } = useQueueEvents(activeSector);
