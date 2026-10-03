@@ -4,7 +4,6 @@ import {
   use,
   useCallback,
   useEffect,
-  useRef,
   useState,
   useSyncExternalStore,
   memo,
@@ -249,10 +248,10 @@ export default function MonitorPage({ params }) {
       const k = e.key;
       if (["ArrowRight", "PageDown", "Enter", " "].includes(k)) {
         e.preventDefault();
-        callNext(CALL_TYPES.NORMAL);
+        void callNext(CALL_TYPES.NORMAL);
       } else if (["ArrowLeft", "PageUp"].includes(k)) {
         e.preventDefault();
-        callNext(CALL_TYPES.PREFERENCIAL);
+        void callNext(CALL_TYPES.PREFERENCIAL);
       } else if (["ArrowUp", "Home"].includes(k)) {
         e.preventDefault();
         reCall();
@@ -265,30 +264,21 @@ export default function MonitorPage({ params }) {
   /* ─── atalhos de mouse ─── */
   useEffect(() => {
     function onMouseDown(e) {
-      // ignora cliques em botões/links
-      if (e.target.closest("a, button, input, select, textarea")) return;
-      if (e.button === 0) {
-        e.preventDefault();
-        callNext(CALL_TYPES.NORMAL);
-      } else if (e.button === 2) {
-        e.preventDefault();
-        callNext(CALL_TYPES.PREFERENCIAL);
-      }
-    }
-    function onWheel(e) {
-      if (e.target.closest("a, button, input, select, textarea")) return;
       e.preventDefault();
-      reCall();
     }
+
+    function onWheel(e) {
+      e.preventDefault();
+    }
+
     function onContextMenu(e) {
-      // bloqueia o menu de contexto para o botão direito funcionar
-      if (!e.target.closest("a, button, input, select, textarea")) {
-        e.preventDefault();
-      }
+      e.preventDefault();
     }
+
     window.addEventListener("mousedown", onMouseDown);
     window.addEventListener("wheel", onWheel, { passive: false });
     window.addEventListener("contextmenu", onContextMenu);
+
     return () => {
       window.removeEventListener("mousedown", onMouseDown);
       window.removeEventListener("wheel", onWheel);
