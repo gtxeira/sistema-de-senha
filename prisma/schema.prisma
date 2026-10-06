@@ -10,14 +10,68 @@ datasource db {
 
 // ── Enums ──────────────────────────────────────────────────────
 
-enum user_role {
-  admin
-  attendant
-}
-
 enum queue_type {
   normal
   preferencial
+}
+
+// ── Cargos e permissões (RBAC) ─────────────────────────────────
+// As chaves de permissão em si são um registro fixo em
+// `src/lib/permissions.js` — aqui ficam apenas as atribuições
+// cargo→permissão e usuário→permissão (overrides).
+
+model roles {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique
+  name        String
+  description String?
+  // Cargo criado pelo sistema (admin/attendant): não editável nem removível.
+  built_in    Boolean  @default(false)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  permissions role_permissions[]
+  users       users[]
+}
+
+model role_permissions {
+  permission String
+  role_id    String    @db.Uuid
+
+  role roles @relation(fields: [role_id], references: [id], onDelete: Cascade)
+
+  @@id([role_id, permission])
+}
+
+model user_permissions {
+  permission String
+  // true = concede além do cargo; false = nega mesmo que o cargo conceda.
+  granted    Boolean   @default(true)
+  user_id    String    @db.Uuid
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+
+  user users @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@id([user_id, permission])
+}
+
+// ── Refresh tokens (sessão de curta duração) ───────────────────
+// Guarda apenas o SHA-256 do token opaco emitido no login. Cada rotação
+// marca a linha atual como `used_at` e insere a nova na mesma família;
+// reapresentar um token já usado (fora da janela de graça) revoga a família.
+
+model refresh_tokens {
+  id         String    @id @default(uuid()) @db.Uuid
+  user_id    String    @db.Uuid
+  token_hash String    @unique
+  family_id  String    @db.Uuid
+  expires_at DateTime  @db.Timestamptz(6)
+  used_at    DateTime? @db.Timestamptz(6)
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+
+  user users @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([family_id])
+  @@index([user_id])
 }
 
 // ── Tabela unificada de usuários (substitui auth.users + profiles) ──
@@ -28,14 +82,17 @@ model users {
   email         String    @unique
   password_hash String
   full_name     String
-  role          user_role @default(attendant)
+  role_id       String    @db.Uuid
   sector_id     String?
   guiche_id     String    @default("none")
   active        Boolean   @default(true)
   created_at    DateTime  @default(now()) @db.Timestamptz(6)
 
-  sectors     sectors?      @relation(fields: [sector_id], references: [id])
-  queue_calls queue_calls[]
+  role            roles             @relation(fields: [role_id], references: [id])
+  sectors         sectors?          @relation(fields: [sector_id], references: [id])
+  permissions     user_permissions[]
+  refresh_tokens  refresh_tokens[]
+  queue_calls     queue_calls[]
 }
 
 // ── Setores ────────────────────────────────────────────────────

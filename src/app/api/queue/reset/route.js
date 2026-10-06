@@ -1,18 +1,20 @@
 import { NextResponse } from "next/server";
 import { queue } from "@/lib/repositories";
 import { eventManager } from "@/lib/event-manager";
-import { requireRole } from "@/lib/api-auth";
+import { assertSectorAccess, requirePermission } from "@/lib/api-auth";
+import { QUEUE_RESET } from "@/lib/permissions.js";
 import { SECTORS, ALL_SECTORS } from "@/lib/constants.js";
 
 /* ─────────────────────────────────────────────────
    POST — reseta a sequência de senhas de um setor
    Body: { sector: "farmacia"|"recepcao"|"all" }
-   Restrito a administradores: o reset é destrutivo e vale para
-   todos os dispositivos conectados via SSE.
+   Exige a permissão `filas.resetar` + escopo de escrita em CADA setor
+   alvo (o reset é destrutivo e vale para todos os dispositivos
+   conectados via SSE).
 ───────────────────────────────────────────────── */
 export async function POST(request) {
   try {
-    const { error } = await requireRole();
+    const { session, error } = await requirePermission(QUEUE_RESET);
     if (error) return error;
 
     const { sector } = await request.json();
@@ -32,6 +34,13 @@ export async function POST(request) {
         { error: "Setor inválido." },
         { status: 400 }
       );
+    }
+
+    // "all" expande e cai na mesma regra: sem escopo de escrita em todos
+    // os setores, o reset é negado (nada de rebaixar silenciosamente).
+    for (const s of sectorsToReset) {
+      const scope = assertSectorAccess(session, s, "write");
+      if (scope.error) return scope.error;
     }
 
     // Reset each sector

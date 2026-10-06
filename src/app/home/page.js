@@ -5,7 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Monitor, Settings2, Headphones } from "lucide-react";
 import { getSessionSnapshot, SECTORS } from "@/lib/queue";
-import { ROLES } from "@/lib/constants.js";
+import {
+  SCREEN_ADMIN,
+  canAccessSector,
+  hasPermission,
+} from "@/lib/permissions.js";
 import styles from "./Home.module.css";
 import { SidebarLayout } from "@/components/SidebarLayout/SidebarLayout";
 
@@ -33,8 +37,10 @@ export default function HomePage() {
         <div className={styles.content}>
           <div className={styles.grid}>
 
-            {/* Monitores */}
-            {Object.values(SECTORS).map((s) => (
+            {/* Monitores — só os setores acessíveis à sessão */}
+            {Object.values(SECTORS)
+              .filter((s) => canAccessSector(session, s.id, "read"))
+              .map((s) => (
               <Link key={s.id} href={`/monitor/${s.id}`} className={styles.card}>
                 <div className={`${styles.cardIcon} ${styles.cardIconMonitor}`}>
                   <Monitor size={30} />
@@ -59,8 +65,8 @@ export default function HomePage() {
               <div className={styles.cardArrow}>→</div>
             </Link>
 
-            {/* Admin — só para admins */}
-            {session.role === ROLES.ADMIN && (
+            {/* Admin — só quem tem a permissão de tela */}
+            {hasPermission(session, SCREEN_ADMIN) && (
               <Link href="/admin" className={`${styles.card} ${styles.cardAdmin}`}>
                 <div className={`${styles.cardIcon} ${styles.cardIconAdmin}`}>
                   <Settings2 size={30} />

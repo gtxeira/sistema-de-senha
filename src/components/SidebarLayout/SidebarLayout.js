@@ -14,6 +14,7 @@ import {
   Settings2,
 } from "lucide-react";
 import { SECTORS, SESSION_KEY } from "@/lib/constants.js";
+import { SCREEN_ADMIN, canAccessSector, hasPermission } from "@/lib/permissions.js";
 import { useServerClock } from "@/lib/hooks/useServerClock.js";
 import styles from "./SidebarLayout.module.css";
 
@@ -21,9 +22,9 @@ export { styles as sidebarStyles };
 
 const NAV_ITEMS = [
   { route: "home",      href: "/home",      icon: Home,     label: "Home" },
-  { route: "admin",      href: "/admin",      icon: Settings2,     label: "Administração", onlyAdmin: true },
+  { route: "admin",     href: "/admin",     icon: Settings2, label: "Administração", permission: SCREEN_ADMIN },
   { route: "painel",    href: "/painel",    icon: Bell,     label: "Chamadas" },
-  { route: "historico", href: "/historico",  icon: Clock3,   label: "Histórico" },
+  { route: "historico", href: "/historico", icon: Clock3,   label: "Histórico" },
 ];
 
 export function SidebarLayout({
@@ -38,9 +39,27 @@ export function SidebarLayout({
 }) {
   const { timeString } = useServerClock();
   const [monitorsOpen, setMonitorsOpen] = useState(false);
+  // Itens de tela filtrados pelas permissões da sessão (o proxy também
+  // bloqueia no servidor — aqui é só a parte visual).
   const visibleNavItems = NAV_ITEMS.filter(
-    (item) => !item.onlyAdmin || session?.role === "admin"
+    (item) => !item.permission || hasPermission(session, item.permission),
   );
+  const visibleSectors = Object.values(SECTORS).filter((s) =>
+    canAccessSector(session, s.id, "read"),
+  );
+
+  async function handleLogout(e) {
+    e.preventDefault();
+    // Revoga a família do refresh token antes do signOut do Auth.js —
+    // senão uma aba esquecida poderia "acordar" com o refresh antigo.
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      // segue o signOut mesmo sem a revogação (rede)
+    }
+    window.localStorage.removeItem(SESSION_KEY);
+    signOut({ callbackUrl: "/login" });
+  }
 
   return (
     <main className={styles.shell}>
@@ -70,7 +89,7 @@ export function SidebarLayout({
           </button>
           {monitorsOpen && (
             <div className={styles.monitorSubmenu}>
-              {Object.values(SECTORS).map((s) => (
+              {visibleSectors.map((s) => (
                 <a
                   key={s.id}
                   href={`/monitor/${s.id}`}
@@ -95,10 +114,7 @@ export function SidebarLayout({
           <Link
             href="/login"
             className={styles.logout}
-            onClick={() => {
-              window.localStorage.removeItem(SESSION_KEY);
-              signOut({ callbackUrl: "/login" });
-            }}
+            onClick={handleLogout}
           >
             <LogOut size={17} /> Sair
           </Link>

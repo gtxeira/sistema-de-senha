@@ -53,6 +53,21 @@ async function main() {
     console.log(`  ✓ ${deleted.count} usuários antigos removidos`);
   }
 
+  // ── Cargos built-in (criados pela migration; garantidos aqui
+  //    também para bancos criados apenas com o seed) ────────────
+  const roles = {};
+  for (const [key, name] of [
+    ["admin", "Administrador"],
+    ["attendant", "Atendente"],
+  ]) {
+    roles[key] = await prisma.roles.upsert({
+      where: { key },
+      update: {},
+      create: { key, name, built_in: true },
+    });
+  }
+  console.log(`  ✓ ${Object.keys(roles).length} cargos criados/verificados`);
+
   // ── Setores ──────────────────────────────────────────────────
   for (const sector of SECTORS) {
     await prisma.sectors.upsert({
@@ -86,7 +101,7 @@ async function main() {
         email: user.email,
         password_hash: passwordHash,
         full_name: user.full_name,
-        role: user.role,
+        role_id: roles[user.role].id,
         sector_id: user.sector_id,
       },
     });

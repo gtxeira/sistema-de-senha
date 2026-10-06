@@ -1,8 +1,17 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { USERNAME_REGEX, DEFAULT_GUICHE } from "./lib/constants.js";
+import { USERNAME_REGEX, DEFAULT_GUICHE, ACCESS_TOKEN_MAX_AGE } from "./lib/constants.js";
+import { computeEffectivePermissions } from "./lib/permissions.js";
 import { initials } from "./lib/repositories/utils.js";
+
+// Nome fixo do cookie de sessão (e `salt` do JWE do Auth.js). Fixá-lo no
+// config garante que o `encode()` da rota de refresh derive a mesma chave
+// de criptografia que o `decode()` do Auth.js — com nome dinâmico
+// (prefixo __Secure- dependente da URL) os dois poderiam divergir.
+// O prefixo __Secure- só impede cookies injetados por canal inseguro; aqui
+// o cookie continua httpOnly + secure (a flag segue a URL da request).
+export const SESSION_COOKIE_NAME = "authjs.session-token";
 
 // O client gerado pelo Prisma 7 importa `node:path`/`node:url`, que não existem no
 // Edge Runtime. `src/proxy.js` importa este módulo antes de cada request: aqui dentro
@@ -30,6 +39,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: {
     signIn: "/login",
   },
+  cookies: {
+    sessionToken: { name: SESSION_COOKIE_NAME },
+  },
+  // Access token de curta duração: o JWT de sessão vale 15min e é
+  // re-assinado a cada request de sessão (idle timeout). A permissão é
+  // revalidada no máximo a cada PERMISSIONS_MAX_AGE via claim `perms_at`
+  // (ver src/lib/permissions.js) e o teto absoluto da sessão é o claim
+  // `auth_at` (12h desde o login).
+  session: {
+    maxAge: ACCESS_TOKEN_MAX_AGE,
+  },
   providers: [
     Credentials({
       credentials: {
@@ -47,6 +67,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const prisma = await getPrisma();
         const user = await prisma.users.findUnique({
           where: { username },
+          include: {
+            role: { include: { permissions: true } },
+            permissions: true,
+          },
         });
 
         if (!user || !user.active) return null;
@@ -54,13 +78,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const valid = await bcrypt.compare(password, user.password_hash);
         if (!valid) return null;
 
+        const now = Date.now();
         return {
           id: user.id,
           name: user.full_name,
           email: user.email,
-          role: user.role,
           sector: user.sector_id,
           guiche: user.guiche_id || DEFAULT_GUICHE,
+          permissions: computeEffectivePermissions(
+            user.role.permissions.map((p) => p.permission),
+            user.permissions,
+          ),
+          authAt: now,
+          permsAt: now,
         };
       },
     }),
@@ -68,17 +98,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.role = user.role;
         token.sector = user.sector;
         token.guiche = user.guiche;
+        token.permissions = user.permissions;
+        token.authAt = user.authAt;
+        token.permsAt = user.permsAt;
       }
+      // Claims não são recalculadas aqui de propósito: o callback roda em
+      // todo request de sessão (inclusive no proxy, em Edge, sem banco).
+      // Atualização de permissões acontece no login e no refresh
+      // (/api/auth/refresh), que emite um JWT novo com perms_at atual.
       return token;
     },
     async session({ session, token }) {
       session.user.id = token.sub;
-      session.user.role = token.role;
       session.user.sector = token.sector;
       session.user.guiche = token.guiche;
+      session.user.permissions = token.permissions ?? [];
+      session.user.authAt = token.authAt;
+      session.user.permsAt = token.permsAt;
       session.user.initials = session.user.name
         ? initials(session.user.name)
         : "";

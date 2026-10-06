@@ -1,16 +1,29 @@
 import { beforeEach, vi } from "vitest";
 
-vi.mock("@/auth", () => ({
-  auth: vi.fn().mockResolvedValue({
-    user: {
-      id: "c0f4795e-f467-4695-b479-5ef467c695a6",
-      name: "Dev Teste",
-      email: "dev@teste.com",
-      role: "admin",
-    },
-    expires: new Date(Date.now() + 2 * 86400000).toISOString(),
-  }),
-}));
+// Sessão padrão de teste: admin com todas as permissões e claims de frescor
+// novas (`authAt`/`permsAt` são exigidos por requireSession; claims vêm do
+// JWT em produção — aqui são geradas em cada chamada para o teste nunca
+// estourar o janela de 15min por causa de relógio do teste).
+vi.mock("@/auth", async () => {
+  const { ALL_PERMISSIONS } = await import("@/lib/permissions.js");
+  return {
+    // Nome do cookie fixado em src/auth.js — as rotas de refresh o importam.
+    SESSION_COOKIE_NAME: "authjs.session-token",
+    auth: vi.fn().mockImplementation(async () => ({
+      user: {
+        id: "c0f4795e-f467-4695-b479-5ef467c695a6",
+        name: "Dev Teste",
+        email: "dev@teste.com",
+        sector: null,
+        guiche: "none",
+        permissions: [...ALL_PERMISSIONS],
+        authAt: Date.now(),
+        permsAt: Date.now(),
+      },
+      expires: new Date(Date.now() + 2 * 86400000).toISOString(),
+    })),
+  };
+});
 
 if (typeof window === "undefined") {
   // Skip DOM-only setup in node environment (e.g. integration tests)

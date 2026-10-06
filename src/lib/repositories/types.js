@@ -89,17 +89,25 @@ export class AuthRepository {
 }
 
 /**
- * Users repository interface (profiles)
+ * Users repository interface (profiles + overrides de permissão)
+ *
+ * `role` é a CHAVE do cargo ("admin"|"attendant"|chave custom) — um dado de
+ * exibição/edição. As permissões efetivas saem de
+ * `getEffectivePermissions()` (cargo ∪ grants − denials).
  */
 export class UsersRepository {
   /**
-   * List all users
+   * List all users (com cargo e overrides)
    * @returns {Promise<Array<{
    *   id: string,
    *   username?: string,
    *   full_name: string,
-   *   role: 'admin'|'attendant',
-   *   sector_id: 'farmacia'|'recepcao'|null
+   *   role: string,
+   *   role_id: string,
+   *   role_name: string,
+   *   active: boolean,
+   *   sector_id: 'farmacia'|'recepcao'|null,
+   *   permissions: Array<{permission: string, granted: boolean}>
    * }>>}
    */
   async list() {}
@@ -110,22 +118,41 @@ export class UsersRepository {
    *   username: string,
    *   password: string,
    *   full_name: string,
-   *   role?: 'admin'|'attendant',
-   *   sector_id?: 'farmacia'|'recepcao'|null
+   *   role_id?: string,
+   *   role?: string,
+   *   sector_id?: 'farmacia'|'recepcao'|null,
+   *   active?: boolean,
+   *   permissions?: Array<{permission: string, granted: boolean}>
    * }} data
-   * @returns {Promise<{
-   *   success: boolean,
-   *   user: {
-   *     id: string,
-   *     username: string,
-   *     full_name: string,
-   *     role: 'admin'|'attendant',
-   *     sector_id: 'farmacia'|'recepcao'|null
-   *   }
-   * }>}
+   * @returns {Promise<{ success: boolean, user: object }>}
    * @throws {{ status: number, message: string }} on error
    */
   async create(data) {}
+
+  /**
+   * Update user data (senha em branco mantém a atual)
+   * @param {string} id
+   * @param {object} data
+   * @returns {Promise<object>} usuário atualizado
+   * @throws {{ status: number, message: string }} on error
+   */
+  async update(id, data) {}
+
+  /**
+   * Substitui os overrides de permissão (grants/denials) do usuário
+   * @param {string} id
+   * @param {Array<{permission: string, granted: boolean}>} permissions
+   * @returns {Promise<Array<{permission: string, granted: boolean}>>}
+   * @throws {{ status: number, message: string }} on error
+   */
+  async setPermissions(id, permissions) {}
+
+  /**
+   * Permissões efetivas para login/refresh
+   * @param {string} id
+   * @returns {Promise<string[]|null>} null se o usuário não existir
+   */
+  async getEffectivePermissions(id) {}
 
   /**
    * Delete a user by id
@@ -133,6 +160,32 @@ export class UsersRepository {
    * @returns {Promise<{ success: boolean }>}
    * @throws {{ status: number, message: string }} on error
    */
+  async remove(id) {}
+}
+
+/**
+ * Roles repository interface (cargos + atribuições de permissão)
+ *
+ * As chaves de permissão em si vivem em `src/lib/permissions.js` — aqui só
+ * se grava cargo→permissão. Cargos built-in são imutáveis.
+ */
+export class RolesRepository {
+  /**
+   * @returns {Promise<Array<{id:string, key:string, name:string,
+   *   description:string|null, built_in:boolean, permissions:string[]}>>}
+   */
+  async list() {}
+
+  /** @param {string} key */
+  async getByKey(key) {}
+
+  /** @param {{key:string, name:string, description?:string|null, permissions?:string[]}} data */
+  async create(data) {}
+
+  /** @param {string} id @param {{name?:string, description?:string|null, permissions?:string[]}} data */
+  async update(id, data) {}
+
+  /** @param {string} id */
   async remove(id) {}
 }
 

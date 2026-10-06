@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { LockKeyhole } from "lucide-react";
-import { SESSION_KEY } from "@/lib/queue";
+import { writeSessionSnapshot } from "@/lib/queue";
 import { USERNAME_REGEX, USERNAME_REGEX_LABEL } from "@/lib/constants.js";
 import styles from "./Login.module.css";
 import brandIcon from "@/app/icon.ico";
@@ -33,22 +33,17 @@ export default function LoginPage() {
         throw new Error("Usuário ou senha inválidos.");
       }
 
-      // Busca a sessão estabelecida pelo Auth.js
+      // Busca a sessão estabelecida pelo Auth.js e espelha os claims
+      // (permissões/setor) no snapshot local usado pelos guards de tela.
       const res = await fetch("/api/auth/session");
       const session = await res.json();
 
       if (session?.user) {
-        window.localStorage.setItem(
-          SESSION_KEY,
-          JSON.stringify({
-            id: session.user.id,
-            name: session.user.name,
-            initials: session.user.initials,
-            role: session.user.role,
-            sector: session.user.sector,
-            guiche: session.user.guiche,
-          }),
-        );
+        writeSessionSnapshot(session.user);
+
+        // Emite o refresh token (12h) junto com o login — é ele que permite
+        // "acordar" a sessão após 15min de idle sem digitar a senha de novo.
+        await fetch("/api/auth/refresh", { method: "POST" }).catch(() => {});
       }
 
       router.push("/home");

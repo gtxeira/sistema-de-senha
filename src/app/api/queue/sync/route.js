@@ -1,17 +1,19 @@
 import { NextResponse } from "next/server";
 import { queue } from "@/lib/repositories";
 import { formatNumberString, normalizeCallType } from "@/lib/repositories/utils";
-import { requireRole } from "@/lib/api-auth";
+import { assertSectorAccess, requirePermission } from "@/lib/api-auth";
+import { QUEUE_SYNC } from "@/lib/permissions.js";
 import { SECTORS, MIN_QUEUE_NUMBER, MAX_QUEUE_NUMBER } from "@/lib/constants.js";
 
 /* ─────────────────────────────────────────────────
    POST — sincroniza a fila para um número específico
    Body: { sector, type, nextNumber }
-   Restrito a administradores: fixa a numeração de toda a fila do setor.
+   Exige a permissão `filas.sincronizar` + escopo de escrita no setor:
+   fixa a numeração de toda a fila do setor.
 ───────────────────────────────────────────────── */
 export async function POST(request) {
   try {
-    const { error } = await requireRole();
+    const { session, error } = await requirePermission(QUEUE_SYNC);
     if (error) return error;
 
     const body = await request.json();
@@ -24,6 +26,9 @@ export async function POST(request) {
         { status: 400 }
       );
     }
+
+    const scope = assertSectorAccess(session, sector, "write");
+    if (scope.error) return scope.error;
 
     // Normalize type
     const { sequenceType } = normalizeCallType(type);

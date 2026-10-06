@@ -229,8 +229,16 @@ describe("/api/queue/recent — integration", () => {
 
     it("atende qualquer usuário autenticado (inclusive atendente)", async () => {
       const { auth } = await import("@/auth");
+      const now = Date.now();
       auth.mockResolvedValueOnce({
-        user: { id: "u1", name: "Atendente", role: "attendant" },
+        user: {
+          id: "u1",
+          name: "Atendente",
+          sector: "farmacia",
+          permissions: [],
+          authAt: now,
+          permsAt: now,
+        },
       });
 
       const { GET } = await importRoute();

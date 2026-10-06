@@ -1,5 +1,5 @@
 import { eventManager } from "@/lib/event-manager";
-import { requireSession } from "@/lib/api-auth";
+import { assertSectorAccess, requireSession } from "@/lib/api-auth";
 import {
   SECTORS,
   KEEPALIVE_INTERVAL,
@@ -14,9 +14,13 @@ import {
  *
  * EventSource is same-origin, so the session cookie travels with the request and
  * monitors keep receiving their stream while unauthenticated callers do not.
+ *
+ * Escopo: checado na abertura da conexão (setor próprio ou
+ * `setores.todos.ver`). Stream já aberto não é revalidado — revogações
+ * valem para novas conexões.
  */
 export async function GET(request) {
-  const { error } = await requireSession();
+  const { session, error } = await requireSession();
   if (error) return error;
 
   const { searchParams } = new URL(request.url);
@@ -27,6 +31,9 @@ export async function GET(request) {
       status: 400,
     });
   }
+
+  const scope = assertSectorAccess(session, sector, "read");
+  if (scope.error) return scope.error;
 
   // Reject before opening a stream so an over-limit caller never holds a file
   // descriptor or a keepalive timer.

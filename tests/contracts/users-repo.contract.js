@@ -103,6 +103,96 @@ export function usersRepoContract(createRepo) {
       });
     });
 
+    describe("update()", () => {
+      it("atualiza dados básicos", async () => {
+        const { id } = await seedUser({
+          username: `update.me.${Date.now()}`,
+          full_name: "Antes",
+        });
+        const user = await repo.update(id, {
+          full_name: "Depois",
+          sector_id: "recepcao",
+        });
+        expect(user.full_name).toBe("Depois");
+        expect(user.sector_id).toBe("recepcao");
+      });
+
+      it("troca o cargo pela chave", async () => {
+        const { id } = await seedUser({
+          username: `update.role.${Date.now()}`,
+          full_name: "Cargo Antes",
+        });
+        const user = await repo.update(id, { role: "admin" });
+        expect(user.role).toBe("admin");
+      });
+
+      it("senha em branco é ignorada (não altera a senha atual)", async () => {
+        const { id } = await seedUser({
+          username: `update.pw.${Date.now()}`,
+          full_name: "Senha",
+        });
+        const user = await repo.update(id, {
+          password: "",
+          full_name: "Nome Atualizado",
+        });
+        expect(user.full_name).toBe("Nome Atualizado");
+      });
+
+      it("404 para id inexistente", async () => {
+        await expect(
+          repo.update("00000000-0000-0000-0000-000000000000", {
+            full_name: "Nada",
+          }),
+        ).rejects.toMatchObject({ status: 404 });
+      });
+    });
+
+    describe("setPermissions()", () => {
+      it("substitui os overrides do usuário", async () => {
+        const { id } = await seedUser({
+          username: `perms.set.${Date.now()}`,
+          full_name: "Perms",
+        });
+
+        await repo.setPermissions(id, [
+          { permission: "filas.resetar", granted: true },
+        ]);
+        // substituição completa: uma segunda chamada zera a anterior
+        await repo.setPermissions(id, [
+          { permission: "usuarios.ver", granted: false },
+        ]);
+
+        const user = (await repo.list()).find((u) => u.id === id);
+        expect(user.permissions).toEqual([
+          { permission: "usuarios.ver", granted: false },
+        ]);
+      });
+
+      it("rejeita chave de permissão desconhecida (400)", async () => {
+        const { id } = await seedUser({
+          username: `perms.bad.${Date.now()}`,
+          full_name: "Bad",
+        });
+        await expect(
+          repo.setPermissions(id, [{ permission: "permissao.fantasma", granted: true }]),
+        ).rejects.toMatchObject({ status: 400 });
+      });
+
+      it("lista vazia limpa os overrides", async () => {
+        const { id } = await seedUser({
+          username: `perms.clear.${Date.now()}`,
+          full_name: "Clear",
+        });
+        await repo.setPermissions(id, [
+          { permission: "filas.resetar", granted: true },
+        ]);
+        await repo.setPermissions(id, []);
+
+        const user = (await repo.list()).find((u) => u.id === id);
+        expect(user.permissions).toEqual([]);
+      });
+    });
+
     describe("remove()", () => {
       it("deleta usuário existente sem erro", async () => {
         const { id } = await seedUser({

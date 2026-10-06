@@ -1,5 +1,5 @@
 import { queue } from "@/lib/repositories";
-import { requireSession } from "@/lib/api-auth";
+import { assertSectorAccess, requireSession } from "@/lib/api-auth";
 import { SECTORS, DEFAULT_RECENT_LIMIT } from "@/lib/constants.js";
 
 /**
@@ -10,9 +10,11 @@ import { SECTORS, DEFAULT_RECENT_LIMIT } from "@/lib/constants.js";
  * The `resetAt` marker lets clients detect a reset performed on another device.
  * Calls made before the last reset are excluded — those rows survive the reset
  * (so `/historico` keeps working) but must never be replayed into a monitor.
+ *
+ * Escopo: leitura exige setor próprio ou `setores.todos.ver`.
  */
 export async function GET(request) {
-  const { error } = await requireSession();
+  const { session, error } = await requireSession();
   if (error) return error;
 
   const { searchParams } = new URL(request.url);
@@ -25,6 +27,9 @@ export async function GET(request) {
       { status: 400 },
     );
   }
+
+  const scope = assertSectorAccess(session, sector, "read");
+  if (scope.error) return scope.error;
 
   try {
     const resetAt = await queue.getSectorResetAt(sector);

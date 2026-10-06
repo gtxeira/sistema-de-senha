@@ -1,8 +1,39 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
+import { REFRESH_COOKIE_NAME } from "@/lib/constants.js";
+import {
+  SCREEN_HOME,
+  canAccessSector,
+  hasPermission,
+  monitorSectorFor,
+  screenPermissionFor,
+  sessionFreshnessProblem,
+} from "@/lib/permissions.js";
 
 const PUBLIC = ["/login"];
 const PROTECTED = ["/home", "/admin", "/monitor", "/painel", "/historico"];
+
+/**
+ * Sem sessão válida (ou stale/expirada): se existe um refresh cookie,
+ * manda o browser pela rota de refresh (Node, com banco) — que rotaciona
+ * o token, recalcula permissões e devolve os cookies — e volta para a
+ * página pedida. Sem refresh, é login mesmo.
+ *
+ * Roda em Edge: nada de banco aqui, só claims decodificados do JWT.
+ */
+function resumeSessionOrLogin(req, pathname, hasRefresh) {
+  if (hasRefresh) {
+    const refreshUrl = new URL("/api/auth/refresh", req.url);
+    refreshUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(refreshUrl);
+  }
+  return NextResponse.redirect(new URL("/login", req.url));
+}
+
+/** Redireciona para a home (se a permissão de tela existir) ou /login. */
+function homeOrLogin(user, baseUrl) {
+  return new URL(hasPermission(user, SCREEN_HOME) ? "/home" : "/login", baseUrl);
+}
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;
@@ -16,30 +47,62 @@ export default auth((req) => {
     return NextResponse.next();
   }
 
-  // Raiz → /login
+  const user = req.auth?.user ?? null;
+  const hasRefresh = !!req.cookies?.get?.(REFRESH_COOKIE_NAME)?.value;
+
+  // Raiz → /home
   if (pathname === "/") {
-    return NextResponse.redirect(new URL("/login", req.url));
+    if (user && !sessionFreshnessProblem(user)) {
+      return NextResponse.redirect(new URL("/home", req.url));
+    }
+    return resumeSessionOrLogin(req, "/home", hasRefresh);
   }
 
   // Rotas públicas passam livres
   if (PUBLIC.some((r) => pathname === r || pathname.startsWith(r + "/"))) {
-    // Se já autenticado e tentando acessar /login, redireciona para /home
-    if (req.auth?.user && pathname === "/login") {
+    // Autenticado indo para /login, com sessão boa: segue para a home.
+    if (
+      user &&
+      !sessionFreshnessProblem(user) &&
+      pathname === "/login" &&
+      hasPermission(user, SCREEN_HOME)
+    ) {
       return NextResponse.redirect(new URL("/home", req.url));
     }
-    return NextResponse.next();
-  }
-
-  // Rotas protegidas → verifica sessão
-  if (PROTECTED.some((r) => pathname === r || pathname.startsWith(r + "/"))) {
-    if (!req.auth?.user) {
-      return NextResponse.redirect(new URL("/login", req.url));
+    // Sessão stale até no /login: tenta o refresh antes de renderizar.
+    if (user && sessionFreshnessProblem(user)) {
+      return resumeSessionOrLogin(req, "/home", hasRefresh);
     }
     return NextResponse.next();
   }
 
-  // Qualquer outra rota → /login
-  return NextResponse.redirect(new URL("/login", req.url));
+  // Rotas protegidas → sessão + frescor + permissão de tela + escopo
+  if (PROTECTED.some((r) => pathname === r || pathname.startsWith(r + "/"))) {
+    if (!user) {
+      return resumeSessionOrLogin(req, pathname, hasRefresh);
+    }
+
+    const problem = sessionFreshnessProblem(user);
+    if (problem) {
+      return resumeSessionOrLogin(req, pathname, hasRefresh);
+    }
+
+    const required = screenPermissionFor(pathname);
+    if (required && !hasPermission(user, required)) {
+      return NextResponse.redirect(homeOrLogin(user, req.url));
+    }
+
+    // /monitor/<setor>: leitura exige setor próprio ou setores.todos.ver
+    const monitorSector = monitorSectorFor(pathname);
+    if (monitorSector && !canAccessSector(user, monitorSector, "read")) {
+      return NextResponse.redirect(homeOrLogin(user, req.url));
+    }
+
+    return NextResponse.next();
+  }
+
+  // Qualquer outra rota → /login (ou refresh, se há como acordar a sessão)
+  return resumeSessionOrLogin(req, pathname, hasRefresh);
 });
 
 export const config = {

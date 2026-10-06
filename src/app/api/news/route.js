@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { news } from "@/lib/repositories";
-import { requireSession, requireRole } from "@/lib/api-auth";
+import { requireSession, requirePermission } from "@/lib/api-auth";
+import { NEWS_CREATE, NEWS_DELETE } from "@/lib/permissions.js";
 
 /* ─────────────────────────────────────────────────
    GET — lista notícias ativas
@@ -23,11 +24,12 @@ export async function GET() {
 
 /* ─────────────────────────────────────────────────
    POST — cria nova notícia (upload + banco)
-   Restrito a administradores: o texto e a imagem aparecem nos monitores.
+   Exige a permissão `noticias.criar`: o texto e a imagem aparecem nos
+   monitores.
 ───────────────────────────────────────────────── */
 export async function POST(request) {
   try {
-    const { error } = await requireRole();
+    const { error } = await requirePermission(NEWS_CREATE);
     if (error) return error;
 
     const formData = await request.formData();
@@ -53,11 +55,11 @@ export async function POST(request) {
 
 /* ─────────────────────────────────────────────────
    DELETE — remove notícia (soft delete + storage)
-   Restrito a administradores.
+   Exige a permissão `noticias.excluir`.
 ───────────────────────────────────────────────── */
 export async function DELETE(request) {
   try {
-    const { error } = await requireRole();
+    const { error } = await requirePermission(NEWS_DELETE);
     if (error) return error;
 
     const { searchParams } = new URL(request.url);

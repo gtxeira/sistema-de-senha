@@ -23,7 +23,8 @@ import {
   subscribeQueue,
   subscribeSession,
 } from "@/lib/queue";
-import { SECTORS, ROLES, CALL_TYPES, TYPE_FIELDS, TYPE_LABELS, HISTORY_LIMITS, PAGE_SIZES, DEFAULT_SECTOR, DEFAULT_NAME, KEYBOARD_SHORTCUTS, API_ROUTES } from "@/lib/constants.js";
+import { SECTORS, CALL_TYPES, TYPE_FIELDS, TYPE_LABELS, HISTORY_LIMITS, PAGE_SIZES, DEFAULT_SECTOR, DEFAULT_NAME, KEYBOARD_SHORTCUTS, API_ROUTES } from "@/lib/constants.js";
+import { SECTORS_VIEW_ALL, hasPermission } from "@/lib/permissions.js";
 import { useQueueEvents } from "@/lib/hooks/useQueueEvents";
 import { SidebarLayout, sidebarStyles } from "@/components/SidebarLayout/SidebarLayout";
 import styles from "./Painel.module.css";
@@ -56,8 +57,9 @@ export default function PainelPage() {
   const [calling, setCalling]     = useState(false);
   const [historyPage, setHistoryPage] = useState(1);
 
-  // Deriva o setor inicial diretamente da sessão se o usuário não for ADMIN
-  const initialSector = (session?.role !== ROLES.ADMIN && session?.sector)
+  // Sem escopo de "todos os setores", a sessão trava no próprio setor
+  const canViewAllSectors = hasPermission(session, SECTORS_VIEW_ALL);
+  const initialSector = (!canViewAllSectors && session?.sector)
     ? session.sector
     : DEFAULT_SECTOR;
 
@@ -178,7 +180,7 @@ export default function PainelPage() {
       subtitle="Controle as chamadas da sua unidade em tempo real."
       headerActions={
         <>
-          {session?.role === ROLES.ADMIN && (
+          {canViewAllSectors && (
             <select
               className={sidebarStyles.sectorSelect}
               value={activeSector}

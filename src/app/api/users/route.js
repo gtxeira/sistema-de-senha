@@ -1,19 +1,26 @@
 import { NextResponse } from "next/server";
 import { users } from "@/lib/repositories";
-import { requireRole } from "@/lib/api-auth";
+import { requirePermission } from "@/lib/api-auth";
+import {
+  USERS_CREATE,
+  USERS_DELETE,
+  USERS_EDIT,
+  USERS_VIEW,
+} from "@/lib/permissions.js";
 
 /* ─────────────────────────────────────────────────
-   Todas as operações de usuário são restritas a administradores.
-   Sem essa barreira, qualquer requisição anônima poderia criar uma conta com
-   role "admin" (escalação de privilégio) ou apagar contas existentes.
+   Gestão de usuários: cada operação exige a permissão
+   correspondente (usuarios.ver/criar/editar/excluir).
+   Sem essa barreira, qualquer requisição anônima poderia criar uma conta
+   privilegiada ou apagar contas existentes.
 ───────────────────────────────────────────────── */
 
 /* ─────────────────────────────────────────────────
-   GET — lista todos os usuários
+   GET — lista todos os usuários (com cargo e overrides)
 ───────────────────────────────────────────────── */
 export async function GET() {
   try {
-    const { error } = await requireRole();
+    const { error } = await requirePermission(USERS_VIEW);
     if (error) return error;
 
     const userList = await users.list();
@@ -31,7 +38,7 @@ export async function GET() {
 ───────────────────────────────────────────────── */
 export async function POST(request) {
   try {
-    const { error } = await requireRole();
+    const { error } = await requirePermission(USERS_CREATE);
     if (error) return error;
 
     const body = await request.json();
@@ -46,11 +53,64 @@ export async function POST(request) {
 }
 
 /* ─────────────────────────────────────────────────
+   PATCH — edita usuário (dados, cargo, situação e overrides de permissão)
+   Body: { id, full_name?, password?, role_id?/role?, sector_id?, active?,
+           permissions?: [{permission, granted}] }
+───────────────────────────────────────────────── */
+export async function PATCH(request) {
+  try {
+    const { session, error } = await requirePermission(USERS_EDIT);
+    if (error) return error;
+
+    const body = await request.json();
+    const id = body?.id;
+    if (!id) {
+      return NextResponse.json(
+        { error: "ID do usuário é obrigatório" },
+        { status: 400 }
+      );
+    }
+
+    // Proteção contra auto-lockout: ninguém altera a própria situação/cargo.
+    if (id === session.user.id && (body.active !== undefined || body.role_id !== undefined || body.role !== undefined)) {
+      return NextResponse.json(
+        { error: "Você não pode alterar o próprio cargo ou situação." },
+        { status: 400 }
+      );
+    }
+
+    const { permissions, ...data } = body;
+    if (Object.keys(data).length > 1) {
+      await users.update(id, data);
+    }
+    if (permissions !== undefined) {
+      await users.setPermissions(id, permissions);
+    }
+    // Re-busca depois de aplicar os overrides (o update sozinho devolveria
+    // as linhas antigas de permissões).
+    const user = (await users.list()).find((u) => u.id === id);
+    if (!user) {
+      return NextResponse.json(
+        { error: "Usuário não encontrado" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ success: true, user });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err.message || "Erro ao atualizar usuário" },
+      { status: err.status || 500 }
+    );
+  }
+}
+
+/* ─────────────────────────────────────────────────
    DELETE — remove usuário do banco
 ───────────────────────────────────────────────── */
 export async function DELETE(request) {
   try {
-    const { error } = await requireRole();
+    const { session, error } = await requirePermission(USERS_DELETE);
     if (error) return error;
 
     const { searchParams } = new URL(request.url);
@@ -59,6 +119,13 @@ export async function DELETE(request) {
     if (!id) {
       return NextResponse.json(
         { error: "ID do usuário é obrigatório" },
+        { status: 400 }
+      );
+    }
+
+    if (id === session.user.id) {
+      return NextResponse.json(
+        { error: "Você não pode excluir o próprio usuário." },
         { status: 400 }
       );
     }

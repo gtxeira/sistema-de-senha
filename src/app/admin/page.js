@@ -17,17 +17,28 @@ import {
 } from "@/lib/queue";
 import {
   SECTORS,
-  ROLES,
   DEFAULT_SECTOR,
   CALL_TYPES,
   MAX_QUEUE_NUMBER,
   DRAFT_PREFIX,
-  USERNAME_REGEX,
-  USERNAME_REGEX_LABEL,
   NO_PASSWORD,
 } from "@/lib/constants.js";
+import {
+  NEWS_CREATE,
+  NEWS_DELETE,
+  QUEUE_RESET,
+  QUEUE_SYNC,
+  SCREEN_ADMIN,
+  SCREEN_ADMIN_FILAS,
+  SCREEN_ADMIN_NOTICIAS,
+  SCREEN_ADMIN_USUARIOS,
+  SECTORS_MANAGE_ALL,
+  canAccessSector,
+  hasPermission,
+} from "@/lib/permissions.js";
 import styles from "./Admin.module.css";
 import { SidebarLayout } from "@/components/SidebarLayout/SidebarLayout";
+import AccessSection from "./AccessSection";
 
 let newsCache = [];
 const serverNewsSnapshot = [];
@@ -78,10 +89,15 @@ export default function AdminPage() {
   const [, refreshNews] = useState(0);
   const pendingFileRef = useRef(null);
 
-  /* segurança: só admin */
+  /* segurança: a seção /admin exige a permissão de tela `tela.admin`
+     (o proxy também bloqueia no servidor — aqui é só a camada visual) */
   useEffect(() => {
     const storedSession = getSessionSnapshot();
-    if (!storedSession || storedSession.role !== ROLES.ADMIN) { router.push("/login"); }
+    if (!storedSession) {
+      router.push("/login");
+    } else if (!hasPermission(storedSession, SCREEN_ADMIN)) {
+      router.push("/home");
+    }
   }, [router]);
 
   /* notícias */
@@ -100,6 +116,16 @@ export default function AdminPage() {
   }, []);
 
   if (!session) return null;
+
+  /* permissões desta sessão: cada bloco da tela se renderiza por conta própria */
+  const canManageFilas = hasPermission(session, SCREEN_ADMIN_FILAS);
+  const canReset = hasPermission(session, QUEUE_RESET);
+  const canSync = hasPermission(session, QUEUE_SYNC);
+  const canManageNews = hasPermission(session, SCREEN_ADMIN_NOTICIAS);
+  const canCreateNews = hasPermission(session, NEWS_CREATE);
+  const canDeleteNews = hasPermission(session, NEWS_DELETE);
+  const canManageUsers = hasPermission(session, SCREEN_ADMIN_USUARIOS);
+  const canManageAllSectors = hasPermission(session, SECTORS_MANAGE_ALL);
 
   /* ── reset de fila ── */
   async function resetSector(sectorId) {
@@ -257,6 +283,7 @@ export default function AdminPage() {
         {message && <div className={styles.alertBox}>{message}</div>}
 
         {/* ── Controle de filas ── */}
+        {canManageFilas && (
         <section className={styles.section}>
           <div className={styles.sectionTitle}>
             <div>
@@ -266,9 +293,12 @@ export default function AdminPage() {
           </div>
 
           <div className={styles.sectors}>
-            {Object.values(SECTORS).map((item) => {
+            {Object.values(SECTORS)
+              .filter((item) => canAccessSector(session, item.id, "read"))
+              .map((item) => {
               const queue = normalizeQueue(state[item.id]);
               const isReset = !!resettingSector[item.id];
+              const canResetSector = canReset && canAccessSector(session, item.id, "write");
               return (
                 <article key={item.id}>
                   <div>
@@ -286,46 +316,52 @@ export default function AdminPage() {
                     <Link href={`/monitor/${item.id}`} target="_blank">
                       <Monitor size={16}/> Abrir Monitor
                     </Link>
-                    <button
-                      type="button"
-                      onClick={() => resetSector(item.id)}
-                      disabled={isReset}
-                      className={styles.resetSectorButton}
-                    >
-                      <RotateCcw size={16}/>
-                      {isReset ? "Resetando…" : "Resetar senhas"}
-                    </button>
+                    {canResetSector && (
+                      <button
+                        type="button"
+                        onClick={() => resetSector(item.id)}
+                        disabled={isReset}
+                        className={styles.resetSectorButton}
+                      >
+                        <RotateCcw size={16}/>
+                        {isReset ? "Resetando…" : "Resetar senhas"}
+                      </button>
+                    )}
                   </div>
                 </article>
               );
             })}
           </div>
 
-          <div className={styles.resetAllWrapper}>
-            <div className={styles.resetAllInfo}>
-              <AlertTriangle size={16}/>
-              <span>
-                Resetar todos os setores de uma vez — numeração volta para {MIN_QUEUE_NUMBER.toString().padStart(3, "0")} em todos.
-              </span>
+          {canReset && canManageAllSectors && (
+            <div className={styles.resetAllWrapper}>
+              <div className={styles.resetAllInfo}>
+                <AlertTriangle size={16}/>
+                <span>
+                  Resetar todos os setores de uma vez — numeração volta para {MIN_QUEUE_NUMBER.toString().padStart(3, "0")} em todos.
+                </span>
+              </div>
+              <button
+                type="button"
+                className={styles.resetAllButton}
+                onClick={() => resetSector("all")}
+                disabled={Object.keys(resettingSector).length > 0}
+              >
+                <RotateCcw size={16}/>
+                {Object.keys(resettingSector).length > 0
+                  ? "Resetando…"
+                  : "Resetar todos os setores"}
+              </button>
             </div>
-            <button
-              type="button"
-              className={styles.resetAllButton}
-              onClick={() => resetSector("all")}
-              disabled={Object.keys(resettingSector).length > 0}
-            >
-              <RotateCcw size={16}/>
-              {Object.keys(resettingSector).length > 0
-                ? "Resetando…"
-                : "Resetar todos os setores"}
-            </button>
-          </div>
+          )}
         </section>
+        )}
 
         {/* ── Sincronizar senhas ── */}
-        <SyncSection />
+        {canManageFilas && <SyncSection session={session} canSync={canSync} />}
 
         {/* ── Notícias do monitor ── */}
+        {canManageNews && (
         <section className={styles.section}>
           <div className={styles.sectionTitle}>
             <div>
@@ -334,27 +370,29 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <form className={styles.newsForm} onSubmit={addNews}>
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Título da notícia"
-              required
-            />
-            <label className={styles.upload}>
-              <ImagePlus size={18}/>{" "}
-              {image ? "Imagem selecionada" : "Adicionar imagem"}
+          {canCreateNews && (
+            <form className={styles.newsForm} onSubmit={addNews}>
               <input
-                type="file"
-                accept="image/*"
-                onChange={readImage}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Título da notícia"
                 required
               />
-            </label>
-            <button type="submit">
-              <ImagePlus size={16}/> Adicionar à lista
-            </button>
-          </form>
+              <label className={styles.upload}>
+                <ImagePlus size={18}/>{" "}
+                {image ? "Imagem selecionada" : "Adicionar imagem"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={readImage}
+                  required
+                />
+              </label>
+              <button type="submit">
+                <ImagePlus size={16}/> Adicionar à lista
+              </button>
+            </form>
+          )}
 
           <div className={styles.newsGrid}>
             {draftNews.map((item, i) => (
@@ -367,289 +405,53 @@ export default function AdminPage() {
                   unoptimized
                 />
                 <strong>{item.title}</strong>
-                <button
-                  className={styles.deleteNews}
-                  type="button"
-                  onClick={() => deleteNews(item.id)}
-                >
-                  <Trash2 size={14}/> Excluir
-                </button>
+                {canDeleteNews && (
+                  <button
+                    className={styles.deleteNews}
+                    type="button"
+                    onClick={() => deleteNews(item.id)}
+                  >
+                    <Trash2 size={14}/> Excluir
+                  </button>
+                )}
               </article>
             ))}
           </div>
 
-          <button
-            className={styles.saveNews}
-            type="button"
-            onClick={saveNews}
-            disabled={savingNews}
-          >
-            <Save size={16}/> {savingNews ? "Salvando…" : "Salvar notícias"}
-          </button>
+          {(canCreateNews || canDeleteNews) && (
+            <button
+              className={styles.saveNews}
+              type="button"
+              onClick={saveNews}
+              disabled={savingNews}
+            >
+              <Save size={16}/> {savingNews ? "Salvando…" : "Salvar notícias"}
+            </button>
+          )}
         </section>
+        )}
 
-        {/* ── Gerenciamento de usuários ── */}
-        <UsersSection/>
+        {/* ── Gerenciamento de usuários e permissões ── */}
+        {canManageUsers && <AccessSection />}
       </section>
     </SidebarLayout>
   );
 }
 
 /* ═══════════════════════════════════════════════════════════
-   SEÇÃO DE USUÁRIOS
-═══════════════════════════════════════════════════════════ */
-function UsersSection() {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-  const [showForm, setShowForm] = useState(false);
-
-  // form
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [role, setRole] = useState(ROLES.ATTENDANT);
-  const [sectorId, setSectorId] = useState("");
-
-  useEffect(() => {
-    loadUsers();
-  }, []);
-
-  async function loadUsers() {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/users");
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setUsers(data.users || []);
-    } catch (err) {
-      setMessage(err.message || "Erro ao carregar usuários");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleCreate(e) {
-    e.preventDefault();
-    setMessage("");
-    setLoading(true);
-
-    try {
-      const res = await fetch("/api/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username,
-          password,
-          full_name: fullName,
-          role,
-          sector_id: sectorId || null,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-
-      setMessage(`Usuário ${fullName} criado com sucesso!`);
-      setUsername("");
-      setPassword("");
-      setFullName("");
-      setRole(ROLES.ATTENDANT);
-      setSectorId("");
-      setShowForm(false);
-      await loadUsers();
-    } catch (err) {
-      setMessage(err.message || "Erro ao criar usuário");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleDelete(userId, userName) {
-    if (
-      !window.confirm(
-        `Excluir o usuário "${userName}"?\n\nEsta ação não pode ser desfeita.`,
-      )
-    ) {
-      return;
-    }
-
-    setLoading(true);
-    setMessage("");
-
-    try {
-      const res = await fetch(`/api/users?id=${userId}`, { method: "DELETE" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-
-      setMessage(`Usuário ${userName} excluído com sucesso.`);
-      await loadUsers();
-    } catch (err) {
-      setMessage(err.message || "Erro ao excluir usuário");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <section className={styles.section}>
-      <div className={styles.sectionTitle}>
-        <div>
-          <p>ACESSO</p>
-          <h2>Gerenciamento de usuários</h2>
-        </div>
-        <button
-          type="button"
-          className={styles.addUserBtn}
-          onClick={() => setShowForm(!showForm)}
-        >
-          {showForm ? "Cancelar" : "+ Novo usuário"}
-        </button>
-      </div>
-
-      {message && <div className={styles.alertBox}>{message}</div>}
-
-      {/* Formulário de criação */}
-      {showForm && (
-        <form className={styles.userForm} onSubmit={handleCreate}>
-          <div className={styles.formRow}>
-            <label>
-              Usuário
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="nome.sobrenome"
-                pattern={USERNAME_REGEX}
-                title={USERNAME_REGEX_LABEL}
-                required
-              />
-            </label>
-
-            <label>
-              Senha
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-              />
-            </label>
-          </div>
-
-          <div className={styles.formRow}>
-            <label>
-              Nome completo
-              <input
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Nome Sobrenome"
-                required
-              />
-            </label>
-
-            <label>
-              Função
-              <select value={role} onChange={(e) => setRole(e.target.value)}>
-                <option value={ROLES.ATTENDANT}>Atendente</option>
-                <option value={ROLES.ADMIN}>Administrador</option>
-              </select>
-            </label>
-
-            <label>
-              Setor (opcional)
-              <select
-                value={sectorId}
-                onChange={(e) => setSectorId(e.target.value)}
-              >
-                <option value="">Nenhum</option>
-                {Object.values(SECTORS).map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          <button type="submit" disabled={loading}>
-            {loading ? "Criando…" : "Criar usuário"}
-          </button>
-        </form>
-      )}
-
-      {/* Lista de usuários */}
-      <div className={styles.usersTable}>
-        <h3>Usuários cadastrados</h3>
-        {loading && <p className={styles.loadingMsg}>Carregando…</p>}
-        {!loading && users.length === 0 && (
-          <p className={styles.emptyMsg}>
-            Nenhum usuário cadastrado. Clique em &quot;+ Novo usuário&quot; para criar o
-            primeiro administrador.
-          </p>
-        )}
-        {!loading && users.length > 0 && (
-          <table>
-            <thead>
-            <tr>
-              <th>Usuário</th>
-              <th>Nome</th>
-              <th>Função</th>
-              <th>Setor</th>
-              <th>Ações</th>
-            </tr>
-            </thead>
-            <tbody>
-            {users.map((u) => (
-              <tr key={u.id}>
-                <td>{u.username || "—"}</td>
-                <td>{u.full_name}</td>
-                <td>
-                    <span
-                      className={
-                        u.role === ROLES.ADMIN
-                          ? styles.badgeAdmin
-                          : styles.badgeAttendant
-                      }
-                    >
-                      {u.role === ROLES.ADMIN ? "Administrador" : "Atendente"}
-                    </span>
-                </td>
-                <td>
-                  {u.sector_id
-                    ? SECTORS[u.sector_id]?.name || u.sector_id
-                    : "—"}
-                </td>
-                <td>
-                  <button
-                    type="button"
-                    className={styles.deleteUserBtn}
-                    onClick={() => handleDelete(u.id, u.full_name)}
-                    disabled={loading}
-                  >
-                    <Trash2 size={13}/> Excluir
-                  </button>
-                </td>
-              </tr>
-            ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </section>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════
    SEÇÃO DE SINCRONIZAÇÃO DE SENHAS
 ═══════════════════════════════════════════════════════════ */
-function SyncSection() {
+function SyncSection({ session, canSync }) {
   const [syncSector, setSyncSector] = useState(DEFAULT_SECTOR);
   const [syncType, setSyncType] = useState(CALL_TYPES.NORMAL);
   const [syncNumber, setSyncNumber] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
+
+  // Setores operáveis por esta sessão (escopo de escrita)
+  const syncSectors = Object.values(SECTORS).filter((s) =>
+    canAccessSector(session, s.id, "write"),
+  );
 
   async function handleSync(e) {
     e.preventDefault();
@@ -699,8 +501,15 @@ function SyncSection() {
         ou não aparecem nos monitores.
       </p>
 
+      {!canSync && (
+        <div className={styles.alertBox}>
+          Sua sessão não tem a permissão <strong>filas.sincronizar</strong>.
+        </div>
+      )}
+
       {syncMessage && <div className={styles.alertBox}>{syncMessage}</div>}
 
+      {canSync && (
       <form className={styles.syncForm} onSubmit={handleSync}>
         <div className={styles.syncRow}>
           <label>
@@ -709,7 +518,7 @@ function SyncSection() {
               value={syncSector}
               onChange={(e) => setSyncSector(e.target.value)}
             >
-              {Object.values(SECTORS).map((s) => (
+              {syncSectors.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
                   </option>
@@ -753,6 +562,7 @@ function SyncSection() {
           </label>
         </div>
       </form>
+      )}
     </section>
   );
 }

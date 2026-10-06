@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import { queue } from "@/lib/repositories";
 import { eventManager } from "@/lib/event-manager";
 import { formatNumberString, normalizeCallType } from "@/lib/repositories/utils";
-import { auth } from "@/auth";
+import { assertSectorAccess, requirePermission } from "@/lib/api-auth";
+import { QUEUE_CALL } from "@/lib/permissions.js";
 import { SECTORS, LOCALE } from "@/lib/constants.js";
 
 /* ─────────────────────────────────────────────────
    POST — chama próxima senha de um setor
    Fluxo:
-   1. Valida setor e tipo
+   1. Valida setor, permissão e escopo do setor
    2. Obtém próximo número
    3. Formata número (N001, P002, etc.)
    4. Salva chamada no banco
@@ -16,10 +17,8 @@ import { SECTORS, LOCALE } from "@/lib/constants.js";
 ───────────────────────────────────────────────── */
 export async function POST(request) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const { session, error } = await requirePermission(QUEUE_CALL);
+    if (error) return error;
 
     const body = await request.json();
     const { sector, type } = body;
@@ -31,6 +30,9 @@ export async function POST(request) {
         { status: 400 }
       );
     }
+
+    const scope = assertSectorAccess(session, sector, "write");
+    if (scope.error) return scope.error;
 
     // Normalize type
     const { sequenceType, callType } = normalizeCallType(type);

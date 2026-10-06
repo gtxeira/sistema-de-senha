@@ -11,7 +11,8 @@ import {
   getSessionSnapshot,
   subscribeSession,
 } from "@/lib/queue";
-import { SECTORS, ROLES, CALL_TYPES, PAGE_SIZES, DEFAULT_SECTOR } from "@/lib/constants.js";
+import { SECTORS, CALL_TYPES, PAGE_SIZES, DEFAULT_SECTOR } from "@/lib/constants.js";
+import { SECTORS_VIEW_ALL, hasPermission } from "@/lib/permissions.js";
 import { SidebarLayout, sidebarStyles } from "@/components/SidebarLayout/SidebarLayout";
 import styles from "./Historico.module.css";
 import { convertToBrazilTimeString } from "@/lib/date-utils.js";
@@ -33,7 +34,9 @@ export default function HistoricoPage() {
     getServerSessionSnapshot
   );
 
-  const initialSector = (session?.role !== ROLES.ADMIN && session?.sector)
+  // Sem escopo de "todos os setores", a sessão trava no próprio setor
+  const canViewAllSectors = hasPermission(session, SECTORS_VIEW_ALL);
+  const initialSector = (!canViewAllSectors && session?.sector)
     ? session.sector
     : DEFAULT_SECTOR;
 
@@ -42,7 +45,8 @@ export default function HistoricoPage() {
   const [filterDays, setFilterDays] = useState("30");
   const [filterType, setFilterType] = useState("");
   const [stats, setStats]           = useState(null);
-  const [loading, setLoading]       = useState(false);
+  // começa carregando: o effect de montagem busca sem setState síncrono
+  const [loading, setLoading]       = useState(true);
   const [page, setPage]             = useState(1);
 
   useEffect(() => {
@@ -50,23 +54,32 @@ export default function HistoricoPage() {
     if (!stored) router.push("/login");
   }, [router]);
 
+  const statsUrl = (days, sector) => {
+    const params = new URLSearchParams({ days });
+    if (sector) params.set("sector", sector);
+    return `/api/stats?${params}`;
+  };
+
+  // Uso em handlers de evento (Filtrar): setState síncrono é permitido lá
   const fetchStats = (overrides = {}) => {
     const days   = overrides.days !== undefined ? overrides.days : filterDays;
     const sector = overrides.sector !== undefined ? overrides.sector : activeSector;
 
-    const params = new URLSearchParams({ days });
-    if (sector) params.set("sector", sector);
-
     setLoading(true);
-    fetch(`/api/stats?${params}`)
+    fetch(statsUrl(days, sector))
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => { setStats(data); setLoading(false); })
       .catch(() => setLoading(false));
   };
 
+  // Carga inicial e troca de setor: setState só dentro de callbacks
+  // assíncronos (regra set-state-in-effect). O "loading" e o reset de página
+  // da troca são disparados pelo handler do seletor, antes deste effect.
   useEffect(() => {
-    fetchStats();
-    setPage(1);
+    fetch(statsUrl(filterDays, activeSector))
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => { setStats(data); setLoading(false); })
+      .catch(() => setLoading(false));
   }, [activeSector]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!isClient || !session) return null;
@@ -95,11 +108,15 @@ export default function HistoricoPage() {
       subtitle="Consulte todas as chamadas de senhas realizadas."
       headerActions={
         <>
-          {session?.role === ROLES.ADMIN && (
+          {canViewAllSectors && (
             <select
               className={sidebarStyles.sectorSelect}
               value={activeSector}
-              onChange={(e) => { setActiveSector(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                setActiveSector(e.target.value);
+                setPage(1);
+                setLoading(true);
+              }}
             >
               {Object.values(SECTORS).map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>

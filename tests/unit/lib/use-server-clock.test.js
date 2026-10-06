@@ -208,7 +208,7 @@ describe("useServerClock — SidebarLayout usa o hook", () => {
     );
     const code = readFileSync(sidebarPath, "utf-8");
 
-    expect(code).toContain('from "../../lib/hooks/useServerClock.js"');
+    expect(code).toContain('from "@/lib/hooks/useServerClock.js"');
     expect(code).toContain("useServerClock()");
   });
 
@@ -236,7 +236,7 @@ describe("useServerClock — Monitor usa o hook", () => {
     );
     const code = readFileSync(monitorPath, "utf-8");
 
-    expect(code).toContain('from "../../../lib/hooks/useServerClock.js"');
+    expect(code).toContain('from "@/lib/hooks/useServerClock.js"');
     expect(code).toContain("useServerClock()");
   });
 

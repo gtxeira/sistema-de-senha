@@ -395,6 +395,28 @@ export function getSessionSnapshot() {
   return clientSessionSnapshot;
 }
 
+/**
+ * Persiste o snapshot da sessão (localStorage) a partir do `session.user`
+ * do Auth.js — usado no login e após cada refresh, para que guards e
+ * filtros de UI (permissões/setores) enxerguem os claims atualizados.
+ * Dispara "storage" para os assinantes (useSyncExternalStore) re-renderizarem.
+ */
+export function writeSessionSnapshot(user) {
+  if (typeof window === "undefined" || !user?.id) return;
+  const snapshot = {
+    id: user.id,
+    name: user.name,
+    initials: user.initials,
+    sector: user.sector,
+    guiche: user.guiche,
+    permissions: Array.isArray(user.permissions) ? user.permissions : [],
+  };
+  window.localStorage.setItem(SESSION_KEY, JSON.stringify(snapshot));
+  clientSessionRaw = null;
+  clientSessionSnapshot = null;
+  window.dispatchEvent(new Event("storage"));
+}
+
 export function getServerSessionSnapshot() {
   return null;
 }

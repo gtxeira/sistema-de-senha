@@ -13,7 +13,7 @@ const prisma = new PrismaClient({
  * @param {string} data.username
  * @param {string} data.password
  * @param {string} data.full_name
- * @param {string} [data.role]
+ * @param {string} [data.role] chave do cargo ("admin"|"attendant"|custom)
  * @param {string} [data.sector_id]
  * @returns {{ id: string, username: string, password: string }}
  */
@@ -24,6 +24,12 @@ export async function seedTestUser(data) {
   const rawPassword = data.password || "default123";
   const passwordHash = await bcrypt.hash(rawPassword, 10);
 
+  // `users.role` (enum) virou FK para a tabela `roles`
+  const role = await prisma.roles.findUnique({
+    where: { key: data.role || "attendant" },
+  });
+  if (!role) throw new Error(`Cargo não encontrado: ${data.role || "attendant"}`);
+
   await prisma.users.create({
     data: {
       id,
@@ -31,7 +37,7 @@ export async function seedTestUser(data) {
       email,
       password_hash: passwordHash,
       full_name: data.full_name || "Test User",
-      role: data.role || "attendant",
+      role_id: role.id,
       sector_id: data.sector_id || null,
     },
   });

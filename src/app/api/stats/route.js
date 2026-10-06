@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { read } from "@/lib/repositories";
-import { requireSession } from "@/lib/api-auth";
+import { assertSectorAccess, requireSession } from "@/lib/api-auth";
+import { hasPermission, SECTORS_VIEW_ALL } from "@/lib/permissions.js";
 import { MIN_DAYS, MAX_DAYS, DEFAULT_DAYS } from "@/lib/constants.js";
 
 /* ─────────────────────────────────────────────────
@@ -11,9 +12,11 @@ import { MIN_DAYS, MAX_DAYS, DEFAULT_DAYS } from "@/lib/constants.js";
    - from: data inicial (YYYY-MM-DD)
    - to: data final (YYYY-MM-DD)
    Somente `/historico` consome esta rota, e ele é autenticado.
+   Escopo: com `sector` → setor próprio ou `setores.todos.ver`;
+   sem `sector` (agregado de todos) → exige `setores.todos.ver`.
 ───────────────────────────────────────────────── */
 export async function GET(request) {
-  const { error } = await requireSession();
+  const { session, error } = await requireSession();
   if (error) return error;
 
   const url = new URL(request.url);
@@ -21,6 +24,16 @@ export async function GET(request) {
   const sector = url.searchParams.get("sector") || null;
   const from = url.searchParams.get("from") || null;
   const to = url.searchParams.get("to") || null;
+
+  if (sector) {
+    const scope = assertSectorAccess(session, sector, "read");
+    if (scope.error) return scope.error;
+  } else if (!hasPermission(session, SECTORS_VIEW_ALL)) {
+    return NextResponse.json(
+      { error: "Acesso ao setor negado.", code: "sector_forbidden" },
+      { status: 403 }
+    );
+  }
 
   try {
     const stats = await read.getStats({ days, sector, from: from ? new Date(from) : null, to: to ? new Date(to) : null });

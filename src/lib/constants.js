@@ -69,6 +69,25 @@ export const EMAIL_DOMAIN = "@central-atendimento.local";
 export const DEFAULT_INITIALS = "AT";
 export const DEFAULT_NAME = "Atendente";
 
+// Sessão em dois níveis:
+// - access token = JWT de sessão do Auth.js, validade de 15min (rotaciona a
+//   cada request de sessão, então na prática é um idle timeout);
+// - refresh token = cookie opaco guardado (hash) no banco por 12h contadas
+//   do login, rotacionado a cada uso, com detecção de reuso.
+export const ACCESS_TOKEN_MAX_AGE = 15 * 60; // segundos
+export const PERMISSIONS_MAX_AGE = 15 * 60; // segundos: frescor máximo das permissões no JWT
+export const SESSION_ABSOLUTE_MAX_AGE = 12 * 60 * 60; // segundos: teto absoluto da sessão desde o login
+export const REFRESH_TOKEN_MAX_AGE = 12 * 60 * 60; // segundos: janela absoluta do refresh token
+// Janela de graça para rotações concorrentes do mesmo refresh token (ex.:
+// intervalo do client disparando junto com um redirect do proxy). Dentro da
+// graça o reuso NÃO revoga a família — apenas sinaliza "outro fluxo já
+// renovou". Fora da graça é tratado como roubo de token.
+export const REFRESH_REUSE_GRACE = 10; // segundos
+export const REFRESH_COOKIE_NAME = "app.refresh-token";
+// Intervalo de renovação proativa no client (menor que PERMISSIONS_MAX_AGE
+// para que o refresh nunca fique stale com a aba aberta).
+export const SESSION_REFRESH_INTERVAL = 10 * 60 * 1000; // ms
+
 // ── Guichê ──
 export const DEFAULT_GUICHE = "none";
 

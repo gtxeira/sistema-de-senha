@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { queue } from "@/lib/repositories";
 import { eventManager } from "@/lib/event-manager";
-import { auth } from "@/auth";
+import { assertSectorAccess, requirePermission } from "@/lib/api-auth";
+import { QUEUE_RECALL } from "@/lib/permissions.js";
 import { SECTORS, LOCALE } from "@/lib/constants.js";
 
 /* ─────────────────────────────────────────────────
@@ -10,10 +11,8 @@ import { SECTORS, LOCALE } from "@/lib/constants.js";
 ───────────────────────────────────────────────── */
 export async function POST(request) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const { session, error } = await requirePermission(QUEUE_RECALL);
+    if (error) return error;
 
     const body = await request.json();
     const { sector } = body;
@@ -24,6 +23,9 @@ export async function POST(request) {
         { status: 400 }
       );
     }
+
+    const scope = assertSectorAccess(session, sector, "write");
+    if (scope.error) return scope.error;
 
     const resetAt = await queue.getSectorResetAt(sector);
     // Only calls made after the last reset are repeatable — the rows from
