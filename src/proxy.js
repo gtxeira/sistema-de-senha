@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { auth, SESSION_COOKIE_NAME } from "@/auth";
 import { NextResponse } from "next/server";
 import { REFRESH_COOKIE_NAME } from "@/lib/constants.js";
 import {
@@ -27,6 +27,9 @@ function resumeSessionOrLogin(req, pathname, hasRefresh) {
     refreshUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(refreshUrl);
   }
+  // Nunca redirecionar para o próprio pathname (auto-loop, ex.:
+  // /login → /login com cookie de sessão inválido).
+  if (req.nextUrl.pathname === "/login") return NextResponse.next();
   return NextResponse.redirect(new URL("/login", req.url));
 }
 
@@ -70,8 +73,14 @@ export default auth((req) => {
       return NextResponse.redirect(new URL("/home", req.url));
     }
     // Sessão stale até no /login: tenta o refresh antes de renderizar.
+    // Sem refresh cookie não há como acordar — renderiza o login (o redirect
+    // para /login aqui seria um loop infinito) e descarta o cookie inválido
+    // até o próximo login sobrescrevê-lo.
     if (user && sessionFreshnessProblem(user)) {
-      return resumeSessionOrLogin(req, "/home", hasRefresh);
+      if (hasRefresh) return resumeSessionOrLogin(req, "/home", true);
+      const res = NextResponse.next();
+      res.cookies.delete(SESSION_COOKIE_NAME);
+      return res;
     }
     return NextResponse.next();
   }

@@ -8,6 +8,7 @@ import { REFRESH_COOKIE_NAME } from "@/lib/constants.js";
 // Mock auth() pass-through: o valor do cookie de sessão É o JSON do usuário,
 // então cada teste monta a sessão que quiser (permissões, setor, frescor).
 vi.mock("@/auth", () => ({
+  SESSION_COOKIE_NAME: "authjs.session-token",
   auth: (fn) => (req) => {
     const sessionCookie = req.cookies?.get?.("authjs.session-token")?.value;
     req.auth = sessionCookie ? { user: JSON.parse(sessionCookie) } : null;
@@ -154,6 +155,34 @@ describe("proxy — frescor da sessão (auth_at / perms_at)", () => {
   it("token legado sem claims de frescor é tratado como expirado", () => {
     const res = proxy(makeRequest("/home", { id: "u1", name: "Legado" }));
     expect(locationHeader(res)).toMatch(/\/login$/);
+  });
+
+  // Regressão: cookie de sessão antigo (pré-RBAC, sem authAt/permsAt e sem
+  // refresh cookie) em /login redirecionava para /login — loop infinito no
+  // navegador (ERR_TOO_MANY_REDIRECTS) que impedia qualquer acesso.
+  it("/login com sessão stale SEM refresh cookie renderiza (sem auto-loop)", () => {
+    const res = proxy(
+      makeRequest("/login", freshUser({ permsAt: Date.now() - 16 * 60 * 1000 })),
+    );
+    expect(locationHeader(res)).toBeNull();
+    // higiene: o cookie inválido é descartado na resposta
+    expect(res.headers.get("set-cookie")).toContain("authjs.session-token");
+  });
+
+  it("/login com token legado SEM refresh cookie renderiza (sem auto-loop)", () => {
+    const res = proxy(makeRequest("/login", { id: "u1", name: "Legado" }));
+    expect(locationHeader(res)).toBeNull();
+    expect(res.headers.get("set-cookie")).toContain("authjs.session-token");
+  });
+
+  it("cadeia / → /login termina mesmo com sessão stale sem refresh", () => {
+    const stale = { id: "u1", name: "Legado" };
+
+    const first = proxy(makeRequest("/", stale));
+    expect(locationHeader(first)).toMatch(/\/login$/);
+
+    const second = proxy(makeRequest("/login", stale));
+    expect(locationHeader(second)).toBeNull();
   });
 });
 
