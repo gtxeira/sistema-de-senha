@@ -18,10 +18,21 @@ import { writeSessionSnapshot } from "./queue.js";
 
 let inflight = null;
 
+// Fetch real, capturado ANTES de instalar o interceptor. Todo código interno
+// usa `netFetch` — chamar o global depois do wrap faria
+// fetchWithRefreshRetry → fetch(envolvido) → fetchWithRefreshRetry → …
+// (RangeError "too much recursion" e, no signIn, navegação para
+// /api/auth/error).
+let originalFetch = null;
+
+function netFetch(input, init) {
+  return (originalFetch ?? globalThis.fetch)(input, init);
+}
+
 /** Busca a sessão do Auth.js e persiste o snapshot local. */
 async function syncSessionSnapshot() {
   try {
-    const res = await fetch("/api/auth/session", { cache: "no-store" });
+    const res = await netFetch("/api/auth/session", { cache: "no-store" });
     if (!res.ok) return false;
     const session = await res.json();
     if (session?.user?.id) {
@@ -55,7 +66,7 @@ export function refreshSession() {
 
   inflight = (async () => {
     try {
-      const res = await fetch("/api/auth/refresh", { method: "POST" });
+      const res = await netFetch("/api/auth/refresh", { method: "POST" });
       if (res.ok) {
         await syncSessionSnapshot();
         return true;
@@ -81,8 +92,15 @@ export function refreshSession() {
 }
 
 async function fetchWithRefreshRetry(input, init) {
-  const res = await fetch(input, init);
+  const url =
+    typeof input === "string" ? input : String(input?.url ?? input ?? "");
+  const res = await netFetch(input, init);
   if (res.status !== 401) return res;
+
+  // Rotas de sessão do Auth.js não passam pelo retry: elas mesmas renovam a
+  // sessão, e o interceptor reentraria em refreshSession — o single-flight
+  // devolveria a própria promise em curso (deadlock).
+  if (url.includes("/api/auth/")) return res;
 
   let code = null;
   try {
@@ -95,7 +113,7 @@ async function fetchWithRefreshRetry(input, init) {
   const renewed = await refreshSession();
   if (!renewed) return res;
   // Só uma retentativa — se falhar de novo, o 401 original volta ao caller.
-  return fetch(input, init);
+  return netFetch(input, init);
 }
 
 let started = false;
@@ -115,7 +133,8 @@ export function startSessionRefresh() {
   const onFocus = () => refreshSession();
   window.addEventListener("focus", onFocus);
 
-  const originalFetch = window.fetch.bind(window);
+  const original = window.fetch.bind(window);
+  originalFetch = original;
   window.fetch = (input, init) => fetchWithRefreshRetry(input, init);
 
   // Assim que a aba sobe, tenta acordar a sessão (ex.: TV ligada de manhã).
@@ -125,6 +144,6 @@ export function startSessionRefresh() {
     started = false;
     clearInterval(intervalId);
     window.removeEventListener("focus", onFocus);
-    window.fetch = originalFetch;
+    window.fetch = original;
   };
 }
