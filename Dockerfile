@@ -38,8 +38,8 @@ COPY --from=build /app/.next ./.next
 COPY --from=build /app/public ./public
 COPY package.json bun.lock ./
 COPY prisma ./prisma
-COPY prisma.config.mjs ./
-COPY next.config.mjs ./
+COPY prisma.config.ts ./
+COPY next.config.ts ./
 COPY --chmod=755 scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 3000

@@ -3,7 +3,7 @@
   "type": "module",
   "version": "0.2.0",
   "private": true,
-  "main": "main.js",
+  "main": "dist-electron/main.js",
   "scripts": {
     "preinstall": "npx only-allow bun",
     "postinstall": "prisma generate",
@@ -11,6 +11,9 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint .",
+    "lint:type-aware": "eslint . --config eslint.config.type-aware.mjs",
+    "build:electron": "bun build main.ts --outdir=dist-electron --format=esm --target=node --external electron",
+    "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest",
     "test:changed": "vitest --changed",
     "test:failed": "vitest --onlyFailed",
@@ -19,8 +22,8 @@
     "test:integration": "vitest run tests/integration/",
     "test:coverage": "vitest run --coverage",
     "test:all": "vitest run",
-    "electron:dev": "electron .",
-    "dist": "electron-builder --win nsis",
+    "electron:dev": "bun run build:electron && electron .",
+    "dist": "bun run build:electron && electron-builder --win nsis",
     "db:migrate": "prisma migrate dev && prisma generate",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
@@ -44,6 +47,9 @@
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
+    "@types/node": "^26.6.4",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@vitest/coverage-v8": "^5.0.3",
     "dotenv-cli": "^11",
     "electron": "^44",
@@ -52,6 +58,8 @@
     "eslint-config-next": "^16.3.8",
     "eslint-plugin-no-relative-import-paths": "^1.7.3",
     "happy-dom": "^20.14.5",
+    "typescript": "^6",
+    "typescript-eslint": "^8.71.0",
     "vitest": "^5.0.3"
   },
   "trustedDependencies": [
@@ -67,7 +75,9 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "assets/icon.svg"

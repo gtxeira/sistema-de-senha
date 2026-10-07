@@ -1,8 +1,8 @@
 import { spawnSync } from "node:child_process";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { checkIsRunningInDocker } from "./check-is-running-in-docker.js";
-import { loadEnvFile } from "./load-env-file.js";
+import { checkIsRunningInDocker } from "./check-is-running-in-docker";
+import { loadEnvFile } from "./load-env-file";
 
 if (checkIsRunningInDocker()) {
   console.error("❌ ERRO DE EXECUÇÃO:");

@@ -23,8 +23,8 @@ export default defineConfig(() => {
     test: {
       environment: "happy-dom",
       globals: true,
-      include: ["tests/**/*.test.{js,jsx}"],
-      setupFiles: ["./tests/setup.js"],
+      include: ["tests/**/*.test.{js,jsx,ts,tsx}"],
+      setupFiles: ["./tests/setup.ts"],
       fileParallelism: false,
 
       env: {
@@ -46,17 +46,17 @@ export default defineConfig(() => {
       coverage: {
         provider: "v8",
         include: [
-          "src/lib/repositories/**/*.js",
-          "src/lib/queue-server.js",
-          "src/lib/prisma-client.js",
-          "src/lib/event-manager.js",
-          "src/lib/hooks/**/*.js",
-          "src/app/api/**/*.js",
-          "src/proxy.js",
+          "src/lib/repositories/**/*.ts",
+          "src/lib/queue-server.ts",
+          "src/lib/prisma-client.ts",
+          "src/lib/event-manager.ts",
+          "src/lib/hooks/**/*.ts",
+          "src/app/api/**/*.ts",
+          "src/proxy.ts",
         ],
         exclude: [
           "tests/**",
-          "src/**/*.test.{js,jsx}",
+          "src/**/*.test.{js,jsx,ts,tsx}",
           "src/**/*.module.css",
         ],
         reporter: ["text", "html", "json-summary"],

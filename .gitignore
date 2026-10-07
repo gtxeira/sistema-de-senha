@@ -23,6 +23,9 @@ tests/fixtures/news/*
 /build
 /dist
 
+# bundle do processo principal do Electron (bun build)
+/dist-electron/
+
 # prisma-client gerado (prisma generate)
 /src/generated/
 
