@@ -9,7 +9,7 @@
     "postinstall": "prisma generate",
     "dev": "bun --inspect=0.0.0.0:9229 --bun ./node_modules/next/dist/bin/next dev",
     "build": "prisma generate && next build",
-    "start": "next start",
+    "start": "bun .next/standalone/server.js",
     "lint": "eslint .",
     "lint:type-aware": "eslint . --config eslint.config.type-aware.mjs",
     "build:electron": "bun build main.ts --outdir=dist-electron --format=esm --target=node --external electron",

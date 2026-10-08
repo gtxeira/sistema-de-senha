@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Gera `.next/standalone` (servidor mínimo com node_modules rastreado)
+  // para a imagem de produção — ver Dockerfile, estágio `runner`.
+  output: "standalone",
+
   turbopack: {
     root: process.cwd(),
   },
