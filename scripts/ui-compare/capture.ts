@@ -2,11 +2,13 @@
  * Captura screenshot + métricas de uma rota para comparação antes/depois.
  *
  * Uso:
- *   bun run capture.ts <rota> <nome> [base-url]
+ *   bun run capture.ts <rota> <nome> [base=url] [clicar=sel] [viewport=LxA]
  *   ex.:  bun run capture.ts /home home-antes
+ *         bun run capture.ts /home sub-aberto clicar="text=Monitores"
+ *         bun run capture.ts /home mob-antes viewport=480x900
  *
  * Saída (em shots/):
- *   <nome>.png  — screenshot fullPage (1440×900, DPR 1, light, reduced-motion)
+ *   <nome>.png  — screenshot fullPage (DPR 1, light, reduced-motion)
  *   <nome>.json — métricas por elemento visível (caixa + estilos computados)
  *   state.json  — cookies da sessão (login automático nas próximas capturas)
  *
@@ -27,17 +29,37 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const SHOTS = join(dirname(fileURLToPath(import.meta.url)), "shots");
-const [rota, nome, base = "http://localhost:3000"] = process.argv.slice(2);
+
+const argv = process.argv.slice(2);
+const flags = new Map<string, string>();
+const posicionais: string[] = [];
+for (const arg of argv) {
+  const eq = arg.indexOf("=");
+  const chave = eq > 0 ? arg.slice(0, eq) : "";
+  // valores podem conter '=' (ex.: clicar=text=Monitores)
+  if (["base", "clicar", "viewport"].includes(chave)) {
+    flags.set(chave, arg.slice(eq + 1));
+  } else {
+    posicionais.push(arg);
+  }
+}
+
+const [rota, nome] = posicionais;
+const base = flags.get("base") ?? "http://localhost:3000";
+const clicar = flags.get("clicar");
+const [vw, vh] = (flags.get("viewport") ?? "1440x900").split("x").map(Number);
 
 if (!rota || !nome) {
-  console.error("Uso: bun run capture.ts <rota> <nome> [base-url]");
+  console.error(
+    "Uso: bun run capture.ts <rota> <nome> [base=url] [clicar=sel] [viewport=LxA]",
+  );
   process.exit(1);
 }
 mkdirSync(SHOTS, { recursive: true });
 
 const browser = await chromium.launch();
 const contexto = await browser.newContext({
-  viewport: { width: 1440, height: 900 },
+  viewport: { width: vw, height: vh },
   deviceScaleFactor: 1,
   colorScheme: "light",
   reducedMotion: "reduce",
@@ -73,6 +95,13 @@ await pagina.evaluate(async () => {
   await document.fonts.ready;
 });
 await pagina.waitForTimeout(500); // deixa render/HMR assentarem
+
+// Estado interativo opcional (ex.: submenu de monitores aberto) — o mesmo
+// seletor deve ser usado nas capturas antes e depois.
+if (clicar) {
+  await pagina.click(clicar);
+  await pagina.waitForTimeout(300);
+}
 
 // Esconde o indicador de dev do Next (chrome de desenvolvimento, não é UI
 // da tela) — ele não pode poluir o screenshot nem variar entre capturas.
