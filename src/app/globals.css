@@ -113,6 +113,20 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  /* Pulso do indicador "AO VIVO" do painel — os keyframes/tempos vêm do
+     `.live i` do Painel.module.css antigo (o animate-pulse nativo é 2s
+     com opacidade 0.5, e este painel piscava 1.5s com 0.3). */
+  --animate-live-pulse: live-pulse 1.5s ease-in-out infinite;
+
+  @keyframes live-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.3;
+    }
+  }
 }
 
 .dark {
