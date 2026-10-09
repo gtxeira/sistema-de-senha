@@ -54,18 +54,10 @@
   --radius-card: 16px; /* era --radius-lg; fora da escala do shadcn */
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  background-color: var(--bg-main);
-  color: var(--text-main);
-  min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
-}
+/* O reset `*` (box-sizing/margin/padding) foi removido: o preflight do
+   Tailwind já faz o mesmo reset DENTRO de @layer base. Aqui ele estava
+   sem camada e, no CSS, regras sem camada vencem qualquer @layer — anulando
+   utilitários como py-[13px] e mb-7 de toda a aplicação. */
 
 @media (prefers-reduced-motion: reduce) {
   * {
@@ -163,6 +155,8 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
   }
   html {
     @apply font-sans;

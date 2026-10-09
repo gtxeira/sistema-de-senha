@@ -7,9 +7,12 @@ import { LockKeyhole } from "lucide-react";
 import { writeSessionSnapshot } from "@/lib/queue";
 import { readJson } from "@/lib/json";
 import type { AuthSessionBody } from "@/types/api";
-import styles from "./Login.module.css";
 import brandIcon from "@/app/icon.ico";
 import Image from "next/image";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -60,80 +63,108 @@ export default function LoginPage() {
   }
 
   return (
-    <main className={styles.page}>
+    <main className="flex min-h-dvh">
       {/* ── Hero ── */}
-      <div className={styles.hero}>
-        <div className={styles.heroContent}>
-          <div className={styles.heroMark}>
-            <Image
-              src={brandIcon}
-              alt="Logo"
-              priority
-            />
+      <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-[linear-gradient(160deg,#061e32_0%,#0b3555_45%,#0e5070_100%)] px-12 py-[60px] before:absolute before:-right-25 before:-top-30 before:size-[480px] before:rounded-full before:bg-white before:opacity-[0.07] before:content-[''] after:absolute after:-bottom-20 after:-left-15 after:size-[300px] after:rounded-full after:bg-white after:opacity-[0.07] after:content-[''] max-md:hidden">
+        <div className="relative z-[1] max-w-[380px] text-white">
+          <div className="mb-[15px] size-16 overflow-hidden">
+            <Image src={brandIcon} alt="Logo" priority className="size-full object-contain" />
           </div>
-          <h1>
+          <h1 className="mb-4 text-[clamp(32px,4vw,48px)] font-black leading-[1.15] text-white">
             Sistema de
             <br />
             Atendimento
           </h1>
-          <p>Gerenciamento de senhas e filas para unidades de saúde.</p>
-          <div className={styles.heroDots}>
-            <span />
-            <span />
-            <span />
+          <p className="text-[15px] leading-[1.6] text-[#8eb8cc]">
+            Gerenciamento de senhas e filas para unidades de saúde.
+          </p>
+          <div className="mt-10 flex gap-2">
+            <span className="size-2 rounded-full bg-[#1678a0]" />
+            <span className="size-2 rounded-full bg-[#1678a0] opacity-60" />
+            <span className="size-2 rounded-full bg-[#1678a0] opacity-30" />
           </div>
         </div>
       </div>
 
       {/* ── Painel de login ── */}
-      <div className={styles.side}>
-        <div className={styles.panel}>
+      <div className="flex w-[min(480px,100%)] items-center justify-center bg-[#f4f8fb] px-8 py-10 max-md:min-h-dvh max-md:w-full max-md:bg-[linear-gradient(160deg,#061e32_0%,#0b3555_100%)] max-md:px-6">
+        <div className="w-full max-w-[360px]">
           {/* brand só no mobile */}
-          <div className={styles.mobileBrand}>
-            <div className={styles.brandMark}>S</div>
+          <div className="mb-8 hidden items-center gap-3 max-md:flex">
+            <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#1678a0] text-[22px] font-black text-white">
+              S
+            </div>
             <div>
-              <strong>Central de Atendimento</strong>
-              <span>Sistema de Senhas</span>
+              <strong className="block text-[15px] font-extrabold text-white">
+                Central de Atendimento
+              </strong>
+              <span className="text-[11px] text-white/50">Sistema de Senhas</span>
             </div>
           </div>
 
-          <h2 className={styles.panelTitle}>Entrar no sistema</h2>
-          <p className={styles.panelSub}>
+          <h2 className="mb-1.5 text-2xl font-black leading-normal text-[#0d2d47] max-md:text-white">
+            Entrar no sistema
+          </h2>
+          <p className="mb-7 text-[13px] text-[#7a9aad] max-md:text-[#8eb8cc]">
             Digite suas credenciais para continuar.
           </p>
 
-          <form className={styles.form} onSubmit={(e) => void handleSubmit(e)}>
-            <label>
-              Usuário
-              <input
-                type="text"
-                value={login}
-                onChange={(e) => setLogin(e.target.value)}
-                placeholder="nome.sobrenome"
-                autoComplete="username"
-                autoFocus
-                required
-              />
-            </label>
+          <form className="grid gap-4" onSubmit={(e) => void handleSubmit(e)}>
+            <FieldGroup className="gap-4">
+              <Field className="gap-[7px]">
+                <FieldLabel
+                  htmlFor="login"
+                  className="text-[11px] font-bold uppercase leading-normal tracking-[0.5px] text-[#416477] max-md:text-[#8eb8cc]"
+                >
+                  Usuário
+                </FieldLabel>
+                <Input
+                  id="login"
+                  type="text"
+                  value={login}
+                  onChange={(e) => setLogin(e.target.value)}
+                  placeholder="nome.sobrenome"
+                  autoComplete="username"
+                  autoFocus
+                  required
+                  className="h-auto rounded-lg border-[1.5px] px-3.5 py-[13px] text-sm leading-normal max-md:border-white/[0.18] max-md:bg-white/[0.08] max-md:text-white max-md:placeholder:text-white/30 max-md:focus-visible:bg-white/[0.12]"
+                />
+              </Field>
 
-            <label>
-              Senha
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                autoComplete="current-password"
-                required
-              />
-            </label>
+              <Field className="gap-[7px]">
+                <FieldLabel
+                  htmlFor="password"
+                  className="text-[11px] font-bold uppercase leading-normal tracking-[0.5px] text-[#416477] max-md:text-[#8eb8cc]"
+                >
+                  Senha
+                </FieldLabel>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  required
+                  className="h-auto rounded-lg border-[1.5px] px-3.5 py-[13px] text-sm leading-normal max-md:border-white/[0.18] max-md:bg-white/[0.08] max-md:text-white max-md:placeholder:text-white/30 max-md:focus-visible:bg-white/[0.12]"
+                />
+              </Field>
+            </FieldGroup>
 
-            {error && <div className={styles.errorBox}>{error}</div>}
+            {error && (
+              <Alert variant="destructive" className="rounded-[7px] px-3.5 py-[11px] text-xs font-semibold leading-normal">
+                {error}
+              </Alert>
+            )}
 
-            <button type="submit" disabled={loading}>
-              <LockKeyhole size={17} />
+            <Button
+              type="submit"
+              disabled={loading}
+              className="mt-1 h-auto w-full rounded-[9px] px-2.5 py-[15px] text-sm font-extrabold leading-normal shadow-[0_4px_16px_rgba(2,132,199,0.3)]"
+            >
+              <LockKeyhole data-icon="inline-start" />
               {loading ? "Entrando…" : "Entrar"}
-            </button>
+            </Button>
           </form>
         </div>
       </div>
