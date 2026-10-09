@@ -369,7 +369,7 @@ export default function AccessSection() {
       <div className={styles.sectionTitle}>
         <div>
           <p>ACESSO</p>
-          <h2>Usuários e permissões</h2>
+          <h2 className="font-bold">Usuários e permissões</h2>
         </div>
         <div className={styles.tabBar}>
           <button
@@ -394,9 +394,9 @@ export default function AccessSection() {
       {/* ══════════ ABA USUÁRIOS ══════════ */}
       {tab === "usuarios" && (
         <>
-          <div className={styles.sectionTitle} style={{ marginTop: 8 }}>
-            <div>
-              <h3>Usuários cadastrados</h3>
+          <div className={styles.sectionTitle} style={{ marginTop: 14 }}>
+            <div className="content-end">
+              <h3 className="font-medium text-sm">Usuários cadastrados</h3>
             </div>
             {canCreate && !showUserForm && (
               <button type="button" className={styles.addUserBtn} onClick={openCreateUser}>
@@ -625,9 +625,10 @@ export default function AccessSection() {
       {/* ══════════ ABA CARGOS ══════════ */}
       {tab === "cargos" && (
         <>
-          <div className={styles.sectionTitle} style={{ marginTop: 8 }}>
-            <div>
-              <h3>Cargos</h3>
+
+          <div className={styles.sectionTitle} style={{ marginTop: 14 }}>
+            <div className="content-end">
+              <h3 className="font-medium text-sm">Cargos</h3>
             </div>
             {canManageRoles && !showRoleForm && (
               <button type="button" className={styles.addUserBtn} onClick={openCreateRole}>

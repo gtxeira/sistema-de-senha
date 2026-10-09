@@ -152,7 +152,7 @@ export function SidebarLayout({
         <header className={styles.header}>
           <div>
             {eyebrow && <p className={styles.eyebrow}>{eyebrow}</p>}
-            {title && <h1>{title}</h1>}
+            {title && <h1 className="font-bold">{title}</h1>}
             {subtitle && <p className={styles.muted}>{subtitle}</p>}
           </div>
           <div className={styles.headerActions}>

@@ -309,7 +309,7 @@ export default function AdminPage() {
           <div className={styles.sectionTitle}>
             <div>
               <p>FILAS POR SERVIÇO</p>
-              <h2>Controle dos atendimentos</h2>
+              <h2 className="font-bold">Controle dos atendimentos</h2>
             </div>
           </div>
 
@@ -387,7 +387,7 @@ export default function AdminPage() {
           <div className={styles.sectionTitle}>
             <div>
               <p>COMUNICAÇÃO</p>
-              <h2>Notícias do monitor</h2>
+              <h2 className="font-bold">Notícias do monitor</h2>
             </div>
           </div>
 
@@ -520,7 +520,7 @@ function SyncSection({ session, canSync }: SyncSectionProps) {
       <div className={styles.sectionTitle}>
         <div>
           <p>CONTROLE</p>
-          <h2>Sincronizar senhas</h2>
+          <h2 className="font-bold">Sincronizar senhas</h2>
         </div>
       </div>
 

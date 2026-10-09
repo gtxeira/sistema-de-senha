@@ -608,6 +608,9 @@
   font-weight: 700;
   cursor: pointer;
   transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 2px;
 }
 
 .addUserBtn:hover {
@@ -682,7 +685,7 @@
 }
 
 .usersTable {
-  margin-top: 24px;
+  margin-top: 12px;
 }
 
 .usersTable h3 {

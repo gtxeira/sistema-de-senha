@@ -4,10 +4,6 @@ WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # ── 2. Dependências dev/build (lint, testes, next build) ──
-# Ao final, extrai para `.prisma-slice/` a fatia do CLI do Prisma usada pelo
-# entrypoint do runner (`bun prisma migrate deploy`): é cópia do próprio
-# node_modules já instalado — mesmas versões do lockfile e SEM rede/DNS no
-# build (o standalone não rastreia o CLI, já que ele não é importado pela app).
 FROM base AS deps
 COPY package.json bun.lock ./
 COPY prisma/schema.prisma ./prisma/schema.prisma
@@ -27,8 +23,6 @@ FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/src/generated ./src/generated
 COPY . .
-# Depois do build, completa o `.next/standalone` — regra do Next: `public/` e
-# `.next/static` não entram no rastreamento e precisam ser copiados à mão.
 RUN --mount=type=cache,target=/app/.next/cache \
     bunx next build && \
     mkdir -p .next/standalone/.next/static .next/standalone/public && \
@@ -51,7 +45,6 @@ ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
 COPY --from=build /app/.next/standalone ./.next/standalone
-# Fatia do CLI do Prisma (extraída do deps) — só para o entrypoint.
 COPY --from=deps /app/.prisma-slice ./node_modules
 COPY package.json ./
 COPY prisma ./prisma

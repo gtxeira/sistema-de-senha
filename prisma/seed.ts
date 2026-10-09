@@ -12,6 +12,7 @@ const SECTORS = [
   { id: "recepcao", name: "Recepção Saúde" },
 ];
 
+// TODO: Adicionar o seed diretamente no armazenamento S3
 const DEFAULT_NEWS = {
   title: "Bem-vindo ao Sistema de Senhas",
   image_url: "/news/1789083615350-os7rdzpymeb.jpeg",
