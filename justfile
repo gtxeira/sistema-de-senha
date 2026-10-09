@@ -82,6 +82,16 @@ test:
     {{ _exec_app }} bun run db:reset:test
     {{ _exec_app }} bun run test
 
+# Captura screenshot + métricas de uma rota para comparação visual (host)
+# ex.: just ui-capture /home home-antes
+ui-capture rota *args:
+    cd scripts/ui-compare && bun run capture.ts {{ rota }} {{ args }}
+
+# Compara duas capturas capturadas com ui-capture (host)
+# ex.: just ui-compare home-antes home-depois
+ui-compare antes depois *args:
+    cd scripts/ui-compare && bun run compare.ts {{ antes }} {{ depois }} {{ args }}
+
 # ── Garage ───────────────────────────────────────────────────────────────────
 
 # Criar os buckets de dev e test
