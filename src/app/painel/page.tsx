@@ -65,7 +65,7 @@ const tableHeadStyle =
   "mb-1 grid grid-cols-[0.8fr_1.2fr_1fr_1fr] gap-3 rounded-[6px] bg-[#f0f6f9] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-[1px] text-[#7a9aad] max-[560px]:grid-cols-[1fr_1.4fr_1fr] max-[560px]:[&>span:nth-child(3)]:hidden";
 /** Linha da tabela (`.tableRow`) — mesmo responsive do cabeçalho. */
 const tableRowStyle =
-  "grid grid-cols-[0.8fr_1.2fr_1fr_1fr] items-center gap-3 border-b border-[#edf2f5] p-3 text-[12px] text-[#5a7a8a] max-[560px]:grid-cols-[1fr_1.4fr_1fr] max-[560px]:[&>span:nth-child(3)]:hidden";
+  "grid grid-cols-[0.8fr_1.2fr_1fr_1fr] items-center gap-3 border-b border-b-[#edf2f5] p-3 text-[12px] text-[#5a7a8a] max-[560px]:grid-cols-[1fr_1.4fr_1fr] max-[560px]:[&>span:nth-child(3)]:hidden";
 
 const emptySubscribe = () => () => {};
 function useIsClient() {
@@ -354,7 +354,7 @@ export default function PainelPage() {
                 ))}
             </div>
             {current.history.length > ITEMS_PER_PAGE && (
-              <div className="mt-[18px] flex items-center justify-center gap-4 border-t border-[#edf2f5] pt-4">
+              <div className="mt-[18px] flex items-center justify-center gap-4 border-t border-t-[#edf2f5] pt-4">
                 <button
                   type="button"
                   className="rounded-[6px] border border-[#cfdee8] bg-white px-3.5 py-2 text-[12px] font-bold text-[#3a6a80] transition-[background-color,border-color] duration-[120ms] enabled:hover:border-[#1678a0] enabled:hover:bg-[#f0f6f9] disabled:cursor-not-allowed disabled:opacity-40"

@@ -21,12 +21,6 @@ import { SCREEN_ADMIN, canAccessSector, hasPermission } from "@/lib/permissions"
 import type { Permission } from "@/lib/permissions";
 import type { SessionSnapshot } from "@/lib/queue";
 import { useServerClock } from "@/lib/hooks/useServerClock";
-import styles from "./SidebarLayout.module.css";
-
-/* `sectorSelect` e `monitorLink` seguem no módulo: são consumidos pelo
-   painel e pelo histórico no slot `headerActions` até as etapas 4/5 da
-   Fase 2 — quando essas telas migrarem, o módulo é apagado. */
-export { styles as sidebarStyles };
 
 interface NavItem {
   readonly route: string;

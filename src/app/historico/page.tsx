@@ -15,11 +15,33 @@ import { SECTORS, CALL_TYPES, PAGE_SIZES, DEFAULT_SECTOR, getSector } from "@/li
 import { readJson } from "@/lib/json";
 import type { QueueStats } from "@/lib/repositories/types";
 import { SECTORS_VIEW_ALL, hasPermission } from "@/lib/permissions";
-import { SidebarLayout, sidebarStyles } from "@/components/SidebarLayout/SidebarLayout";
-import styles from "./Historico.module.css";
+import { SidebarLayout } from "@/components/SidebarLayout/SidebarLayout";
 import { convertToBrazilTimeString } from "@/lib/date-utils";
 
 const ITEMS_PER_PAGE = PAGE_SIZES.historico;
+
+/* ── Estilos (eram classes do Historico.module.css, migrado na etapa 5
+     da Fase 2) ── */
+
+/** Rótulo cinza em versalete (`.label`). */
+const labelStyle =
+  "text-[10px] font-extrabold tracking-[1.25px] text-[#7990a1]";
+/** Campo de filtro (`.filterGroup`): no responsive de 560px vira
+    coluna full-width (`min-width: unset` via valor arbitrário). */
+const filterGroupStyle =
+  "flex min-w-[140px] flex-col gap-[5px] max-[560px]:min-w-[unset] max-[560px]:w-full";
+/** `<select>` de filtro (`.filterGroup select`). */
+const filterSelectStyle =
+  "rounded-[6px] border border-[#cddde5] bg-white px-2.5 py-[9px] text-[13px] text-[#1a3d55] outline-[#1678a0]";
+/** Cabeçalho da tabela (`.tableHead`): no responsive de 560px a 4ª
+    coluna (SETOR) some e as colunas reencaixam em 3. */
+const tableHeadStyle =
+  "mb-1 grid grid-cols-[0.7fr_1fr_1.2fr_1fr] gap-3 rounded-[6px] bg-[#f0f6f9] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-[1px] text-[#7a9aad] max-[560px]:grid-cols-[0.7fr_1fr_1fr] max-[560px]:[&>span:nth-child(4)]:hidden";
+/** Linha da tabela (`.tableRow`) — mesmo responsive do cabeçalho. */
+const tableRowStyle =
+  "grid grid-cols-[0.7fr_1fr_1.2fr_1fr] items-center gap-3 border-b border-b-[#edf2f5] p-3 text-[12px] text-[#5a7a8a] max-[560px]:grid-cols-[0.7fr_1fr_1fr] max-[560px]:[&>span:nth-child(4)]:hidden";
+/** Número da senha na linha (`.tableRow strong`). */
+const rowStrongStyle = "text-[17px] font-extrabold tracking-[1px] text-[#163b52]";
 
 const emptySubscribe = () => () => {};
 function useIsClient() {
@@ -112,7 +134,7 @@ export default function HistoricoPage() {
         <>
           {canViewAllSectors && (
             <select
-              className={sidebarStyles.sectorSelect}
+              className="cursor-pointer rounded-[7px] border border-[#cfdee8] bg-white px-[13px] py-[10px] text-[12px] font-bold text-[#236681] outline-[#1678a0]"
               value={activeSector}
               onChange={(e) => {
                 setActiveSector(e.target.value);
@@ -129,10 +151,11 @@ export default function HistoricoPage() {
       }
     >
       {/* ── Filtros ── */}
-      <div className={styles.filters}>
-        <div className={styles.filterGroup}>
-          <label>Período</label>
+      <div className="mt-7 flex flex-wrap items-end gap-3 rounded-[12px] border border-[#dde9ed] bg-white px-5 py-[18px] max-[560px]:flex-col max-[560px]:items-stretch">
+        <div className={filterGroupStyle}>
+          <label className="text-[10px] font-extrabold uppercase tracking-[1px] text-[#7a9aad]">Período</label>
           <select
+            className={filterSelectStyle}
             value={filterDays}
             onChange={(e) => { setFilterDays(e.target.value); setPage(1); }}
           >
@@ -142,9 +165,10 @@ export default function HistoricoPage() {
             <option value="90">Últimos 90 dias</option>
           </select>
         </div>
-        <div className={styles.filterGroup}>
-          <label>Tipo</label>
+        <div className={filterGroupStyle}>
+          <label className="text-[10px] font-extrabold uppercase tracking-[1px] text-[#7a9aad]">Tipo</label>
           <select
+            className={filterSelectStyle}
             value={filterType}
             onChange={(e) => { setFilterType(e.target.value); setPage(1); }}
           >
@@ -154,7 +178,7 @@ export default function HistoricoPage() {
           </select>
         </div>
         <button
-          className={styles.filterBtn}
+          className="flex cursor-pointer items-center gap-1.5 self-end rounded-[7px] border-current bg-[#1678a0] px-[18px] py-2.5 text-[12px] font-extrabold text-white transition-[background-color] duration-[150ms] hover:bg-[#1389b8] max-[560px]:w-full max-[560px]:justify-center"
           type="button"
           onClick={() => fetchStats()}
         >
@@ -164,45 +188,45 @@ export default function HistoricoPage() {
 
       {/* ── Stats ── */}
       {stats && (
-        <div className={styles.statsGrid}>
-          <article className={styles.statCard}>
-            <strong>{stats.summary?.total ?? 0}</strong>
-            <span>Total no período</span>
+        <div className="mt-6 grid grid-cols-4 gap-3.5 max-[900px]:grid-cols-2 max-[560px]:grid-cols-1">
+          <article className="rounded-[10px] border border-[#dde9ed] bg-white px-5 py-[18px]">
+            <strong className="block text-[32px] font-black leading-none text-[#0d5e7e]">{stats.summary?.total ?? 0}</strong>
+            <span className="mt-1.5 block text-[11px] font-bold uppercase tracking-[0.5px] text-[#7a9aad]">Total no período</span>
           </article>
-          <article className={styles.statCard}>
-            <strong>{stats.summary?.today ?? 0}</strong>
-            <span>Atendimentos hoje</span>
+          <article className="rounded-[10px] border border-[#dde9ed] bg-white px-5 py-[18px]">
+            <strong className="block text-[32px] font-black leading-none text-[#0d5e7e]">{stats.summary?.today ?? 0}</strong>
+            <span className="mt-1.5 block text-[11px] font-bold uppercase tracking-[0.5px] text-[#7a9aad]">Atendimentos hoje</span>
           </article>
-          <article className={`${styles.statCard} ${styles.statCardNormal}`}>
-            <strong>{stats.summary?.normal ?? 0}</strong>
-            <span>Senhas normais</span>
+          <article className="rounded-[10px] border border-[#dde9ed] bg-white px-5 py-[18px]">
+            <strong className="block text-[32px] font-black leading-none text-[#1678a0]">{stats.summary?.normal ?? 0}</strong>
+            <span className="mt-1.5 block text-[11px] font-bold uppercase tracking-[0.5px] text-[#7a9aad]">Senhas normais</span>
           </article>
-          <article className={`${styles.statCard} ${styles.statCardPref}`}>
-            <strong>{stats.summary?.preferencial ?? 0}</strong>
-            <span>Preferenciais</span>
+          <article className="rounded-[10px] border border-[#dde9ed] bg-white px-5 py-[18px]">
+            <strong className="block text-[32px] font-black leading-none text-[#b85c00]">{stats.summary?.preferencial ?? 0}</strong>
+            <span className="mt-1.5 block text-[11px] font-bold uppercase tracking-[0.5px] text-[#7a9aad]">Preferenciais</span>
           </article>
         </div>
       )}
 
       {/* ── Tabela ── */}
-      <section className={styles.historySection}>
-        <div className={styles.sectionHeading}>
+      <section className="mt-6 rounded-[14px] border border-[#dde9ed] bg-white p-7">
+        <div className="mb-5 flex items-start justify-between">
           <div>
-            <span className={styles.label}>REGISTROS</span>
-            <h2>Chamadas de senhas</h2>
+            <span className={labelStyle}>REGISTROS</span>
+            <h2 className="mt-1.75 text-[18px] font-bold">Chamadas de senhas</h2>
           </div>
         </div>
 
-        {loading && <p className={styles.loadingMsg}>Carregando...</p>}
+        {loading && <p className="p-8 text-center text-[13px] text-[#7a9aad]">Carregando...</p>}
 
         {!loading && pagedCalls.length === 0 && (
-          <p className={styles.emptyMsg}>Nenhuma chamada encontrada para os filtros selecionados.</p>
+          <p className="p-8 text-center text-[13px] text-[#9ab0bc]">Nenhuma chamada encontrada para os filtros selecionados.</p>
         )}
 
         {!loading && pagedCalls.length > 0 && (
           <>
-            <div className={styles.table}>
-              <div className={styles.tableHead}>
+            <div className="flex flex-col">
+              <div className={tableHeadStyle}>
                 <span>SENHA</span>
                 <span>TIPO</span>
                 <span>HORÁRIO</span>
@@ -210,15 +234,18 @@ export default function HistoricoPage() {
               </div>
               {pagedCalls.map((item, index) => (
                 <div
-                  className={styles.tableRow}
+                  className={tableRowStyle}
                   key={`${item.id || item.number}-${index}`}
                 >
-                  <strong>{formatQueueNumber(item.number, item.type)}</strong>
-                  <span className={item.type === CALL_TYPES.PREFERENCIAL ? styles.priorityTag : styles.normalTag}>
+                  <strong className={rowStrongStyle}>{formatQueueNumber(item.number, item.type)}</strong>
+                  <span className={item.type === CALL_TYPES.PREFERENCIAL
+                    ? "inline-block rounded-[4px] bg-[#fff3e0] px-2.5 py-1 text-[10px] font-extrabold tracking-[0.5px] text-[#b85c00]"
+                    : "inline-block rounded-[4px] bg-[#e6f4f9] px-2.5 py-1 text-[10px] font-extrabold tracking-[0.5px] text-[#1678a0]"}
+                  >
                     {item.type === CALL_TYPES.PREFERENCIAL ? "Preferencial" : "Normal"}
                   </span>
                   <span>{item.time}</span>
-                  <span className={styles.sectorTag}>
+                  <span className="inline-block rounded-[4px] bg-[#f0f6f9] px-2.5 py-1 text-[10px] font-bold text-[#4a6a7a]">
                     {getSector(item.sector_id)?.shortName || item.sector_id || "—"}
                   </span>
                 </div>
@@ -226,21 +253,21 @@ export default function HistoricoPage() {
             </div>
 
             {totalPages > 1 && (
-              <div className={styles.pagination}>
+              <div className="mt-[18px] flex items-center justify-center gap-4 border-t border-t-[#edf2f5] pt-4">
                 <button
                   type="button"
-                  className={styles.pageBtn}
+                  className="rounded-[6px] border border-[#cfdee8] bg-white px-3.5 py-2 text-[12px] font-bold text-[#3a6a80] transition-[background-color,border-color] duration-[120ms] enabled:hover:border-[#1678a0] enabled:hover:bg-[#f0f6f9] disabled:cursor-not-allowed disabled:opacity-40"
                   disabled={page === 1}
                   onClick={() => setPage((p) => p - 1)}
                 >
                   ← Anterior
                 </button>
-                <span className={styles.pageInfo}>
+                <span className="text-[12px] font-semibold text-[#7a9aad]">
                   Página {page} de {totalPages}
                 </span>
                 <button
                   type="button"
-                  className={styles.pageBtn}
+                  className="rounded-[6px] border border-[#cfdee8] bg-white px-3.5 py-2 text-[12px] font-bold text-[#3a6a80] transition-[background-color,border-color] duration-[120ms] enabled:hover:border-[#1678a0] enabled:hover:bg-[#f0f6f9] disabled:cursor-not-allowed disabled:opacity-40"
                   disabled={page >= totalPages}
                   onClick={() => setPage((p) => p + 1)}
                 >
