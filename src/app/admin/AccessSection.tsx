@@ -1,7 +1,18 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { Check, Minus, Pencil, Plus, ShieldCheck, Trash2 } from "lucide-react";
+import {
+  Check,
+  Minus,
+  Pencil,
+  Plus,
+  ShieldCheck,
+  Trash2,
+  UserCheck,
+  Headset,
+  LucideIcon,
+  ChevronDown
+} from "lucide-react";
 import {
   getSessionSnapshot,
   getServerSessionSnapshot,
@@ -34,7 +45,36 @@ import {
   computeEffectivePermissions,
   hasPermission,
 } from "@/lib/permissions";
-import styles from "./Admin.module.css";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  alertBoxStyle,
+  fieldLabelStyle,
+  fieldStyle,
+  sectionEyebrowStyle,
+  sectionHeadingStyle,
+  sectionStyle,
+  sectionTitleStyle,
+} from "./admin-styles";
+import { cn } from "@/lib/utils";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const INHERIT = "inherit";
 const GRANT = "grant";
@@ -50,6 +90,90 @@ const EMPTY_USER_FORM = {
 };
 
 const EMPTY_ROLE_FORM = { key: "", name: "", description: "" };
+
+/* ── classes locais desta seção (as comuns vêm de ./admin-styles) ── */
+
+const tabBarStyle = "flex shrink-0 gap-2";
+/* o hover fica na variante escolhida: as duas abas têm fundo próprio e
+   competiriam no mesmo `hover:bg-*` */
+const tabBaseStyle =
+  "cursor-pointer rounded-[8px] border-[1.5px] px-4 py-[9px] text-[13px] font-bold text-[#416477] transition-all duration-[150ms]";
+const tabInactiveStyle = `${tabBaseStyle} border-[#dde9ed] bg-[#f1f7fa] hover:bg-[#e6f2f8]`;
+const tabActiveStyle = `${tabBaseStyle} border-[#1678a0] bg-[#1678a0] text-white`;
+const addUserBtnStyle =
+  "flex cursor-pointer items-center gap-0.5 rounded-[8px] border-current bg-[#1678a0] px-[18px] py-2.5 text-[13px] font-bold text-white transition-[background-color] duration-[150ms] hover:bg-[#1389b8]";
+
+/* Formulários: agora dentro de Dialog — o card `.userForm` (fundo, borda e
+   margens) some com o diálogo; campos e matriz mantêm o visual exato. */
+const formRowStyle =
+  "mb-4 grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-4";
+const permMatrixStyle =
+  "mb-[18px] rounded-[10px] border border-[#dde9ed] bg-[#f9fcfe] p-[18px]";
+const permMatrixTitleStyle =
+  "flex items-center justify-between gap-3 text-[12px] font-bold uppercase tracking-[0.5px] text-[#416477]";
+const effectiveCountStyle =
+  "rounded-[6px] bg-[#e6f4fb] px-2.5 py-1 text-[11px] text-[#1678a0]";
+const permGroupStyle = "mb-4";
+const permGroupTitleStyle =
+  "mb-2 text-[11px] font-extrabold uppercase tracking-[0.8px] text-[#7a9aad]";
+const permRowStyle =
+  "flex items-center justify-between gap-3 border-b border-dashed border-[#eaf1f4] py-1.5 last:border-b-0";
+const permOnStyle =
+  "inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#1c7c4a]";
+const permOffStyle =
+  "inline-flex items-center gap-1.5 text-[13px] text-[#9ab0bd]";
+const triStateStyle =
+  "min-w-[150px] rounded-[6px] border-[1.5px] border-[#cddde5] bg-white px-2 py-1.5 text-[12px] text-[#416477] outline-none transition-[border-color] duration-[150ms] focus:border-[#1678a0]";
+const permCheckStyle =
+  "flex cursor-pointer items-center gap-2 py-1 text-[13px] text-[#416477]";
+const formActionsStyle = "flex gap-2.5 justify-end";
+const submitBtnStyle =
+  "cursor-pointer rounded-[8px] border-current bg-[#1678a0] px-6 py-3 text-sm font-bold text-white transition-[background-color] duration-[150ms] enabled:hover:bg-[#1389b8] disabled:cursor-wait disabled:opacity-50";
+const cancelBtnStyle =
+  "cursor-pointer rounded-[8px] border-[1.5px] border-[#cddde5] bg-[#f1f7fa] px-6 py-3 text-[13px] font-bold text-[#416477] transition-[background-color] duration-[150ms] enabled:hover:bg-[#e6f2f8]";
+
+/* Tabelas e estados de lista. */
+const usersTableStyle = "mt-3";
+const loadingMsgStyle = "mt-5 text-[13px] text-[#7a9aad]";
+const emptyMsgStyle = "p-6 text-center text-[13px] text-[#7a9aad]";
+const tableStyle =
+  "w-full border-collapse overflow-hidden rounded-[10px] border border-[#dde9ed] bg-white";
+const theadStyle = "bg-[#f4f8fb]";
+const thStyle =
+  "border-b border-[#dde9ed] px-4 py-3.5 text-left text-[11px] font-extrabold uppercase tracking-[0.5px] text-[#416477]";
+const tdStyle =
+  "border-b border-[#f0f5f8] px-4 py-3.5 text-[13px] text-[#0d2d47]";
+/* `tbody tr:last-child td { border-bottom: none }` */
+const tbodyStyle = "[&>tr:last-child>td]:border-b-0";
+const badgeBaseStyle =
+  "inline-flex items-center gap-0.5 rounded-[6px] px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.3px]";
+const badgeUserActiveStyle = `${badgeBaseStyle} bg-[#e6f4fb] text-[#1678a0]`;
+const badgeUserInactiveStyle = `${badgeBaseStyle} bg-[#fef3e6] text-[#c97a0e]`;
+/* td não vira flex: as utilidades ficam em cada botão e o espaçamento entre
+   irmãos, no próprio td */
+const rowActionsStyle = "whitespace-nowrap [&>button+button]:ml-1.5";
+const rowBtnBaseStyle =
+  "inline-flex cursor-pointer items-center gap-[5px] rounded-[6px] px-3 py-1.5 text-[12px] font-bold";
+const editBtnStyle = `${rowBtnBaseStyle} border border-[#bfe3f3] bg-[#e6f4fb] text-[#1678a0] enabled:hover:bg-[#d3edfa] disabled:cursor-wait disabled:opacity-50`;
+const deleteBtnStyle = `${rowBtnBaseStyle} border border-[#f5c6c2] bg-[#fdecea] text-[#b33a2e] transition-[background-color] duration-[150ms] enabled:hover:bg-[#fcded9] disabled:cursor-wait disabled:opacity-50`;
+const roleDescriptionStyle =
+  "mt-[3px] text-[12px] font-normal tracking-normal text-[#7a9aad]";
+
+const ROLE_CONFIG: Record<string, { icon: LucideIcon; className: string }> = {
+  admin: {
+    icon: ShieldCheck,
+    className: 'bg-[#fef3e6] text-[#c97a0e]',
+  },
+  attendant: {
+    icon: Headset,
+    className: 'bg-[#e6f4fb] text-[#1678a0]', // ou sua variável badgeAttendantStyle
+  },
+}
+
+const DEFAULT_ROLE_CONFIG = {
+  icon: UserCheck,
+  className: 'bg-gray-100 text-gray-700',
+}
 
 /** Estado de um override por usuário: herdado do cargo, concedido ou negado. */
 type OverrideMode = typeof INHERIT | typeof GRANT | typeof DENY;
@@ -70,6 +194,8 @@ function isOverrideMode(value: string): value is OverrideMode {
  *    (conceder/negar permissão além do cargo);
  *  - Cargos: CRUD de cargos + matriz de permissões (Telas/Ações/Escopo).
  * Os cargos built-in (Administrador/Atendente) são somente leitura.
+ * Formulários abrem em Dialog e as exclusões pedem confirmação em
+ * AlertDialog (antes, tudo era `window.confirm`).
  */
 export default function AccessSection() {
   const session = useSyncExternalStore(
@@ -104,6 +230,10 @@ export default function AccessSection() {
   // `Set<string>` de propósito: cargo e usuário trazem strings do banco e
   // precisam ser filtrados sem cast (mesma leitura de permissions.ts).
   const [rolePerms, setRolePerms] = useState<Set<string>>(() => new Set());
+
+  /* ── confirmações de exclusão (antes `window.confirm`) ── */
+  const [deleteUserTarget, setDeleteUserTarget] = useState<UserRecord | null>(null);
+  const [deleteRoleTarget, setDeleteRoleTarget] = useState<RoleRecord | null>(null);
 
   useEffect(() => {
     if (!canView) return;
@@ -229,21 +359,19 @@ export default function AccessSection() {
     }
   }
 
-  async function handleDeleteUser(userId: string, userName: string) {
-    if (
-      !window.confirm(
-        `Excluir o usuário "${userName}"?\n\nEsta ação não pode ser desfeita.`,
-      )
-    ) {
-      return;
-    }
+  /* Roda depois da confirmação no AlertDialog — o clique em Excluir só
+     guarda o alvo em `deleteUserTarget`. */
+  async function confirmDeleteUser() {
+    const target = deleteUserTarget;
+    if (!target) return;
+    setDeleteUserTarget(null);
     setLoading(true);
     setMessage("");
     try {
-      const res = await fetch(`/api/users?id=${userId}`, { method: "DELETE" });
+      const res = await fetch(`/api/users?id=${target.id}`, { method: "DELETE" });
       const data = await readJson<SuccessBody>(res);
       if (!res.ok) throw new Error(data.error);
-      setMessage(`Usuário ${userName} excluído com sucesso.`);
+      setMessage(`Usuário ${target.full_name} excluído com sucesso.`);
       await loadUsers();
     } catch (err) {
       setMessage(errorMessage(err, "Erro ao excluir usuário"));
@@ -325,18 +453,15 @@ export default function AccessSection() {
     }
   }
 
-  async function handleDeleteRole(roleId: string, roleName: string) {
-    if (
-      !window.confirm(
-        `Excluir o cargo "${roleName}"?\n\nUsuários com este cargo ficarão órfãos — troque-os antes.`,
-      )
-    ) {
-      return;
-    }
+  /* Mesmo fluxo do usuário: alvo em `deleteRoleTarget` + AlertDialog. */
+  async function confirmDeleteRole() {
+    const target = deleteRoleTarget;
+    if (!target) return;
+    setDeleteRoleTarget(null);
     setLoading(true);
     setMessage("");
     try {
-      const res = await fetch(`/api/roles?id=${roleId}`, { method: "DELETE" });
+      const res = await fetch(`/api/roles?id=${target.id}`, { method: "DELETE" });
       const data = await readJson<SuccessBody>(res);
       if (!res.ok) throw new Error(data.error);
       setMessage("Cargo excluído.");
@@ -362,26 +487,30 @@ export default function AccessSection() {
   const roleUsersCount = (roleId: string) =>
     users.filter((u) => u.role_id === roleId).length;
 
+  /* Com um Dialog aberto o alerta da seção ficaria escondido atrás do
+     overlay — aí a mensagem aparece dentro do formulário. */
+  const messageOutsideForm = !showUserForm && !showRoleForm;
+
   if (!canView) return null;
 
   return (
-    <section className={styles.section}>
-      <div className={styles.sectionTitle}>
+    <section className={sectionStyle}>
+      <div className={sectionTitleStyle}>
         <div>
-          <p>ACESSO</p>
-          <h2 className="font-bold">Usuários e permissões</h2>
+          <p className={sectionEyebrowStyle}>ACESSO</p>
+          <h2 className={`font-bold ${sectionHeadingStyle}`}>Usuários e permissões</h2>
         </div>
-        <div className={styles.tabBar}>
+        <div className={tabBarStyle}>
           <button
             type="button"
-            className={`${styles.tab} ${tab === "usuarios" ? styles.tabActive : ""}`}
+            className={tab === "usuarios" ? tabActiveStyle : tabInactiveStyle}
             onClick={() => setTab("usuarios")}
           >
             Usuários
           </button>
           <button
             type="button"
-            className={`${styles.tab} ${tab === "cargos" ? styles.tabActive : ""}`}
+            className={tab === "cargos" ? tabActiveStyle : tabInactiveStyle}
             onClick={() => setTab("cargos")}
           >
             Cargos e permissões
@@ -389,198 +518,300 @@ export default function AccessSection() {
         </div>
       </div>
 
-      {message && <div className={styles.alertBox}>{message}</div>}
+      {message && messageOutsideForm && <div className={alertBoxStyle}>{message}</div>}
 
       {/* ══════════ ABA USUÁRIOS ══════════ */}
       {tab === "usuarios" && (
         <>
-          <div className={styles.sectionTitle} style={{ marginTop: 14 }}>
+          <div className={`${sectionTitleStyle} mt-[14px]`}>
             <div className="content-end">
               <h3 className="font-medium text-sm">Usuários cadastrados</h3>
             </div>
             {canCreate && !showUserForm && (
-              <button type="button" className={styles.addUserBtn} onClick={openCreateUser}>
+              <button type="button" className={addUserBtnStyle} onClick={openCreateUser}>
                 <Plus size={14} /> Novo usuário
               </button>
             )}
           </div>
 
-          {showUserForm && (
-            <form className={styles.userForm} onSubmit={(e) => void handleUserSubmit(e)}>
-              <div className={styles.formRow}>
-                <label>
-                  Usuário
-                  <input
-                    type="text"
-                    value={userForm.username}
-                    onChange={(e) => setUserForm({ ...userForm, username: e.target.value })}
-                    placeholder="nome.sobrenome"
-                    // `pattern` quer o *source* do regex: um `RegExp` é
-                    // stringificado como "/^…$/" e o navegador âncora isso em
-                    // `^(?:…)$` — que nunca casa, travando o formulário.
-                    pattern={USERNAME_REGEX.source}
-                    title={USERNAME_REGEX_LABEL}
-                    disabled={!!editingUserId}
-                    required={!editingUserId}
-                  />
-                </label>
-                <label>
-                  Senha {editingUserId && "(deixe em branco para manter)"}
-                  <input
-                    type="password"
-                    value={userForm.password}
-                    onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
-                    placeholder="••••••••"
-                    required={!editingUserId}
-                  />
-                </label>
-              </div>
+          <Dialog
+            open={showUserForm}
+            onOpenChange={(open) => {
+              if (!open) closeUserForm();
+            }}
+          >
+            <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingUserId ? "Editar usuário" : "Novo usuário"}
+                </DialogTitle>
+              </DialogHeader>
+              <form onSubmit={(e) => void handleUserSubmit(e)}>
+                {message && <div className={alertBoxStyle}>{message}</div>}
+                <div className={formRowStyle}>
+                  <label className={fieldLabelStyle}>
+                    Usuário
+                    <input
+                      type="text"
+                      value={userForm.username}
+                      onChange={(e) => setUserForm({ ...userForm, username: e.target.value })}
+                      placeholder="nome.sobrenome"
+                      className={fieldStyle}
+                      // `pattern` quer o *source* do regex: um `RegExp` é
+                      // stringificado como "/^…$/" e o navegador âncora isso em
+                      // `^(?:…)$` — que nunca casa, travando o formulário.
+                      pattern={USERNAME_REGEX.source}
+                      title={USERNAME_REGEX_LABEL}
+                      disabled={!!editingUserId}
+                      required={!editingUserId}
+                    />
+                  </label>
+                  <label className={fieldLabelStyle}>
+                    Senha {editingUserId && "(deixe em branco para manter)"}
+                    <input
+                      type="password"
+                      value={userForm.password}
+                      onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+                      placeholder="••••••••"
+                      className={fieldStyle}
+                      required={!editingUserId}
+                    />
+                  </label>
+                </div>
 
-              <div className={styles.formRow}>
-                <label>
-                  Nome completo
-                  <input
-                    type="text"
-                    value={userForm.full_name}
-                    onChange={(e) => setUserForm({ ...userForm, full_name: e.target.value })}
-                    placeholder="Nome Sobrenome"
-                    required
-                  />
-                </label>
-                <label>
-                  Cargo
-                  <select
-                    value={userForm.role_id}
-                    onChange={(e) => setUserForm({ ...userForm, role_id: e.target.value })}
-                    required
-                  >
-                    <option value="">Selecione…</option>
-                    {roles.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Setor (opcional)
-                  <select
-                    value={userForm.sector_id}
-                    onChange={(e) => setUserForm({ ...userForm, sector_id: e.target.value })}
-                  >
-                    <option value="">Nenhum</option>
-                    {Object.values(SECTORS).map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Situação
-                  <select
-                    value={userForm.active ? "1" : "0"}
-                    onChange={(e) => setUserForm({ ...userForm, active: e.target.value === "1" })}
-                  >
-                    <option value="1">Ativo</option>
-                    <option value="0">Inativo</option>
-                  </select>
-                </label>
-              </div>
+                <div className={formRowStyle}>
+                  <label className={fieldLabelStyle}>
+                    Nome completo
+                    <input
+                      type="text"
+                      value={userForm.full_name}
+                      onChange={(e) => setUserForm({ ...userForm, full_name: e.target.value })}
+                      placeholder="Nome Sobrenome"
+                      className={fieldStyle}
+                      required
+                    />
+                  </label>
+                  <label className={fieldLabelStyle}>
+                    Cargo
+                    <select
+                      value={userForm.role_id}
+                      onChange={(e) => setUserForm({ ...userForm, role_id: e.target.value })}
+                      className={fieldStyle}
+                      required
+                    >
+                      <option value="">Selecione…</option>
+                      {roles.map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {r.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className={fieldLabelStyle}>
+                    Setor (opcional)
+                    <select
+                      value={userForm.sector_id}
+                      onChange={(e) => setUserForm({ ...userForm, sector_id: e.target.value })}
+                      className={fieldStyle}
+                    >
+                      <option value="">Nenhum</option>
+                      {Object.values(SECTORS).map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className={fieldLabelStyle}>
+                    Situação
+                    <select
+                      value={userForm.active ? "1" : "0"}
+                      onChange={(e) => setUserForm({ ...userForm, active: e.target.value === "1" })}
+                      className={fieldStyle}
+                    >
+                      <option value="1">Ativo</option>
+                      <option value="0">Inativo</option>
+                    </select>
+                  </label>
+                </div>
 
-              {/* Overrides por usuário: conceder/negar além do cargo */}
-              <div className={styles.permMatrix}>
-                <p className={styles.permMatrixTitle}>
-                  Permissões individuais — valem além do cargo
-                  <span className={styles.effectiveCount}>
-                    {effectivePerms.length}/{ALL_PERMISSIONS.length} efetivas
-                  </span>
-                </p>
-                {PERMISSION_GROUPS.map((group) => (
-                  <div key={group.key} className={styles.permGroup}>
-                    <h4>{group.label}</h4>
-                    {group.items.map((item) => {
-                      const mode = overrides[item.permission] ?? INHERIT;
-                      const effective = effectivePerms.includes(item.permission);
-                      return (
-                        <div key={item.permission} className={styles.permRow}>
-                          <span className={effective ? styles.permOn : styles.permOff}>
-                            {effective ? <Check size={13} /> : <Minus size={13} />}
-                            {item.label}
-                          </span>
-                          <select
-                            className={styles.triState}
-                            value={mode}
-                            onChange={(e) => {
-                              const mode = e.target.value;
-                              if (isOverrideMode(mode)) {
-                                setOverrides({
-                                  ...overrides,
-                                  [item.permission]: mode,
-                                });
-                              }
-                            }}
-                          >
-                            <option value={INHERIT}>Herdar do cargo</option>
-                            <option value={GRANT}>Conceder</option>
-                            <option value={DENY}>Negar</option>
-                          </select>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))}
-              </div>
+                {/* Overrides por usuário: conceder/negar além do cargo */}
+                {/*<Collapsible defaultOpen className={permMatrixStyle}>*/}
+                {/*  <CollapsibleTrigger className="group flex w-full cursor-pointer items-center justify-between rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">*/}
+                {/*    <p className={permMatrixTitleStyle}>*/}
+                {/*      Permissões individuais — valem além do cargo*/}
+                {/*      <span className={effectiveCountStyle}>*/}
+                {/*        {effectivePerms.length}/{ALL_PERMISSIONS.length} efetivas*/}
+                {/*      </span>*/}
+                {/*    </p>*/}
 
-              <div className={styles.formActions}>
-                <button type="submit" disabled={loading}>
-                  {loading ? "Salvando…" : editingUserId ? "Salvar alterações" : "Criar usuário"}
-                </button>
-                <button type="button" className={styles.cancelBtn} onClick={closeUserForm}>
-                  Cancelar
-                </button>
-              </div>
-            </form>
-          )}
+                {/*    <ChevronDown*/}
+                {/*      size={16}*/}
+                {/*      className="shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180"*/}
+                {/*    />*/}
+                {/*  </CollapsibleTrigger>*/}
 
-          <div className={styles.usersTable}>
-            {loading && <p className={styles.loadingMsg}>Carregando…</p>}
+                {/*  <CollapsibleContent className="space-y-4 pt-3">*/}
+                {/*    {PERMISSION_GROUPS.map((group) => (*/}
+                {/*      <div key={group.key} className={permGroupStyle}>*/}
+                {/*        <h4 className={permGroupTitleStyle}>{group.label}</h4>*/}
+                {/*        {group.items.map((item) => {*/}
+                {/*          const mode = overrides[item.permission] ?? INHERIT;*/}
+                {/*          const effective = effectivePerms.includes(item.permission);*/}
+                {/*          return (*/}
+                {/*            <div key={item.permission} className={permRowStyle}>*/}
+                {/*            <span className={effective ? permOnStyle : permOffStyle}>*/}
+                {/*              {effective ? <Check size={13} /> : <Minus size={13} />}*/}
+                {/*              {item.label}*/}
+                {/*            </span>*/}
+                {/*              <select*/}
+                {/*                className={triStateStyle}*/}
+                {/*                value={mode}*/}
+                {/*                onChange={(e) => {*/}
+                {/*                  const mode = e.target.value;*/}
+                {/*                  if (isOverrideMode(mode)) {*/}
+                {/*                    setOverrides({*/}
+                {/*                      ...overrides,*/}
+                {/*                      [item.permission]: mode,*/}
+                {/*                    });*/}
+                {/*                  }*/}
+                {/*                }}*/}
+                {/*              >*/}
+                {/*                <option value={INHERIT}>Herdar do cargo</option>*/}
+                {/*                <option value={GRANT}>Conceder</option>*/}
+                {/*                <option value={DENY}>Negar</option>*/}
+                {/*              </select>*/}
+                {/*            </div>*/}
+                {/*          );*/}
+                {/*        })}*/}
+                {/*      </div>*/}
+                {/*    ))}*/}
+                {/*  </CollapsibleContent>*/}
+                {/*</Collapsible>*/}
+
+                <Collapsible defaultOpen className={permMatrixStyle}>
+                  <CollapsibleTrigger className="group flex w-full cursor-pointer items-center justify-between rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                    <p className={permMatrixTitleStyle}>
+                      Permissões individuais — valem além do cargo
+                      <span className={effectiveCountStyle}>
+                        {effectivePerms.length}/{ALL_PERMISSIONS.length} efetivas
+                      </span>
+                    </p>
+
+                    <ChevronDown
+                      size={16}
+                      className="shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180"
+                    />
+                  </CollapsibleTrigger>
+
+                  <CollapsibleContent className="pt-3">
+                    <Tabs defaultValue={PERMISSION_GROUPS[0]?.key} className="w-full">
+                      {/* Barra de Seleção das Abas */}
+                      <TabsList className="grid w-full grid-cols-3 rounded-md!">
+                        {PERMISSION_GROUPS.map((group) => {
+                          const activeInGroup = group.items.filter((item) =>
+                            effectivePerms.includes(item.permission)
+                          ).length;
+
+                          return (
+                            <TabsTrigger key={group.key} value={group.key} className="gap-2 text-xs rounded-md!">
+                              {group.label}
+                              <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                                {activeInGroup}/{group.items.length}
+                              </span>
+                            </TabsTrigger>
+                          );
+                        })}
+                      </TabsList>
+
+                      {/* Conteúdo de Cada Aba */}
+                      {PERMISSION_GROUPS.map((group) => (
+                        <TabsContent key={group.key} value={group.key} className="mt-3 space-y-2">
+                          {group.items.map((item) => {
+                            const mode = overrides[item.permission] ?? INHERIT;
+                            const effective = effectivePerms.includes(item.permission);
+
+                            return (
+                              <div key={item.permission} className={permRowStyle}>
+                              <span className={effective ? permOnStyle : permOffStyle}>
+                                {effective ? <Check size={13} /> : <Minus size={13} />}
+                                {item.label}
+                              </span>
+
+                                <select
+                                  className={triStateStyle}
+                                  value={mode}
+                                  onChange={(e) => {
+                                    const newMode = e.target.value;
+                                    if (isOverrideMode(newMode)) {
+                                      setOverrides({
+                                        ...overrides,
+                                        [item.permission]: newMode,
+                                      });
+                                    }
+                                  }}
+                                >
+                                  <option value={INHERIT}>Herdar do cargo</option>
+                                  <option value={GRANT}>Conceder</option>
+                                  <option value={DENY}>Negar</option>
+                                </select>
+                              </div>
+                            );
+                          })}
+                        </TabsContent>
+                      ))}
+                    </Tabs>
+                  </CollapsibleContent>
+                </Collapsible>
+
+                <div className={formActionsStyle}>
+                  <button type="submit" className={submitBtnStyle} disabled={loading}>
+                    {loading ? "Salvando…" : editingUserId ? "Salvar alterações" : "Criar usuário"}
+                  </button>
+                  <button type="button" className={cancelBtnStyle} onClick={closeUserForm}>
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          <div className={usersTableStyle}>
+            {loading && <p className={loadingMsgStyle}>Carregando…</p>}
             {!loading && users.length === 0 && (
-              <p className={styles.emptyMsg}>Nenhum usuário cadastrado.</p>
+              <p className={emptyMsgStyle}>Nenhum usuário cadastrado.</p>
             )}
             {!loading && users.length > 0 && (
-              <table>
-                <thead>
+              <table className={tableStyle}>
+                <thead className={theadStyle}>
                   <tr>
-                    <th>Usuário</th>
-                    <th>Nome</th>
-                    <th>Cargo</th>
-                    <th>Setor</th>
-                    <th>Situação</th>
-                    <th>Permissões extras</th>
-                    <th>Ações</th>
+                    <th className={thStyle}>Usuário</th>
+                    <th className={thStyle}>Nome</th>
+                    <th className={thStyle}>Cargo</th>
+                    <th className={thStyle}>Setor</th>
+                    <th className={thStyle}>Situação</th>
+                    <th className={thStyle}>Permissões extras</th>
+                    <th className={thStyle}>Ações</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className={tbodyStyle}>
                   {users.map((u) => {
                     const grants = (u.permissions || []).filter((p) => p.granted).length;
                     const denies = (u.permissions || []).filter((p) => !p.granted).length;
                     return (
                       <tr key={u.id}>
-                        <td>{u.username || "—"}</td>
-                        <td>{u.full_name}</td>
-                        <td>
-                          <span className={u.role_built_in ? styles.badgeAdmin : styles.badgeAttendant}>
-                            {u.role_name || u.role || "—"}
+                        <td className={tdStyle}>{u.username || "—"}</td>
+                        <td className={tdStyle}>{u.full_name}</td>
+                        <td className={tdStyle}>
+                          <RoleBadge role={ { key: u.role!, name: u.role_name! } } />
+                        </td>
+                        <td className={tdStyle}>{u.sector_id ? getSector(u.sector_id)?.name || u.sector_id : "—"}</td>
+                        <td className={tdStyle}>
+                          <span className={u.active ? badgeUserActiveStyle : badgeUserInactiveStyle}>
+                            {u.active ? "Ativo" : "Inativo"}
                           </span>
                         </td>
-                        <td>{u.sector_id ? getSector(u.sector_id)?.name || u.sector_id : "—"}</td>
-                        <td>
-                          <span className={u.active !== false ? styles.badgeAttendant : styles.badgeAdmin}>
-                            {u.active !== false ? "Ativo" : "Inativo"}
-                          </span>
-                        </td>
-                        <td>
+                        <td className={tdStyle}>
                           {grants + denies === 0
                             ? "—"
                             : [
@@ -590,11 +821,11 @@ export default function AccessSection() {
                                 .filter(Boolean)
                                 .join(" · ")}
                         </td>
-                        <td className={styles.rowActions}>
+                        <td className={`${tdStyle} ${rowActionsStyle}`}>
                           {canEdit && (
                             <button
                               type="button"
-                              className={styles.editUserBtn}
+                              className={editBtnStyle}
                               onClick={() => openEditUser(u)}
                               disabled={loading}
                             >
@@ -604,8 +835,8 @@ export default function AccessSection() {
                           {canDelete && (
                             <button
                               type="button"
-                              className={styles.deleteUserBtn}
-                              onClick={() => void handleDeleteUser(u.id, u.full_name)}
+                              className={deleteBtnStyle}
+                              onClick={() => setDeleteUserTarget(u)}
                               disabled={loading}
                             >
                               <Trash2 size={13} /> Excluir
@@ -626,126 +857,156 @@ export default function AccessSection() {
       {tab === "cargos" && (
         <>
 
-          <div className={styles.sectionTitle} style={{ marginTop: 14 }}>
+          <div className={`${sectionTitleStyle} mt-[14px]`}>
             <div className="content-end">
               <h3 className="font-medium text-sm">Cargos</h3>
             </div>
             {canManageRoles && !showRoleForm && (
-              <button type="button" className={styles.addUserBtn} onClick={openCreateRole}>
+              <button type="button" className={addUserBtnStyle} onClick={openCreateRole}>
                 <Plus size={14} /> Novo cargo
               </button>
             )}
           </div>
 
-          {showRoleForm && (
-            <form className={styles.userForm} onSubmit={(e) => void handleRoleSubmit(e)}>
-              <div className={styles.formRow}>
-                {!editingRoleId && (
-                  <label>
-                    Chave
+          <Dialog
+            open={showRoleForm}
+            onOpenChange={(open) => {
+              if (!open) closeRoleForm();
+            }}
+          >
+            <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingRoleId ? "Editar cargo" : "Novo cargo"}
+                </DialogTitle>
+              </DialogHeader>
+              <form onSubmit={(e) => void handleRoleSubmit(e)}>
+                {message && <div className={alertBoxStyle}>{message}</div>}
+                <div className={formRowStyle}>
+                  {!editingRoleId && (
+                    <label className={fieldLabelStyle}>
+                      Chave
+                      <input
+                        type="text"
+                        value={roleForm.key}
+                        onChange={(e) => setRoleForm({ ...roleForm, key: e.target.value })}
+                        placeholder="coordenador"
+                        className={fieldStyle}
+                        pattern="[a-z][a-z0-9-]*"
+                        title="Minúsculas, sem espaços (ex.: coordenador)"
+                        required
+                      />
+                    </label>
+                  )}
+                  <label className={fieldLabelStyle}>
+                    Nome
                     <input
                       type="text"
-                      value={roleForm.key}
-                      onChange={(e) => setRoleForm({ ...roleForm, key: e.target.value })}
-                      placeholder="coordenador"
-                      pattern="[a-z][a-z0-9-]*"
-                      title="Minúsculas, sem espaços (ex.: coordenador)"
+                      value={roleForm.name}
+                      onChange={(e) => setRoleForm({ ...roleForm, name: e.target.value })}
+                      placeholder="Coordenador"
+                      className={fieldStyle}
                       required
                     />
                   </label>
-                )}
-                <label>
-                  Nome
-                  <input
-                    type="text"
-                    value={roleForm.name}
-                    onChange={(e) => setRoleForm({ ...roleForm, name: e.target.value })}
-                    placeholder="Coordenador"
-                    required
-                  />
-                </label>
-                <label>
-                  Descrição
-                  <input
-                    type="text"
-                    value={roleForm.description}
-                    onChange={(e) => setRoleForm({ ...roleForm, description: e.target.value })}
-                    placeholder="O que este cargo faz"
-                  />
-                </label>
-              </div>
-
-              <div className={styles.permMatrix}>
-                <p className={styles.permMatrixTitle}>
-                  Permissões do cargo
-                  <span className={styles.effectiveCount}>
-                    {rolePerms.size}/{ALL_PERMISSIONS.length}
-                  </span>
-                </p>
-                {PERMISSION_GROUPS.map((group) => (
-                  <div key={group.key} className={styles.permGroup}>
-                    <h4>{group.label}</h4>
-                    {group.items.map((item) => (
-                      <label key={item.permission} className={styles.permCheck}>
-                        <input
-                          type="checkbox"
-                          checked={rolePerms.has(item.permission)}
-                          onChange={() => toggleRolePermission(item.permission)}
-                          disabled={!canManageRoles}
-                        />
-                        {item.label}
-                      </label>
-                    ))}
-                  </div>
-                ))}
-              </div>
-
-              {canManageRoles && (
-                <div className={styles.formActions}>
-                  <button type="submit" disabled={loading}>
-                    {loading ? "Salvando…" : editingRoleId ? "Salvar cargo" : "Criar cargo"}
-                  </button>
-                  <button type="button" className={styles.cancelBtn} onClick={closeRoleForm}>
-                    Fechar
-                  </button>
+                  <label className={fieldLabelStyle}>
+                    Descrição
+                    <input
+                      type="text"
+                      value={roleForm.description}
+                      onChange={(e) => setRoleForm({ ...roleForm, description: e.target.value })}
+                      placeholder="O que este cargo faz"
+                      className={fieldStyle}
+                    />
+                  </label>
                 </div>
-              )}
-            </form>
-          )}
 
-          <div className={styles.usersTable}>
-            {roles.length === 0 && <p className={styles.emptyMsg}>Nenhum cargo cadastrado.</p>}
+                <div className={permMatrixStyle}>
+                  <p className={permMatrixTitleStyle}>
+                    Permissões do cargo
+                    <span className={effectiveCountStyle}>
+                      {rolePerms.size}/{ALL_PERMISSIONS.length}
+                    </span>
+                  </p>
+                  {PERMISSION_GROUPS.map((group) => (
+                    <div key={group.key} className={permGroupStyle}>
+                      <h4 className={permGroupTitleStyle}>{group.label}</h4>
+                      {group.items.map((item) => (
+                        <label
+                          key={item.permission}
+                          className={permCheckStyle}
+                          onClick={(e) => {
+                            /* O clique no texto do label ativa nativamente o
+                               input oculto do Checkbox (também alterna o
+                               estado) — e o toggle abaixo rodaria em cima:
+                               dois toggles = nada parecia acontecer.
+                               `preventDefault` cancela essa ativação e deixa
+                               só o nosso toggle. O clique vindo do próprio
+                               box é descartado pelo guard (o Base UI já
+                               alternou antes, na fase de destino). */
+                            e.preventDefault();
+                            if ((e.target as Element).closest('[data-slot="checkbox"]')) return;
+                            if (canManageRoles) toggleRolePermission(item.permission);
+                          }}
+                        >
+                          <Checkbox
+                            checked={rolePerms.has(item.permission)}
+                            onCheckedChange={() => toggleRolePermission(item.permission)}
+                            disabled={!canManageRoles}
+                          />
+                          {item.label}
+                        </label>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+
+                {canManageRoles && (
+                  <div className={formActionsStyle}>
+                    <button type="submit" className={submitBtnStyle} disabled={loading}>
+                      {loading ? "Salvando…" : editingRoleId ? "Salvar cargo" : "Criar cargo"}
+                    </button>
+                    <button type="button" className={cancelBtnStyle} onClick={closeRoleForm}>
+                      Fechar
+                    </button>
+                  </div>
+                )}
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          <div className={usersTableStyle}>
+            {roles.length === 0 && <p className={emptyMsgStyle}>Nenhum cargo cadastrado.</p>}
             {roles.length > 0 && (
-              <table>
-                <thead>
+              <table className={tableStyle}>
+                <thead className={theadStyle}>
                   <tr>
-                    <th>Cargo</th>
-                    <th>Chave</th>
-                    <th>Permissões</th>
-                    <th>Usuários</th>
-                    <th>Ações</th>
+                    <th className={thStyle}>Cargo</th>
+                    <th className={thStyle}>Chave</th>
+                    <th className={thStyle}>Permissões</th>
+                    <th className={thStyle}>Usuários</th>
+                    <th className={thStyle}>Ações</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className={tbodyStyle}>
                   {roles.map((r) => (
                     <tr key={r.id}>
-                      <td>
-                        <span className={r.built_in ? styles.badgeAdmin : styles.badgeAttendant}>
-                          <ShieldCheck size={12} /> {r.name}
-                        </span>
+                      <td className={tdStyle}>
+                        <RoleBadge role={r} />
+
                         {r.description && (
-                          <div className={styles.roleDescription}>{r.description}</div>
+                          <div className={roleDescriptionStyle}>{r.description}</div>
                         )}
                       </td>
-                      <td>{r.key}</td>
-                      <td>
+                      <td className={tdStyle}>{r.key}</td>
+                      <td className={tdStyle}>
                         {r.permissions.length}/{ALL_PERMISSIONS.length}
                       </td>
-                      <td>{roleUsersCount(r.id)}</td>
-                      <td className={styles.rowActions}>
+                      <td className={tdStyle}>{roleUsersCount(r.id)}</td>
+                      <td className={`${tdStyle} ${rowActionsStyle}`}>
                         <button
                           type="button"
-                          className={styles.editUserBtn}
+                          className={editBtnStyle}
                           onClick={() => openEditRole(r)}
                           disabled={loading}
                         >
@@ -754,8 +1015,8 @@ export default function AccessSection() {
                         {canManageRoles && !r.built_in && (
                           <button
                             type="button"
-                            className={styles.deleteUserBtn}
-                            onClick={() => void handleDeleteRole(r.id, r.name)}
+                            className={deleteBtnStyle}
+                            onClick={() => setDeleteRoleTarget(r)}
                             disabled={loading}
                           >
                             <Trash2 size={13} /> Excluir
@@ -770,6 +1031,73 @@ export default function AccessSection() {
           </div>
         </>
       )}
+
+      {/* ── Confirmações de exclusão — os antigos `window.confirm` ── */}
+      <AlertDialog
+        open={deleteUserTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteUserTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {deleteUserTarget ? `Excluir o usuário "${deleteUserTarget.full_name}"?` : ""}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => void confirmDeleteUser()}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={deleteRoleTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteRoleTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {deleteRoleTarget ? `Excluir o cargo "${deleteRoleTarget.name}"?` : ""}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Usuários com este cargo ficarão órfãos — troque-os antes.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => void confirmDeleteRole()}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
+}
+
+function RoleBadge({ role }: { role: Pick<RoleRecord, 'name' | 'key'> }) {
+  const roleInfo = ROLE_CONFIG[role.key] || DEFAULT_ROLE_CONFIG
+  const Icon = roleInfo.icon
+
+  return (
+    <span className={cn(badgeBaseStyle, roleInfo.className)}>
+      <Icon size={12} />
+      {role.name}
+    </span>
+  )
 }
