@@ -319,7 +319,7 @@ export default function PainelPage() {
         <div className="mb-5 flex items-start justify-between">
           <div>
             <span className={labelStyle}>ÚLTIMAS CHAMADAS</span>
-            <h2>Histórico recente</h2>
+            <h2 className="font-bold">Histórico recente</h2>
           </div>
           <Link href="/historico" className="text-[13px] font-bold text-[#236681] hover:underline">Ver histórico completo →</Link>
         </div>

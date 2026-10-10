@@ -36,7 +36,6 @@ import {
   speakText,
   unlockSpeech,
 } from "@/lib/speech";
-import styles from "./Monitor.module.css";
 import { convertToBrazilTimeString } from "@/lib/date-utils";
 import { readJson } from "@/lib/json";
 import type { NewsListBody } from "@/types/api";
@@ -103,8 +102,10 @@ const NewsCarousel = memo(function NewsCarousel() {
 
   if (!news?.length) {
     return (
-      <div className={styles.emptyNews}>
-        <strong>INFORMAÇÕES DA UNIDADE</strong>
+      <div className="relative z-[1] flex h-full flex-col items-center justify-center p-[4vw] text-[#173b51]">
+        <strong className="mt-2 block max-w-[850px] text-[clamp(20px,3vw,48px)] leading-[1.1] text-[#173b51]">
+          INFORMAÇÕES DA UNIDADE
+        </strong>
       </div>
     );
   }
@@ -114,22 +115,19 @@ const NewsCarousel = memo(function NewsCarousel() {
     <>
       {item?.image && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={item.image}
-          alt={item.title || ""}
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-          }}
-        />
+        <img src={item.image} alt={item.title || ""} className="absolute inset-0 h-full w-full object-cover" />
       )}
-      <div className={styles.newsCaption}>
-        <div className={styles.dots}>
+      <div className="relative z-[1] w-full p-6 text-white">
+        <div className="flex gap-[7px]">
           {news.map((_, i) => (
-            <i key={i} className={i === newsIndex ? styles.activeDot : ""} />
+            <i
+              key={i}
+              className={
+                i === newsIndex
+                  ? "h-2 w-6 rounded-[5px] bg-[#8fe2d2]"
+                  : "h-2 w-2 rounded-[50%] bg-[#ffffff66]"
+              }
+            />
           ))}
         </div>
       </div>
@@ -327,80 +325,109 @@ export default function MonitorPage({ params }: MonitorPageProps) {
   const hasNoPassword = latest.number === null || latest.number === undefined;
 
   return (
-    <main className={styles.monitor}>
-      <header className={styles.header}>
-        <div className={styles.sectorTitle}>{info.name.toUpperCase()}</div>
-        <div className={styles.heading}>
-          <strong>CENTRAL DE ATENDIMENTO</strong>
+    <main className="grid h-[100dvh] w-screen grid-rows-[88px_1fr] overflow-hidden bg-[#f5f8f9] text-[#173b51] max-[900px]:block max-[900px]:h-auto max-[900px]:min-h-screen max-[900px]:overflow-auto">
+      {/* `grid-cols-2` do Tailwind é `minmax(0,1fr)` e corta o header nos
+          220/220; o `1fr 1fr` antigo expandia a coluna do relógio com o
+          conteúdo nowrap (260px) e encolhia a do setor. */}
+      <header className="grid h-[88px] w-full grid-cols-[1fr_2fr_1fr] items-center bg-[#004066] px-[3vw] text-white max-[900px]:h-[72px] max-[900px]:grid-cols-[1fr_1fr] max-[900px]:px-5">
+        <div className="text-[clamp(16px,2vw,28px)] font-extrabold tracking-[1.5px] max-[500px]:text-[14px]">
+          {info.name.toUpperCase()}
         </div>
-        <div className={styles.headerMeta}>
-          <div className={styles.clock}>
+        <div className="text-center max-[900px]:hidden">
+          <strong className="whitespace-nowrap text-[clamp(22px,3.1vw,44px)] tracking-[3px]">
+            CENTRAL DE ATENDIMENTO
+          </strong>
+        </div>
+        <div className="justify-self-end text-right">
+          {/* O `@media (max-width: 500px)` antigo reduzia o .clock para 13px,
+              mas perdia em especificidade para `.headerMeta .clock` (18px) —
+              o efeito real nunca foi o de 13px. */}
+          <div className="flex items-center justify-self-end gap-2 text-[18px]">
             <Clock3 size={18} />
             {timeString}
           </div>
-          <div className={styles.date}>
+          <div className="mt-1 whitespace-nowrap text-[10px] font-bold tracking-[1px] text-[#c5dce5]">
             {dateString}
           </div>
         </div>
       </header>
 
-      <div className={styles.content}>
-        <section className={styles.leftColumn}>
+      <div className="grid h-full w-full min-h-0 grid-cols-[40%_60%] max-[900px]:flex max-[900px]:h-auto max-[900px]:flex-col">
+        <section className="grid h-full min-h-0 grid-rows-[62%_38%] max-[900px]:flex max-[900px]:h-auto max-[900px]:flex-col">
           <section
-            className={`${styles.featured} ${isPriority ? styles.featuredPriority : ""}`}
+            className={`box-border flex h-full min-h-0 flex-col items-center justify-center border-current border-r border-r-[#cadde2] p-3 ${
+              isPriority ? "bg-[#fff7f7]" : "bg-white"
+            } max-[900px]:h-auto max-[900px]:min-h-[320px]`}
           >
-            <p>SENHA</p>
-            <strong className={hasNoPassword ? styles.noPassword : ""}>
+            <p className="mb-[5px] text-[13px] tracking-[5px] text-[#78909c]">SENHA</p>
+            <strong
+              className={`text-[clamp(110px,12vw,240px)] tracking-[5px] leading-none ${
+                hasNoPassword
+                  ? "text-[#b0bec5]"
+                  : isPriority
+                    ? "text-[#d63838]"
+                    : "text-[#1972a0]"
+              } max-[500px]:text-[88px]`}
+            >
               {formatMonitorNumber(latest?.number ?? NO_PASSWORD)}
             </strong>
             {hasNoPassword ? (
-              <span>NENHUMA SENHA CHAMADA</span>
+              <span className="mt-3 text-[14px] font-extrabold tracking-[1.5px] text-[#1972a0]">
+                NENHUMA SENHA CHAMADA
+              </span>
             ) : isPriority ? (
-              <span className={styles.priorityTag}>
+              <span className="mt-2 inline-block rounded-[12px] bg-[#ef4444] px-6 py-[10px] text-[1.2rem] font-extrabold tracking-[1.5px] text-white shadow-[0_4px_10px_rgba(239,68,68,0.3)]">
                 ATENDIMENTO PREFERENCIAL
               </span>
             ) : (
-              <span>ATENDIMENTO</span>
+              <span className="mt-3 text-[14px] font-extrabold tracking-[1.5px] text-[#1972a0]">
+                ATENDIMENTO
+              </span>
             )}
-            <small>{hasNoPassword ? "Aguardando primeiras chamadas" : "Dirija-se ao balcão de atendimento"}</small>
+            <small className="mt-2 text-[11px] text-[#8aa0ab]">
+              {hasNoPassword ? "Aguardando primeiras chamadas" : "Dirija-se ao balcão de atendimento"}
+            </small>
           </section>
 
-          <section className={styles.recent}>
-            <p className={styles.kicker}>ÚLTIMAS SENHAS</p>
+          <section className="box-border h-full min-h-0 overflow-hidden border-current border-r border-r-[#cadde2] bg-[#f8fbfc] px-[3vw] pb-3 pt-4 max-[900px]:h-auto max-[900px]:min-h-[280px]">
+            <p className="mb-2 text-[10px] font-extrabold tracking-[2px] text-[#178c7c]">ÚLTIMAS SENHAS</p>
             {recentCalls.length > 0 ? (
+              // O JS já fatia em 4 itens (`slice(1, 5)`) — o CSS antigo escondia o 5º+.
               recentCalls.map((item, i) => (
                 <div
-                  className={styles.historyItem}
+                  className="grid grid-cols-[1fr_1.5fr_0.6fr] items-center border-b border-b-[#dce8eb] py-2 text-[#668390]"
                   key={`${item.id || item.number}-${item.type}-${i}`}
                 >
                   <strong
-                    className={
+                    className={`text-[clamp(25px,2.6vw,42px)] tracking-[2px] ${
                       item.type === CALL_TYPES.PREFERENCIAL
-                        ? styles.priorityNumber
-                        : styles.normalNumber
-                    }
+                        ? "text-[#d63838]"
+                        : "text-[#1972a0]"
+                    }`}
                   >
                     {formatMonitorNumber(item?.number ?? NO_PASSWORD)}
                   </strong>
                   {item.type === "preferencial" ? (
-                    <span className={styles.priorityTagSmall}>
+                    <span className="inline-block rounded-[8px] bg-[#ef4444] px-3 py-1 text-center text-[10px] font-extrabold tracking-[1px] text-white">
                       PREFERENCIAL
                     </span>
                   ) : (
-                    <span className={styles.normal}>ATENDIMENTO</span>
+                    <span className="text-[10px] font-extrabold tracking-[1px] text-[#1972a0]">
+                      ATENDIMENTO
+                    </span>
                   )}
-                  <time>{item.time}</time>
+                  <time className="text-right text-[11px]">{item.time}</time>
                 </div>
               ))
             ) : (
-              <p style={{ fontSize: "14px", color: "#888", marginTop: "12px" }}>
+              <p className="mt-3 text-[14px] text-[#888]">
                 Nenhuma senha chamada ainda neste setor.
               </p>
             )}
           </section>
         </section>
 
-        <section className={styles.news}>
+        <section className="relative flex h-full min-h-0 w-full items-end overflow-hidden border-current bg-[#dce9eb] after:absolute after:inset-[40%_0_0] after:bg-[linear-gradient(transparent,#092f43dc)] after:content-[''] max-[900px]:h-[420px] max-[900px]:order-first">
           <NewsCarousel />
         </section>
       </div>
