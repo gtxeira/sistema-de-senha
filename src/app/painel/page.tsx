@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import {
   Bell,
   CheckCircle2,
-  Monitor,
   RotateCcw,
 } from "lucide-react";
 import {
@@ -29,6 +28,27 @@ import { SECTORS_VIEW_ALL, hasPermission } from "@/lib/permissions";
 import { useQueueEvents } from "@/lib/hooks/useQueueEvents";
 import { SidebarLayout } from "@/components/SidebarLayout/SidebarLayout";
 import { convertToBrazilTimeString } from "@/lib/date-utils";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem, SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Pagination } from "@/components/pagination";
+import { cn } from "@/lib/utils";
 
 const HISTORY_LIMIT = HISTORY_LIMITS.painel;
 const ITEMS_PER_PAGE = PAGE_SIZES.painel;
@@ -45,9 +65,6 @@ const cardStyle =
   "rounded-[14px] border border-[#dde9ed] bg-white p-7 max-[560px]:px-[17px] max-[560px]:py-[21px]";
 /** Linha do topo dos cartões (`.cardTop`). */
 const cardTopStyle = "flex items-start justify-between";
-/** Selo de contagem ao lado do título (`.counter`). */
-const counterStyle =
-  "rounded-[6px] bg-[#f0f6f9] px-2.5 py-[5px] text-[11px] font-extrabold text-[#7990a1]";
 /** Faixa "AO VIVO" (`.live`); o pulso usa o token `--animate-live-pulse`
     do globals.css, com os keyframes/tempos do módulo antigo. */
 const liveStyle =
@@ -56,16 +73,8 @@ const liveStyle =
     `.priorityButton`); a elevação do hover não vale quando desabilitado
     (daí `enabled:`), e `border-current` reproduz o `border: 0` antigo. */
 const callButtonStyle =
-  "flex items-center justify-between gap-1.5 rounded-[10px] px-5 py-[18px] font-extrabold transition-[transform,box-shadow] duration-[120ms] enabled:hover:-translate-y-0.5 enabled:hover:shadow-[0_6px_20px_rgba(0,0,0,0.12)] disabled:cursor-wait disabled:opacity-60";
-const buttonRowStyle = "flex items-center gap-2.5 text-[16px]";
+  "flex h-auto w-full items-center justify-between gap-1.5 rounded-[10px] px-5! py-[18px] text-[16px] font-extrabold transition-[transform,box-shadow] duration-[120ms] enabled:hover:-translate-y-0.5 enabled:hover:shadow-[0_6px_20px_rgba(0,0,0,0.12)] disabled:cursor-wait disabled:opacity-60";
 const callButtonSmallStyle = "text-[12px] font-semibold opacity-80";
-/** Cabeçalho da tabela (`.tableHead`): no responsive de 560px a 3ª coluna
-    (HORÁRIO) some e as colunas reencaixam em 3. */
-const tableHeadStyle =
-  "mb-1 grid grid-cols-[0.8fr_1.2fr_1fr_1fr] gap-3 rounded-[6px] bg-[#f0f6f9] px-3 py-2.5 text-[10px] font-extrabold uppercase tracking-[1px] text-[#7a9aad] max-[560px]:grid-cols-[1fr_1.4fr_1fr] max-[560px]:[&>span:nth-child(3)]:hidden";
-/** Linha da tabela (`.tableRow`) — mesmo responsive do cabeçalho. */
-const tableRowStyle =
-  "grid grid-cols-[0.8fr_1.2fr_1fr_1fr] items-center gap-3 border-b border-b-[#edf2f5] p-3 text-[12px] text-[#5a7a8a] max-[560px]:grid-cols-[1fr_1.4fr_1fr] max-[560px]:[&>span:nth-child(3)]:hidden";
 
 const emptySubscribe = () => () => {};
 function useIsClient() {
@@ -100,7 +109,7 @@ export default function PainelPage() {
   const [activeSector, setActiveSector] = useState<SectorId>(initialSector);
 
   const handleSectorChange = (newSector: string) => {
-    // O <select> só monta opções de SECTORS; o predicado é o que dá ao TS o
+    // O Select só monta opções de SECTORS; o predicado é o que dá ao TS o
     // estreitamento que `Object.hasOwn` não dá.
     if (!isSectorId(newSector)) return;
     setActiveSector(newSector);
@@ -229,24 +238,25 @@ export default function PainelPage() {
       headerActions={
         <>
           {canViewAllSectors && (
-            <select
-              className="cursor-pointer rounded-[7px] border border-[#cfdee8] bg-white px-[13px] py-[10px] text-[12px] font-bold text-[#236681] outline-[#1678a0]"
+            <Select
               value={activeSector}
-              onChange={(e) => handleSectorChange(e.target.value)}
+              onValueChange={(v) => { if (v !== null) handleSectorChange(v); }}
+              items={Object.fromEntries(Object.values(SECTORS).map((s) => [s.id, s.name]))}
             >
-              {Object.values(SECTORS).map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel>Setores</SelectLabel>
+
+                  {Object.values(SECTORS).map((s) => (
+                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
           )}
-          <Link
-            href={`/monitor/${activeSector}`}
-            className="flex items-center gap-[7px] rounded-[7px] border border-[#cfdee8] bg-white px-[13px] py-[10px] font-bold text-[#236681]"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Monitor size={17} /> Abrir monitor
-          </Link>
         </>
       }
     >
@@ -266,13 +276,17 @@ export default function PainelPage() {
               ? formatQueueNumber(current.history[0].number, current.history[0].type)
               : formatQueueNumber(null, "normal")}
           </div>
-          <p className="text-[12px] font-extrabold tracking-[1.5px] text-[#7990a1]">
+          <p className={cn(
+            'text-[12px] font-extrabold tracking-[1.5px] text-[#1972a0]',
+            current.history[0]?.type === CALL_TYPES.PREFERENCIAL && 'text-[#ef4444]'
+          )}>
             {current.history[0]?.type === CALL_TYPES.PREFERENCIAL
               ? "ATENDIMENTO PREFERENCIAL" : "ATENDIMENTO NORMAL"}
           </p>
-          <div className="flex items-center gap-2 rounded-[8px] border border-[#a8dbb9] bg-[#eaf7ef] px-4 py-3 text-[13px] font-semibold text-[#1a6b3a]">
-            <CheckCircle2 size={18} /> {notice}
-          </div>
+          <Alert className="border-[#a8dbb9] bg-[#eaf7ef] text-[#1a6b3a]">
+            <CheckCircle2 />
+            <AlertDescription className="font-semibold text-[#1a6b3a]">{notice}</AlertDescription>
+          </Alert>
         </section>
 
         <section className={`${cardStyle} flex flex-col gap-3`}>
@@ -281,37 +295,48 @@ export default function PainelPage() {
               <span className={labelStyle}>PRÓXIMA CHAMADA</span>
               <h2 className="font-bold">Escolha o tipo de atendimento</h2>
             </div>
-            <span className={counterStyle}>{current.history.length} hoje</span>
+            <Badge variant="secondary">{current.history.length} hoje</Badge>
           </div>
-          <button
-            className={`${callButtonStyle} border-current bg-[#0b3555] text-white`}
+
+          <Button
+            className={cn(callButtonStyle, 'bg-[#1972a0] text-white hover:bg-[#1972a0]/90')}
             disabled={calling}
             onClick={() => void callNext(CALL_TYPES.NORMAL)}
           >
-            <span className={buttonRowStyle}><Bell size={22} /> {calling ? "CHAMANDO..." : "CHAMAR NORMAL"}</span>
+            <span className="flex items-center gap-1.5">
+              <Bell data-icon="inline-start" className="size-6" /> {calling ? "CHAMANDO..." : "CHAMAR NORMAL"}
+            </span>
+
             <small className={callButtonSmallStyle}>
               Próxima senha: {formatQueueNumber(nextQueueNumber(current.normalCurrent), "normal")}
             </small>
-          </button>
+          </Button>
 
-          <button
-            className={`${callButtonStyle} border-current bg-[#d97706] text-white`}
+          <Button
+            className={cn(callButtonStyle, 'bg-[#ef4444] text-white hover:bg-[#ef4444]/90')}
             disabled={calling}
             onClick={() => void callNext(CALL_TYPES.PREFERENCIAL)}
           >
-            <span className={buttonRowStyle}><Bell size={22} /> {calling ? "CHAMANDO..." : "CHAMAR PREFERENCIAL"}</span>
+            <span className="flex items-center gap-1.5">
+              <Bell data-icon="inline-start" className="size-6" /> {calling ? "CHAMANDO..." : "CHAMAR PREFERENCIAL"}
+            </span>
+
             <small className={callButtonSmallStyle}>
               Próxima senha: {formatQueueNumber(nextQueueNumber(current.priorityCurrent), "preferencial")}
             </small>
-          </button>
+          </Button>
 
-          <button
-            className="flex items-center justify-between gap-1.5 rounded-[10px] border-[1.5px] border-[#cbd5e1] bg-[#f8fafc] px-5 py-3 font-bold text-[#0b3555] transition-[transform,box-shadow,background-color,border-color] duration-[120ms] enabled:hover:-translate-y-0.5 enabled:hover:border-[#94a3b8] enabled:hover:bg-[#f1f5f9] enabled:hover:shadow-[0_6px_20px_rgba(0,0,0,0.12)] enabled:active:translate-y-0 enabled:active:shadow-none disabled:cursor-wait disabled:opacity-60"
+          <Button
+            variant="outline"
+            className={cn(callButtonStyle, 'h-auto px-5 py-3 font-medium')}
             disabled={calling}
             onClick={() => void reCall()}
           >
-            <span className={buttonRowStyle}><RotateCcw size={22} /> CHAMAR NOVAMENTE</span>
-          </button>
+            <span className="flex items-center gap-1.5">
+              <RotateCcw data-icon="inline-start" className="size-6" />
+              CHAMAR NOVAMENTE
+            </span>
+          </Button>
         </section>
       </div>
 
@@ -321,60 +346,59 @@ export default function PainelPage() {
             <span className={labelStyle}>ÚLTIMAS CHAMADAS</span>
             <h2 className="font-bold">Histórico recente</h2>
           </div>
-          <Link href="/historico" className="text-[13px] font-bold text-[#236681] hover:underline">Ver histórico completo →</Link>
+
+          <Link
+            href="/historico"
+            className={buttonVariants({ variant: "link", size: "sm" })}
+          >
+            Ver histórico completo →
+          </Link>
         </div>
         {current.history.length === 0 ? (
           <p className="p-6 text-center text-[13px] text-[#9ab0bc]">Nenhuma chamada registrada ainda.</p>
         ) : (
           <>
-            <div className="flex flex-col">
-              <div className={tableHeadStyle}>
-                <span>SENHA</span>
-                <span>TIPO</span>
-                <span>HORÁRIO</span>
-                <span>STATUS</span>
-              </div>
-              {current.history
-                .slice((historyPage - 1) * ITEMS_PER_PAGE, historyPage * ITEMS_PER_PAGE)
-                .map((item, index) => (
-                  <div
-                    className={tableRowStyle}
-                    key={`${item.number}-${item.type}-${item.time}-${(historyPage - 1) * ITEMS_PER_PAGE + index}`}
-                  >
-                    <strong className="text-[17px] font-extrabold tracking-[1px] text-[#163b52]">{formatQueueNumber(item.number, item.type)}</strong>
-                    <span className={item.type === CALL_TYPES.PREFERENCIAL
-                      ? "inline-block rounded-[4px] bg-[#fff3e0] px-2.5 py-1 text-[10px] font-extrabold tracking-[0.5px] text-[#b85c00]"
-                      : "inline-block rounded-[4px] bg-[#e6f4f9] px-2.5 py-1 text-[10px] font-extrabold tracking-[0.5px] text-[#1678a0]"}
-                    >
-                      {item.type === CALL_TYPES.PREFERENCIAL ? TYPE_LABELS.preferencial : TYPE_LABELS.normal}
-                    </span>
-                    <span>{item.time}</span>
-                    <span className="flex items-center gap-[5px] font-bold text-[#159883]"><CheckCircle2 size={15} /> Chamada</span>
-                  </div>
-                ))}
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[0.8fr]">Senha</TableHead>
+                  <TableHead className="w-[1.2fr]">Tipo</TableHead>
+                  <TableHead className="w-[1fr] max-[560px]:hidden">Horário</TableHead>
+                  <TableHead className="w-[1fr]">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {current.history
+                  .slice((historyPage - 1) * ITEMS_PER_PAGE, historyPage * ITEMS_PER_PAGE)
+                  .map((item, index) => (
+                    <TableRow key={`${item.number}-${item.type}-${item.time}-${(historyPage - 1) * ITEMS_PER_PAGE + index}`}>
+                      <TableCell>
+                        <strong className="text-[17px] font-extrabold tracking-[1px] text-[#163b52]">{formatQueueNumber(item.number, item.type)}</strong>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          className={cn(
+                            item.type === CALL_TYPES.NORMAL && 'bg-[#1972a0]',
+                            item.type === CALL_TYPES.PREFERENCIAL && 'bg-[#ef4444]/90'
+                          )}
+                        >
+                          {item.type === CALL_TYPES.PREFERENCIAL ? TYPE_LABELS.preferencial : TYPE_LABELS.normal}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="max-[560px]:hidden">{item.time}</TableCell>
+                      <TableCell>
+                        <span className="flex items-center gap-1.25 font-bold text-[#159883]"><CheckCircle2 size={15} /> Chamada</span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
             {current.history.length > ITEMS_PER_PAGE && (
-              <div className="mt-[18px] flex items-center justify-center gap-4 border-t border-t-[#edf2f5] pt-4">
-                <button
-                  type="button"
-                  className="rounded-[6px] border border-[#cfdee8] bg-white px-3.5 py-2 text-[12px] font-bold text-[#3a6a80] transition-[background-color,border-color] duration-[120ms] enabled:hover:border-[#1678a0] enabled:hover:bg-[#f0f6f9] disabled:cursor-not-allowed disabled:opacity-40"
-                  disabled={historyPage === 1}
-                  onClick={() => setHistoryPage((p) => p - 1)}
-                >
-                  ← Anterior
-                </button>
-                <span className="text-[12px] font-semibold text-[#7a9aad]">
-                  Página {historyPage} de {Math.ceil(current.history.length / ITEMS_PER_PAGE)}
-                </span>
-                <button
-                  type="button"
-                  className="rounded-[6px] border border-[#cfdee8] bg-white px-3.5 py-2 text-[12px] font-bold text-[#3a6a80] transition-[background-color,border-color] duration-[120ms] enabled:hover:border-[#1678a0] enabled:hover:bg-[#f0f6f9] disabled:cursor-not-allowed disabled:opacity-40"
-                  disabled={historyPage >= Math.ceil(current.history.length / ITEMS_PER_PAGE)}
-                  onClick={() => setHistoryPage((p) => p + 1)}
-                >
-                  Próxima →
-                </button>
-              </div>
+              <Pagination
+                page={historyPage}
+                totalPages={Math.ceil(current.history.length / ITEMS_PER_PAGE)}
+                onPageChange={setHistoryPage}
+              />
             )}
           </>
         )}

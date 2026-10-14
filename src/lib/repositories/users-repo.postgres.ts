@@ -99,7 +99,17 @@ export class PostgresUsersRepository implements UsersRepository {
       select: USER_SELECT,
       orderBy: { created_at: "desc" },
     });
-    return users.map(shapeUser);
+
+    const shapedUsers = users.map(shapeUser);
+
+    return shapedUsers.sort((a, b) => {
+      const aIsAdmin = a.role === "admin";
+      const bIsAdmin = b.role === "admin";
+
+      if (aIsAdmin && !bIsAdmin) return -1;
+      if (!aIsAdmin && bIsAdmin) return 1;
+      return 0;
+    });
   }
 
   async create(data: CreateUserInput): Promise<{ success: true; user: UserRecord }> {

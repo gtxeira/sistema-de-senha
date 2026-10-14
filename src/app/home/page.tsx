@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Monitor, Settings2, Headphones } from "lucide-react";
+import { Monitor, Settings2, Headphones, History } from "lucide-react";
 import { getSessionSnapshot, SECTORS } from "@/lib/queue";
 import {
   SCREEN_ADMIN,
@@ -11,19 +11,18 @@ import {
   hasPermission,
 } from "@/lib/permissions";
 import { SidebarLayout } from "@/components/SidebarLayout/SidebarLayout";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardTitle,
+} from "@/components/ui/card";
 
-/* ── Cartão de navegação ──
-   Valores exatos do Home.module.css antigo (bordas/ícones personalizados
-   da identidade da tela) para a migração permanecer pixel-idêntica. */
-const cardStyle =
-  "group flex items-center gap-4 rounded-[14px] border border-[#dde9ed] bg-white px-5 py-6 text-[#0d2d47] shadow-[0_2px_8px_rgba(0,0,0,0.05)] transition-[transform,box-shadow,border-color] duration-150 hover:-translate-y-[3px] hover:border-[#b5d4e0] hover:shadow-[0_8px_28px_rgba(0,0,0,0.1)] active:scale-[0.98]";
+/* ── Cartão de navegação ── */
+const cardLinkStyle =
+  "group flex items-center gap-4 transition-[transform,box-shadow] duration-150 hover:-translate-y-[3px] hover:shadow-[0_8px_28px_rgba(0,0,0,0.1)] active:scale-[0.98]";
 const cardIconStyle =
   "grid size-14 shrink-0 place-items-center rounded-[14px]";
-const cardTitleStyle =
-  "mb-[3px] block text-base font-extrabold text-[#0d2d47]";
-const cardDescStyle = "text-xs leading-normal text-[#7a9aad]";
-const cardArrowStyle =
-  "text-[18px] text-[#b5d4e0] transition-[transform,color] duration-150 group-hover:translate-x-1 group-hover:text-[#1678a0]";
 
 export default function HomePage() {
   const router = useRouter();
@@ -53,43 +52,71 @@ export default function HomePage() {
             {Object.values(SECTORS)
               .filter((s) => canAccessSector(session, s.id, "read"))
               .map((s) => (
-              <Link key={s.id} href={`/monitor/${s.id}`} className={cardStyle}>
-                <div className={`${cardIconStyle} bg-[#e6f4fb] text-[#1678a0]`}>
-                  <Monitor size={30} />
-                </div>
-                <div className="flex-1">
-                  <strong className={cardTitleStyle}>Monitor</strong>
-                  <span className={cardDescStyle}>{s.name}</span>
-                </div>
-                <div className={cardArrowStyle}>→</div>
+              <Link key={s.id} href={`/monitor/${s.id}`} className={cardLinkStyle}>
+                <Card className="w-full">
+                  <CardContent className="flex items-center gap-4 py-2">
+                    <div className={`${cardIconStyle} bg-primary-light text-primary`}>
+                      <Monitor size={30} />
+                    </div>
+                    <div className="flex-1">
+                      <CardTitle className="font-extrabold">Monitor</CardTitle>
+                      <CardDescription>{s.name}</CardDescription>
+                    </div>
+                    <div className="text-[18px] text-border transition-[transform,color] duration-150 group-hover:translate-x-1 group-hover:text-primary">→</div>
+                  </CardContent>
+                </Card>
               </Link>
             ))}
 
-            {/* Painel de Atendimento */}
-            <Link href="/painel" className={`${cardStyle} col-span-full`}>
-              <div className={`${cardIconStyle} bg-[#f5f3ff] text-[#7c3aed]`}>
-                <Headphones size={30} />
-              </div>
-              <div className="flex-1">
-                <strong className={cardTitleStyle}>Painel de Atendimento</strong>
-                <span className={cardDescStyle}>Controle as chamadas em tempo real</span>
-              </div>
-              <div className={cardArrowStyle}>→</div>
-            </Link>
-
             {/* Admin — só quem tem a permissão de tela */}
             {hasPermission(session, SCREEN_ADMIN) && (
-              <Link href="/admin" className={`${cardStyle} col-span-full`}>
-                <div className={`${cardIconStyle} bg-[#fff7ed] text-[#ea580c]`}>
-                  <Settings2 size={30} />
-                </div>
-                <div className="flex-1">
-                  <strong className={cardTitleStyle}>Administração</strong>
-                  <span className={cardDescStyle}>Filas, notícias e estatísticas</span>
-                </div>
-                <div className={cardArrowStyle}>→</div>
+              <Link href="/admin" className={`${cardLinkStyle} col-span-full`}>
+                <Card className="w-full">
+                  <CardContent className="flex items-center gap-4 py-2">
+                    <div className={`${cardIconStyle} bg-[#fff7ed] text-[#ea580c]`}>
+                      <Settings2 size={30} />
+                    </div>
+                    <div className="flex-1">
+                      <CardTitle className="font-extrabold">Administração</CardTitle>
+                      <CardDescription>Filas, notícias e estatísticas</CardDescription>
+                    </div>
+                    <div className="text-[18px] text-border transition-[transform,color] duration-150 group-hover:translate-x-1 group-hover:text-primary">→</div>
+                  </CardContent>
+                </Card>
               </Link>
             )}
+
+            {/* Painel de Atendimento */}
+            <Link href="/painel" className={`${cardLinkStyle} col-span-full`}>
+              <Card className="w-full">
+                <CardContent className="flex items-center gap-4 py-2">
+                  <div className={`${cardIconStyle} bg-[#f5f3ff] text-[#7c3aed]`}>
+                    <Headphones size={30} />
+                  </div>
+                  <div className="flex-1">
+                    <CardTitle className="font-extrabold">Painel de Atendimento</CardTitle>
+                    <CardDescription>Controle as chamadas em tempo real</CardDescription>
+                  </div>
+                  <div className="text-[18px] text-border transition-[transform,color] duration-150 group-hover:translate-x-1 group-hover:text-primary">→</div>
+                </CardContent>
+              </Card>
+            </Link>
+
+            {/* Histórico */}
+            <Link href="/painel" className={`${cardLinkStyle} col-span-full`}>
+              <Card className="w-full">
+                <CardContent className="flex items-center gap-4 py-2">
+                  <div className={`${cardIconStyle} bg-[#f5f3ff] text-amber`}>
+                    <History size={30} />
+                  </div>
+                  <div className="flex-1">
+                    <CardTitle className="font-extrabold">Histórico</CardTitle>
+                    <CardDescription>Consulte todas as chamadas de senhas realizadas</CardDescription>
+                  </div>
+                  <div className="text-[18px] text-border transition-[transform,color] duration-150 group-hover:translate-x-1 group-hover:text-primary">→</div>
+                </CardContent>
+              </Card>
+            </Link>
 
           </div>
         </div>

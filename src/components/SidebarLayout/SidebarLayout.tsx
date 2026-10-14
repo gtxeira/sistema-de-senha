@@ -21,6 +21,8 @@ import { SCREEN_ADMIN, canAccessSector, hasPermission } from "@/lib/permissions"
 import type { Permission } from "@/lib/permissions";
 import type { SessionSnapshot } from "@/lib/queue";
 import { useServerClock } from "@/lib/hooks/useServerClock";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface NavItem {
   readonly route: string;
@@ -41,20 +43,19 @@ const NAV_ITEMS: readonly NavItem[] = [
 /* ── Estilos do shell (eram classes do SidebarLayout.module.css) ── */
 
 /* Base dos itens de navegação/rodapé — replica a regra agrupada
-   `.nav a, .navItem, .logout` do módulo antigo. */
+   `.nav a, .navItem, .logout` do módulo antigo. Sobre o fundo escuro da
+   sidebar, o ghost do shadcn ganha as cores do shell via classes. */
 const itemStyle =
-  "flex items-center gap-3 rounded-[9px] px-3.5 py-[13px] text-[14px] text-[#aac2d0]";
-/** Hover/ativo — `.nav a:hover, .navItem:hover, .activeNav` (o `!important`
-    do branco original não é necessário: o valor é o mesmo). */
-const itemHoverStyle = "hover:bg-[#174a6d] hover:text-white";
+  "justify-start gap-3 rounded-[9px] px-3.5 py-[13px] text-[14px] font-normal text-[#aac2d0] hover:bg-[#174a6d] hover:text-white";
+/** Hover/ativo — `.nav a:hover, .navItem:hover, .activeNav`. */
 const itemActiveStyle = "bg-[#174a6d] text-white";
 /** Itens do `<nav>` — `.nav a` inclusive no responsive de 900px
     (`font-size: 0` esconde o texto, deixando só o ícone). */
-const navLinkStyle = `${itemStyle} ${itemHoverStyle} max-[900px]:text-[0px] max-[900px]:justify-center`;
+const navLinkStyle = `${itemStyle} max-[900px]:text-[0px] max-[900px]:justify-center`;
 /** O `<button>` da nav NÃO era alcançado por `.nav a` no módulo — por isso
     não herda o `font-size: 0` do responsive de 900px (comportamento
     original preservado). */
-const navButtonStyle = `${itemStyle} ${itemHoverStyle} w-full cursor-pointer border-current text-left`;
+const navButtonStyle = `${itemStyle} w-full max-[900px]:justify-center`;
 /** Itens do submenu: por especificidade, `.nav a` vencia as propriedades
     próprias de `.monitorItem` no módulo — o efeito renderizado era a base
     da nav + a transition única do `.monitorItem`. */
@@ -62,7 +63,7 @@ const monitorItemStyle = `${navLinkStyle} transition-[background-color,color] du
 /** `.logout` no módulo sobrescrevia o grupo: borda superior, raio 0 e
     padding-top 18px (px/pb herdados do grupo: 14px/13px). */
 const logoutStyle =
-  "flex items-center gap-3 rounded-none border-t border-[#28536d] px-3.5 pt-[18px] pb-[13px] text-[14px] text-[#aac2d0] max-[900px]:text-[0px] max-[900px]:justify-center";
+  "justify-start gap-3 rounded-none border-t border-[#28536d] px-3.5 pt-[18px] pb-[13px] text-[14px] font-normal text-[#aac2d0] hover:bg-transparent hover:text-white max-[900px]:text-[0px] max-[900px]:justify-center";
 
 export interface SidebarLayoutProps {
   /** Rota ativa, para destacar no menu. */
@@ -119,46 +120,48 @@ export function SidebarLayout({
             <Link
               key={item.route}
               href={item.href}
-              className={
-                activeRoute === item.route
-                  ? `${navLinkStyle} ${itemActiveStyle}`
-                  : navLinkStyle
-              }
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                activeRoute === item.route ? `${navLinkStyle} ${itemActiveStyle}` : navLinkStyle
+              )}
             >
-              <item.icon size={18}/>
+              <item.icon data-icon="inline-start" />
               {item.label}
             </Link>
           ))}
-          <button
-            type="button"
-            className={`${navButtonStyle} ${monitorsOpen ? itemActiveStyle : "bg-transparent"}`}
+          <Button
+            variant="ghost"
+            className={`${navButtonStyle} ${monitorsOpen ? itemActiveStyle : ""}`}
             onClick={() => setMonitorsOpen(!monitorsOpen)}
           >
-            <Monitor size={18}/>
+            <Monitor data-icon="inline-start" />
             Monitores
             <ChevronDown
               size={14}
               className={`ml-auto transition-transform duration-200 ${monitorsOpen ? "rotate-180" : ""}`}
             />
-          </button>
+          </Button>
           {monitorsOpen && (
             <div className="mt-[-2px] flex flex-col gap-0.5 pl-5">
               {visibleSectors.map((s) => (
-                <a
+                <Link
                   key={s.id}
                   href={`/monitor/${s.id}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={monitorItemStyle}
+                  className={cn(
+                    buttonVariants({ variant: "ghost" }),
+                    monitorItemStyle
+                  )}
                 >
                   {s.name}
-                </a>
+                </Link>
               ))}
             </div>
           )}
         </nav>
         <div className="mt-auto">
-          <div className="flex items-center gap-2.5 border-t border-[#28536d] px-2.5 pt-[18px] pb-[15px]">
+          <div className="flex items-center gap-2.5 border-t border-b border-[#28536d] px-2.5 pt-[18px] pb-[15px]">
             <div className="grid size-[34px] shrink-0 place-items-center rounded-[50%] bg-[#d8f4ee] text-[11px] font-extrabold text-[#168778]">
               {session?.initials || "AT"}
             </div>
@@ -167,12 +170,16 @@ export function SidebarLayout({
               <small className="text-[11px] text-[#8eabbc]">{sectorInfo?.name || ""}</small>
             </div>
           </div>
+
           <Link
             href="/login"
-            className={logoutStyle}
+            className={cn(
+              buttonVariants({ variant: "ghost" }),
+              'mt-4.5 hover:bg-transparent hover:text-white'
+            )}
             onClick={(e) => void handleLogout(e)}
           >
-            <LogOut size={17} /> Sair
+            <LogOut data-icon="inline-start" /> Sair
           </Link>
         </div>
       </aside>

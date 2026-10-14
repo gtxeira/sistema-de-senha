@@ -3,6 +3,7 @@ import { read } from "@/lib/repositories";
 import { assertSectorAccess, requireSession } from "@/lib/api-auth";
 import { hasPermission, SECTORS_VIEW_ALL } from "@/lib/permissions";
 import { MIN_DAYS, MAX_DAYS, DEFAULT_DAYS } from "@/lib/constants";
+import { sanitizeNull } from "@/lib/sanitization";
 
 /* ─────────────────────────────────────────────────
    GET — retorna estatísticas e histórico
@@ -19,7 +20,7 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const days = Math.min(MAX_DAYS, Math.max(MIN_DAYS, Number(url.searchParams.get("days")) || DEFAULT_DAYS));
-  const sector = url.searchParams.get("sector") || null;
+  const sector = sanitizeNull(url.searchParams.get("sector")) || null;
 
   if (sector) {
     const scope = assertSectorAccess(session, sector, "read");

@@ -10,8 +10,8 @@ const statCardVariants = cva("rounded-[10px] border border-border bg-card px-5 p
   variants: {
     tone: {
       default: "text-primary-hover",
-      normal: "text-primary",
-      preferencial: "text-amber-hover",
+      normal: "text-[#1972a0]",
+      preferencial: "text-[#ef4444]/90",
     },
   },
   defaultVariants: {

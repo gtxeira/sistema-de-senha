@@ -46,6 +46,7 @@ import {
   canAccessSector,
   hasPermission,
 } from "@/lib/permissions";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -56,10 +57,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
-  alertBoxStyle,
-  fieldLabelStyle,
-  fieldStyle,
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem, SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { FilterGroup } from "@/components/filter-group";
+import {
   sectionEyebrowStyle,
   sectionHeadingStyle,
   sectionStyle,
@@ -67,50 +77,36 @@ import {
 } from "./admin-styles";
 import { SidebarLayout } from "@/components/SidebarLayout/SidebarLayout";
 import AccessSection from "./AccessSection";
+import { cn } from "@/lib/utils";
 
 /* ── classes locais desta tela (as comuns vêm de ./admin-styles) ── */
-
-/** Base dos botões `.cardActions a, .cardActions button, .newsForm button`. */
-const actionBaseStyle =
-  "flex cursor-pointer items-center gap-1.5 rounded-[6px] border-current px-2.5 py-2 text-[11px] font-bold no-underline";
 
 /** Cartões de setor: grid duplo que vira coluna no mobile. */
 const sectorsStyle = "mt-5 grid grid-cols-2 gap-3.5 max-[700px]:grid-cols-1";
 const sectorCardStyle =
   "flex justify-between gap-3 rounded-[8px] border border-[#e1ebee] p-[18px] max-[700px]:block";
 const cardActionsStyle = "flex flex-col gap-2 max-[700px]:mt-[15px]";
-const cardLinkStyle = `${actionBaseStyle} bg-[#eaf5f7] text-[#20738c]`;
-const cardResetStyle = `${actionBaseStyle} bg-[#ffeaea] font-extrabold text-[#c0392b] disabled:cursor-wait disabled:opacity-60`;
 
 /** Faixa laranja de "resetar todos os setores". */
 const resetAllWrapperStyle =
   "mt-5 flex flex-wrap items-center justify-between gap-4 rounded-[8px] border border-[#f5d9b8] bg-[#fff8f0] px-[18px] py-4";
 const resetAllInfoStyle =
   "flex min-w-[200px] flex-1 items-center gap-2.5 text-[12px] leading-normal text-[#7a4a1e]";
-const resetAllButtonStyle =
-  "flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-[7px] border-current bg-[#c0392b] px-[18px] py-[11px] text-[12px] font-extrabold text-white transition-[background-color] duration-[150ms] enabled:hover:bg-[#a93226] disabled:cursor-wait disabled:opacity-[0.65]";
 
 /** Formulário e grade de notícias do monitor. */
 const newsFormStyle =
   "mt-5 grid grid-cols-[1.3fr_1fr_auto] gap-2.5 max-[700px]:grid-cols-1";
-const newsFieldStyle = "rounded-[6px] border border-[#d3e1e6] p-3 text-[12px]";
-const uploadStyle = `${newsFieldStyle} flex cursor-pointer items-center gap-[7px] text-[#33778b]`;
-const newsSubmitStyle = `${actionBaseStyle} justify-center bg-[#0d7196] text-white`;
+const uploadStyle =
+  "flex h-8 cursor-pointer items-center gap-[7px] rounded-lg border border-input px-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent";
 const newsGridStyle = "mt-5 flex flex-wrap gap-3";
 const newsCardStyle =
   "w-[150px] overflow-hidden rounded-[7px] border border-[#e1ebee]";
 const newsTitleStyle = "block p-[9px] text-[11px]";
-const deleteNewsStyle =
-  "flex w-full cursor-pointer items-center justify-center gap-[5px] border-t border-[#e1ebee] bg-white p-2 text-[11px] font-bold text-[#b44e45]";
-const saveNewsStyle =
-  "mt-[18px] flex cursor-pointer items-center gap-[7px] rounded-[6px] border-current bg-[#168a78] px-4 py-[11px] text-[12px] font-extrabold text-white disabled:cursor-wait disabled:opacity-[0.65]";
 
 /** Seção de sincronização de senha. */
 const syncInfoStyle = "mb-4 text-[13px] leading-normal text-[#5a7a8a]";
 const syncRowStyle =
   "grid grid-cols-[1fr_1fr_1fr_auto] items-end gap-3 max-[700px]:grid-cols-1";
-const syncButtonStyle =
-  "cursor-pointer whitespace-nowrap rounded-[8px] border-current bg-[#1678a0] px-6 py-[13px] text-[13px] font-bold text-white transition-[background-color] duration-[150ms] enabled:hover:bg-[#1389b8] disabled:cursor-default disabled:opacity-50";
 
 /**
  * Item do carrossel de notícias da tela de administração: o que vem do
@@ -161,13 +157,14 @@ export default function AdminPage() {
 
   const [title, setTitle] = useState("");
   const [image, setImage] = useState("");
-  const [message, setMessage] = useState("");
   const [draftNews, setDraftNews] = useState<AdminNews[]>([]);
   const [savingNews, setSavingNews] = useState(false);
   const [resettingSector, setResettingSector] = useState<Record<string, boolean>>({});
   // alvo do reset pendente de confirmação (`"all"` ou o id do setor);
   // null = diálogo fechado
   const [resetPending, setResetPending] = useState<string | null>(null);
+  // alvo da exclusão de notícia pendente de confirmação; null = diálogo fechado
+  const [deleteNewsTarget, setDeleteNewsTarget] = useState<AdminNews | null>(null);
   const [, refreshNews] = useState(0);
   const pendingFileRef = useRef<File | null>(null);
 
@@ -236,7 +233,6 @@ export default function AdminPage() {
       sectorsToReset.forEach((s) => (next[s] = true));
       return next;
     });
-    setMessage("");
 
     try {
       // Server first: the local replica is only dropped once the server has
@@ -250,7 +246,7 @@ export default function AdminPage() {
       const data = await readJson<ApiErrorBody>(res).catch<ApiErrorBody>(() => ({}));
 
       if (!res.ok) {
-        setMessage(data.error || "Erro ao zerar o contador no banco.");
+        toast.error(data.error || "Erro ao zerar o contador no banco.");
         return;
       }
 
@@ -266,13 +262,13 @@ export default function AdminPage() {
       });
       saveQueueState(next);
 
-      setMessage(
+      toast.success(
         isAll
           ? `Todas as senhas foram resetadas. Numeração reinicia em ${MIN_QUEUE_NUMBER.toString().padStart(3, "0")}.`
           : `Senhas de "${label}" zeradas. Numeração reinicia em ${MIN_QUEUE_NUMBER.toString().padStart(3, "0")}.`,
       );
     } catch {
-      setMessage("Erro ao zerar os contadores.");
+      toast.error("Erro ao zerar os contadores.");
     } finally {
       setResettingSector((prev) => {
         const next = { ...prev };
@@ -298,14 +294,11 @@ export default function AdminPage() {
     setTitle("");
     setImage("");
     pendingFileRef.current = null;
-    setMessage(
-      "Alteração pendente. Clique em 'Salvar notícias' para publicar.",
-    );
+    toast.info("Alteração pendente. Clique em 'Salvar notícias' para publicar.");
   }
 
   async function saveNews() {
     setSavingNews(true);
-    setMessage("");
     try {
       // Remove os que foram deletados do rascunho
       const removed = news.filter(
@@ -340,19 +333,24 @@ export default function AdminPage() {
       setDraftNews(data.news);
       refreshNews((v) => v + 1);
       window.dispatchEvent(new Event("news-updated"));
-      setMessage(`${created.length} notícia(s) salva(s) com sucesso.`);
+      toast.success(`${created.length} notícia(s) salva(s) com sucesso.`);
     } catch (err) {
-      setMessage(errorMessage(err, "Não foi possível salvar as notícias."));
+      toast.error(errorMessage(err, "Não foi possível salvar as notícias."));
     } finally {
       setSavingNews(false);
     }
   }
 
-  function deleteNews(id: string) {
-    setDraftNews(draftNews.filter((item) => String(item.id) !== String(id)));
-    setMessage(
-      "Exclusão pendente. Clique em 'Salvar notícias' para confirmar.",
+  /* A exclusão só remove do rascunho: a remoção no servidor acontece ao
+     salvar. O AlertDialog confirma a intenção antes de alterar o rascunho. */
+  function confirmDeleteNews() {
+    const target = deleteNewsTarget;
+    if (!target) return;
+    setDeleteNewsTarget(null);
+    setDraftNews(
+      draftNews.filter((item) => String(item.id) !== String(target.id)),
     );
+    toast.info("Exclusão pendente. Clique em 'Salvar notícias' para confirmar.");
   }
 
   function readImage(event: React.ChangeEvent<HTMLInputElement>) {
@@ -374,8 +372,6 @@ export default function AdminPage() {
       headerActions={null}
     >
       <section>
-        {message && <div className={alertBoxStyle}>{message}</div>}
-
         {/* ── Controle de filas ── */}
         {canManageFilas && (
         <section className={sectionStyle}>
@@ -391,7 +387,7 @@ export default function AdminPage() {
               .filter((item) => canAccessSector(session, item.id, "read"))
               .map((item) => {
               const queue = normalizeQueue(state[item.id]);
-              const isReset = !!resettingSector[item.id];
+              const isReset = resettingSector[item.id];
               const canResetSector = canReset && canAccessSector(session, item.id, "write");
               return (
                 <article key={item.id} className={sectorCardStyle}>
@@ -407,19 +403,24 @@ export default function AdminPage() {
                     </small>
                   </div>
                   <div className={cardActionsStyle}>
-                    <Link href={`/monitor/${item.id}`} target="_blank" className={cardLinkStyle}>
-                      <Monitor size={16}/> Abrir Monitor
+                    <Link
+                      href={`/monitor/${item.id}`}
+                      target="_blank"
+                      className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                    >
+                      <Monitor data-icon="inline-start" /> Abrir Monitor
                     </Link>
+
                     {canResetSector && (
-                      <button
-                        type="button"
+                      <Button
+                        variant="destructive"
+                        size="sm"
                         onClick={() => setResetPending(item.id)}
                         disabled={isReset}
-                        className={cardResetStyle}
                       >
-                        <RotateCcw size={16}/>
+                        <RotateCcw data-icon="inline-start" />
                         {isReset ? "Resetando…" : "Resetar senhas"}
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </article>
@@ -435,17 +436,16 @@ export default function AdminPage() {
                   Resetar todos os setores de uma vez — numeração volta para {MIN_QUEUE_NUMBER.toString().padStart(3, "0")} em todos.
                 </span>
               </div>
-              <button
-                type="button"
-                className={resetAllButtonStyle}
+              <Button
+                variant="destructive"
                 onClick={() => setResetPending("all")}
                 disabled={Object.keys(resettingSector).length > 0}
               >
-                <RotateCcw size={16}/>
+                <RotateCcw data-icon="inline-start" />
                 {Object.keys(resettingSector).length > 0
                   ? "Resetando…"
                   : "Resetar todos os setores"}
-              </button>
+              </Button>
             </div>
           )}
         </section>
@@ -466,15 +466,15 @@ export default function AdminPage() {
 
           {canCreateNews && (
             <form className={newsFormStyle} onSubmit={addNews}>
-              <input
+              <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Título da notícia"
-                className={newsFieldStyle}
+                className="h-8"
                 required
               />
               <label className={uploadStyle}>
-                <ImagePlus size={18}/>{" "}
+                <ImagePlus data-icon="inline-start" className="size-4" />
                 {image ? "Imagem selecionada" : "Adicionar imagem"}
                 <input
                   type="file"
@@ -484,9 +484,9 @@ export default function AdminPage() {
                   required
                 />
               </label>
-              <button type="submit" className={newsSubmitStyle}>
-                <ImagePlus size={16}/> Adicionar à lista
-              </button>
+              <Button type="submit">
+                <ImagePlus data-icon="inline-start" /> Adicionar à lista
+              </Button>
             </form>
           )}
 
@@ -503,27 +503,27 @@ export default function AdminPage() {
                 />
                 <strong className={newsTitleStyle}>{item.title}</strong>
                 {canDeleteNews && (
-                  <button
-                    className={deleteNewsStyle}
-                    type="button"
-                    onClick={() => deleteNews(item.id)}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-full justify-center rounded-none border-t border-[#e1ebee] text-destructive hover:bg-[#fdecea] hover:text-destructive"
+                    onClick={() => setDeleteNewsTarget(item)}
                   >
-                    <Trash2 size={14}/> Excluir
-                  </button>
+                    <Trash2 data-icon="inline-start" /> Excluir
+                  </Button>
                 )}
               </article>
             ))}
           </div>
 
           {(canCreateNews || canDeleteNews) && (
-            <button
-              className={saveNewsStyle}
-              type="button"
+            <Button
+              className="mt-[18px]"
               onClick={() => void saveNews()}
               disabled={savingNews}
             >
-              <Save size={16}/> {savingNews ? "Salvando…" : "Salvar notícias"}
-            </button>
+              <Save data-icon="inline-start" /> {savingNews ? "Salvando…" : "Salvar notícias"}
+            </Button>
           )}
         </section>
         )}
@@ -562,6 +562,34 @@ export default function AdminPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Confirmação de exclusão de notícia — mesmo padrão do reset */}
+        <AlertDialog
+          open={deleteNewsTarget !== null}
+          onOpenChange={(open) => {
+            if (!open) setDeleteNewsTarget(null);
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Excluir esta notícia?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {deleteNewsTarget
+                  ? `"${deleteNewsTarget.title}" sairá da lista exibida no monitor. A exclusão é efetivada ao clicar em "Salvar notícias".`
+                  : null}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                variant="destructive"
+                onClick={() => confirmDeleteNews()}
+              >
+                Excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </section>
     </SidebarLayout>
   );
@@ -577,12 +605,11 @@ interface SyncSectionProps {
 
 function SyncSection({ session, canSync }: SyncSectionProps) {
   const [syncSector, setSyncSector] = useState(DEFAULT_SECTOR);
-  // Vem de um <select> (valor cru da DOM) e vai para `normalizeCallType`, que
+  // Vem do Select (valor cru da lib) e vai para `normalizeCallType`, que
   // aceita `string` — por isso `string` e não `CallType`.
   const [syncType, setSyncType] = useState<string>(CALL_TYPES.NORMAL);
   const [syncNumber, setSyncNumber] = useState("");
   const [syncing, setSyncing] = useState(false);
-  const [syncMessage, setSyncMessage] = useState("");
 
   // Setores operáveis por esta sessão (escopo de escrita)
   const syncSectors = Object.values(SECTORS).filter((s) =>
@@ -591,13 +618,12 @@ function SyncSection({ session, canSync }: SyncSectionProps) {
 
   async function handleSync(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setSyncMessage("");
     setSyncing(true);
 
     try {
       const num = parseInt(syncNumber, 10);
       if (!num || num < 1 || num > MAX_QUEUE_NUMBER) {
-        setSyncMessage("Use um número entre 1 e 999.");
+        toast.error("Use um número entre 1 e 999.");
         return;
       }
 
@@ -614,10 +640,10 @@ function SyncSection({ session, canSync }: SyncSectionProps) {
 
       if (!res.ok) throw new Error(data.error);
 
-      setSyncMessage(data.message || `Próxima senha: ${data.numberStr}`);
+      toast.success(data.message || `Próxima senha: ${data.numberStr}`);
       setSyncNumber("");
     } catch (err) {
-      setSyncMessage(errorMessage(err, "Erro ao sincronizar senha."));
+      toast.error(errorMessage(err, "Erro ao sincronizar senha."));
     } finally {
       setSyncing(false);
     }
@@ -638,67 +664,81 @@ function SyncSection({ session, canSync }: SyncSectionProps) {
       </p>
 
       {!canSync && (
-        <div className={alertBoxStyle}>
-          Sua sessão não tem a permissão <strong>filas.sincronizar</strong>.
-        </div>
+        <Alert variant="destructive" className="mb-4">
+          <AlertTriangle />
+          <AlertTitle>Permissão ausente</AlertTitle>
+          <AlertDescription>
+            Sua sessão não tem a permissão <strong>filas.sincronizar</strong>.
+          </AlertDescription>
+        </Alert>
       )}
-
-      {syncMessage && <div className={alertBoxStyle}>{syncMessage}</div>}
 
       {canSync && (
       <form className="mt-4" onSubmit={(e) => void handleSync(e)}>
         <div className={syncRowStyle}>
-          <label className={fieldLabelStyle}>
-            Setor
-            <select
+          <FilterGroup label="Setor">
+            <Select
               value={syncSector}
-              onChange={(e) => setSyncSector(e.target.value)}
-              className={fieldStyle}
+              onValueChange={(v) => v !== null && setSyncSector(v)}
+              items={Object.fromEntries(syncSectors.map((s) => [s.id, s.name]))}
             >
-              {syncSectors.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-            </select>
-          </label>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel>Setores</SelectLabel>
 
-          <label className={fieldLabelStyle}>
-            Tipo
-            <select
+                  {syncSectors.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </FilterGroup>
+
+          <FilterGroup label="Tipo">
+            <Select
               value={syncType}
-              onChange={(e) => setSyncType(e.target.value)}
-              className={fieldStyle}
+              onValueChange={(v) => v !== null && setSyncType(v)}
+              items={{ [CALL_TYPES.NORMAL]: "Normal", [CALL_TYPES.PREFERENCIAL]: "Preferencial" }}
             >
-              <option value={CALL_TYPES.NORMAL}>Normal</option>
-              <option value={CALL_TYPES.PREFERENCIAL}>Preferencial</option>
-            </select>
-          </label>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel>Tipos de Fila</SelectLabel>
+                  <SelectItem value={CALL_TYPES.NORMAL}>Normal</SelectItem>
+                  <SelectItem value={CALL_TYPES.PREFERENCIAL}>
+                    Preferencial
+                  </SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </FilterGroup>
 
-          <label className={fieldLabelStyle}>
-            Próximo número
-            <input
+          <FilterGroup label="Próximo número">
+            <Input
               type="number"
               min="1"
               max="999"
               value={syncNumber}
               onChange={(e) => setSyncNumber(e.target.value)}
               placeholder="Ex: 045"
-              className={fieldStyle}
               required
             />
-          </label>
+          </FilterGroup>
 
-          <label className={fieldLabelStyle}>
-            &nbsp;
-            <button
-              type="submit"
-              className={syncButtonStyle}
-              disabled={syncing || !syncNumber}
-            >
-              {syncing ? "Sincronizando…" : "Sincronizar"}
-            </button>
-          </label>
+          <Button
+            type="submit"
+            disabled={syncing || !syncNumber}
+            className="mb-[1px] self-end"
+          >
+            {syncing ? "Sincronizando…" : "Sincronizar"}
+          </Button>
         </div>
       </form>
       )}

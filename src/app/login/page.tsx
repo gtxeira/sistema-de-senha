@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { LockKeyhole } from "lucide-react";
+import { Eye, EyeOff, LockKeyhole } from "lucide-react";
 import { writeSessionSnapshot } from "@/lib/queue";
 import { readJson } from "@/lib/json";
 import type { AuthSessionBody } from "@/types/api";
@@ -13,6 +13,7 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/components/ui/input-group";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -20,6 +21,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -125,9 +127,9 @@ export default function LoginPage() {
                   onChange={(e) => setLogin(e.target.value)}
                   placeholder="nome.sobrenome"
                   autoComplete="username"
+                  className="h-10"
                   autoFocus
                   required
-                  className="h-auto rounded-lg border-[1.5px] px-3.5 py-[13px] text-sm leading-normal max-md:border-white/[0.18] max-md:bg-white/[0.08] max-md:text-white max-md:placeholder:text-white/30 max-md:focus-visible:bg-white/[0.12]"
                 />
               </Field>
 
@@ -138,21 +140,34 @@ export default function LoginPage() {
                 >
                   Senha
                 </FieldLabel>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  autoComplete="current-password"
-                  required
-                  className="h-auto rounded-lg border-[1.5px] px-3.5 py-[13px] text-sm leading-normal max-md:border-white/[0.18] max-md:bg-white/[0.08] max-md:text-white max-md:placeholder:text-white/30 max-md:focus-visible:bg-white/[0.12]"
-                />
+
+                <InputGroup className="h-10">
+                  <InputGroupInput
+                    id="password"
+                    type={isVisible ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    autoComplete="current-password"
+                    required
+                  />
+
+                  <InputGroupAddon align="inline-end">
+                    <InputGroupButton
+                      aria-label={isVisible ? "Ocultar senha" : "Mostrar senha"}
+                      title={isVisible ? "Ocultar senha" : "Mostrar senha"}
+                      size="icon-xs"
+                      onClick={() => setIsVisible(!isVisible)}
+                    >
+                      {isVisible ? <EyeOff /> : <Eye />}
+                    </InputGroupButton>
+                  </InputGroupAddon>
+                </InputGroup>
               </Field>
             </FieldGroup>
 
             {error && (
-              <Alert variant="destructive" className="rounded-[7px] px-3.5 py-[11px] text-xs font-semibold leading-normal">
+              <Alert variant="destructive" className="rounded-[7px] px-3.5 py-2.75 text-xs font-semibold leading-normal">
                 {error}
               </Alert>
             )}
@@ -160,7 +175,7 @@ export default function LoginPage() {
             <Button
               type="submit"
               disabled={loading}
-              className="mt-1 h-auto w-full rounded-[9px] px-2.5 py-[15px] text-sm font-extrabold leading-normal shadow-[0_4px_16px_rgba(2,132,199,0.3)]"
+              className="mt-1 h-auto w-full rounded-[9px] px-2.5 py-3.75 text-sm font-extrabold leading-normal shadow-[0_4px_16px_rgba(2,132,199,0.3)]"
             >
               <LockKeyhole data-icon="inline-start" />
               {loading ? "Entrando…" : "Entrar"}

@@ -12,19 +12,19 @@
   --card-foreground: #1e293b;
   --popover: #ffffff;
   --popover-foreground: #1e293b;
-  --primary: #0284c7;
+  --primary: #1678a0;
   --primary-foreground: #ffffff;
-  --secondary: #0f172a;
-  --secondary-foreground: #ffffff;
+  --secondary: #eef4f7;
+  --secondary-foreground: #1678a0;
   --muted: oklch(0.97 0 0);
   --muted-foreground: #64748b;
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
+  --destructive: #c0392b;
   --success: #1a6b3a;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #0284c7;
+  --border: #cbd5e1;
+  --input: #cbd5e1;
+  --ring: #1678a0;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -41,8 +41,8 @@
   --sidebar-ring: oklch(0.708 0 0);
 
   /* --- Aliases legados: consomem os CSS Modules existentes --- */
-  --primary-hover: #0369a1;
-  --primary-light: #e0f2fe;
+  --primary-hover: #125e78;
+  --primary-light: #e6f4fb;
   --amber: #d97706;
   --amber-hover: #b45309;
   --amber-light: #fef3c7;
