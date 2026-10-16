@@ -1,75 +1,23 @@
 "use client";
 
-import { useState, type MouseEvent, type ReactNode } from "react";
-import Link from "next/link";
-import type { Route } from "next";
-import { signOut } from "next-auth/react";
-import {
-  Bell,
-  CheckCircle2,
-  ChevronDown,
-  Clock3,
-  Home,
-  LogOut,
-  Monitor,
-  Settings2,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-import { SECTORS, SESSION_KEY } from "@/lib/constants";
+import type { ReactNode } from "react";
+import { CheckCircle2, Clock3 } from "lucide-react";
 import type { SectorInfo } from "@/lib/constants";
-import { SCREEN_ADMIN, canAccessSector, hasPermission } from "@/lib/permissions";
-import type { Permission } from "@/lib/permissions";
 import type { SessionSnapshot } from "@/lib/queue";
 import { useServerClock } from "@/lib/hooks/useServerClock";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-
-interface NavItem {
-  readonly route: string;
-  /** Rota estática — o `href` do `Link` não aceita `string` solta. */
-  readonly href: Route;
-  readonly icon: LucideIcon;
-  readonly label: string;
-  readonly permission?: Permission;
-}
-
-const NAV_ITEMS: readonly NavItem[] = [
-  { route: "home",      href: "/home",      icon: Home,     label: "Home" },
-  { route: "admin",     href: "/admin",     icon: Settings2, label: "Administração", permission: SCREEN_ADMIN },
-  { route: "painel",    href: "/painel",    icon: Bell,     label: "Chamadas" },
-  { route: "historico", href: "/historico", icon: Clock3,   label: "Histórico" },
-];
-
-/* ── Estilos do shell (eram classes do SidebarLayout.module.css) ── */
-
-/* Base dos itens de navegação/rodapé — replica a regra agrupada
-   `.nav a, .navItem, .logout` do módulo antigo. Sobre o fundo escuro da
-   sidebar, o ghost do shadcn ganha as cores do shell via classes. */
-const itemStyle =
-  "justify-start gap-3 rounded-[9px] px-3.5 py-[13px] text-[14px] font-normal text-[#aac2d0] hover:bg-[#174a6d] hover:text-white";
-/** Hover/ativo — `.nav a:hover, .navItem:hover, .activeNav`. */
-const itemActiveStyle = "bg-[#174a6d] text-white";
-/** Itens do `<nav>` — `.nav a` inclusive no responsive de 900px
-    (`font-size: 0` esconde o texto, deixando só o ícone). */
-const navLinkStyle = `${itemStyle} max-[900px]:text-[0px] max-[900px]:justify-center`;
-/** O `<button>` da nav NÃO era alcançado por `.nav a` no módulo — por isso
-    não herda o `font-size: 0` do responsive de 900px (comportamento
-    original preservado). */
-const navButtonStyle = `${itemStyle} w-full max-[900px]:justify-center`;
-/** Itens do submenu: por especificidade, `.nav a` vencia as propriedades
-    próprias de `.monitorItem` no módulo — o efeito renderizado era a base
-    da nav + a transition única do `.monitorItem`. */
-const monitorItemStyle = `${navLinkStyle} transition-[background-color,color] duration-150`;
-/** `.logout` no módulo sobrescrevia o grupo: borda superior, raio 0 e
-    padding-top 18px (px/pb herdados do grupo: 14px/13px). */
-const logoutStyle =
-  "justify-start gap-3 rounded-none border-t border-[#28536d] px-3.5 pt-[18px] pb-[13px] text-[14px] font-normal text-[#aac2d0] hover:bg-transparent hover:text-white max-[900px]:text-[0px] max-[900px]:justify-center";
+import { AppSidebar } from "@/components/app-sidebar";
+import { Separator } from "@/components/ui/separator";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 
 export interface SidebarLayoutProps {
   /** Rota ativa, para destacar no menu. */
   readonly activeRoute: string;
   readonly session: SessionSnapshot | null;
-  /** Setor exibido no rodapé do perfil; `null` = sem setor. */
+  /** Setor exibido no switcher/rodapé; `null` = sem setor. */
   readonly sectorInfo: SectorInfo | null;
   readonly eyebrow?: string;
   readonly title?: string;
@@ -89,124 +37,53 @@ export function SidebarLayout({
   children,
 }: SidebarLayoutProps) {
   const { timeString } = useServerClock();
-  const [monitorsOpen, setMonitorsOpen] = useState(false);
-  // Itens de tela filtrados pelas permissões da sessão (o proxy também
-  // bloqueia no servidor — aqui é só a parte visual).
-  const visibleNavItems = NAV_ITEMS.filter(
-    (item) => !item.permission || hasPermission(session, item.permission),
-  );
-  const visibleSectors = Object.values(SECTORS).filter((s) =>
-    canAccessSector(session, s.id, "read"),
-  );
-
-  async function handleLogout(e: MouseEvent<HTMLAnchorElement>) {
-    e.preventDefault();
-    // Revoga a família do refresh token antes do signOut do Auth.js —
-    // senão uma aba esquecida poderia "acordar" com o refresh antigo.
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-    } catch {
-      // segue o signOut mesmo sem a revogação (rede)
-    }
-    window.localStorage.removeItem(SESSION_KEY);
-    void signOut({ callbackUrl: "/login" });
-  }
 
   return (
-    <main className="flex h-screen overflow-hidden bg-[#f4f7fb] text-[#17324d]">
-      <aside className="flex h-screen w-[252px] shrink-0 flex-col overflow-y-auto bg-[#0b3555] px-[18px] pt-7 pb-5 text-[#d5e4ee] max-[900px]:w-[72px] max-[900px]:px-[9px] max-[900px]:py-[22px]">
-        <nav className="grid gap-[7px]">
-          {visibleNavItems.map((item) => (
-            <Link
-              key={item.route}
-              href={item.href}
-              className={cn(
-                buttonVariants({ variant: "ghost" }),
-                activeRoute === item.route ? `${navLinkStyle} ${itemActiveStyle}` : navLinkStyle
-              )}
-            >
-              <item.icon data-icon="inline-start" />
-              {item.label}
-            </Link>
-          ))}
-          <Button
-            variant="ghost"
-            className={`${navButtonStyle} ${monitorsOpen ? itemActiveStyle : ""}`}
-            onClick={() => setMonitorsOpen(!monitorsOpen)}
-          >
-            <Monitor data-icon="inline-start" />
-            Monitores
-            <ChevronDown
-              size={14}
-              className={`ml-auto transition-transform duration-200 ${monitorsOpen ? "rotate-180" : ""}`}
-            />
-          </Button>
-          {monitorsOpen && (
-            <div className="mt-[-2px] flex flex-col gap-0.5 pl-5">
-              {visibleSectors.map((s) => (
-                <Link
-                  key={s.id}
-                  href={`/monitor/${s.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={cn(
-                    buttonVariants({ variant: "ghost" }),
-                    monitorItemStyle
-                  )}
-                >
-                  {s.name}
-                </Link>
-              ))}
-            </div>
-          )}
-        </nav>
-        <div className="mt-auto">
-          <div className="flex items-center gap-2.5 border-t border-b border-[#28536d] px-2.5 pt-[18px] pb-[15px]">
-            <div className="grid size-[34px] shrink-0 place-items-center rounded-[50%] bg-[#d8f4ee] text-[11px] font-extrabold text-[#168778]">
-              {session?.initials || "AT"}
-            </div>
-            <div className="max-[900px]:text-[0px] max-[900px]:justify-center">
-              <strong className="block text-[12px] text-white">{session?.name || "Atendente"}</strong>
-              <small className="text-[11px] text-[#8eabbc]">{sectorInfo?.name || ""}</small>
-            </div>
-          </div>
+    <SidebarProvider
+      className="h-svh overflow-hidden bg-[#f4f7fb] text-[#17324d]"
+    >
+      <AppSidebar
+        session={session}
+        sectorInfo={sectorInfo}
+        activeRoute={activeRoute}
+      />
 
-          <Link
-            href="/login"
-            className={cn(
-              buttonVariants({ variant: "ghost" }),
-              'mt-4.5 hover:bg-transparent hover:text-white'
-            )}
-            onClick={(e) => void handleLogout(e)}
-          >
-            <LogOut data-icon="inline-start" /> Sair
-          </Link>
-        </div>
-      </aside>
-
-      <section className="m-auto h-screen flex-1 overflow-y-auto p-[2vw] scroll-smooth max-[900px]:px-[22px] max-[900px]:py-7">
+      <SidebarInset className="h-svh overflow-y-auto bg-transparent p-[2vw] scroll-smooth max-[900px]:px-5.5 max-[900px]:py-7">
         <header className="flex items-start justify-between gap-5 max-[560px]:block">
-          <div>
-            {eyebrow && <p className="text-[10px] font-extrabold tracking-[1.25px] text-[#7990a1]">{eyebrow}</p>}
-            {title && (
-              <h1 className="mt-2 mb-[5px] text-[30px] font-bold text-[#13324d] [&_span]:text-[24px]">
-                {title}
-              </h1>
-            )}
-            {subtitle && <p className="text-[13px] text-[#7590a0]">{subtitle}</p>}
+          <div className="flex items-start gap-2">
+            <SidebarTrigger className="-ml-1 mt-1 shrink-0" />
+
+            <Separator
+              orientation="vertical"
+              className="mt-2 data-vertical:h-4 data-vertical:self-auto"
+            />
+
+            <div>
+              {eyebrow && <p className="text-[10px] font-extrabold tracking-[1.25px] text-[#7990a1]">{eyebrow}</p>}
+              {title && (
+                <h1 className="mt-2 mb-1.25 text-[30px] font-bold text-[#13324d]">
+                  {title}
+                </h1>
+              )}
+              {subtitle && <p className="text-[13px] text-[#7590a0]">{subtitle}</p>}
+            </div>
           </div>
-          <div className="flex items-center gap-[18px] text-[12px] text-[#658296] max-[900px]:flex-wrap max-[900px]:justify-end max-[560px]:justify-start max-[560px]:mt-[18px]">
-            <div className="flex items-center gap-[7px] font-bold text-[#159883]">
+
+          <div className="flex items-center gap-4.5 text-[12px] text-[#658296] max-[900px]:flex-wrap max-[900px]:justify-end max-[560px]:justify-start max-[560px]:mt-4.5">
+            <div className="flex items-center gap-1.75 font-bold text-[#159883]">
               <CheckCircle2 size={16} /> Sistema online
             </div>
+
             {headerActions}
-            <div className="flex items-center gap-[5px]">
+
+            <div className="flex items-center gap-1.25">
               <Clock3 size={16} /> {timeString || "--:--:--"}
             </div>
           </div>
         </header>
+
         {children}
-      </section>
-    </main>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
