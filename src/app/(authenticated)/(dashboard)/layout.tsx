@@ -1,10 +1,10 @@
 "use client"
 
-import React, { useSyncExternalStore } from "react";
+import React from "react";
 import { SidebarLayout } from "@/components/SidebarLayout/SidebarLayout";
-import { getServerSessionSnapshot, getSessionSnapshot, subscribeSession } from "@/lib/queue";
 import { usePathname } from "next/navigation";
 import { useDashboardLayoutStore } from "@/stores/use-dashboard-layout-store";
+import { useSession } from "@/stores/use-session-store";
 import { cn } from "@/lib/utils";
 
 export default function DashboardLayout({
@@ -15,11 +15,7 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const activeRoute = pathname.split("/")[1] || "home";
 
-  const session = useSyncExternalStore(
-    subscribeSession,
-    getSessionSnapshot,
-    getServerSessionSnapshot
-  );
+  const session = useSession();
 
   const sectorInfo = useDashboardLayoutStore((s) => s.sectorInfo);
   const headerActions = useDashboardLayoutStore((s) => s.headerActions);

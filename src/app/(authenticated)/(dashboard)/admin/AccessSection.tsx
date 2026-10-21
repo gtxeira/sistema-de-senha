@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import {
   Check,
   Minus,
@@ -14,11 +14,6 @@ import {
   ChevronDown,
   Eye
 } from "lucide-react";
-import {
-  getSessionSnapshot,
-  getServerSessionSnapshot,
-  subscribeSession,
-} from "@/lib/queue";
 import {
   SECTORS,
   USERNAME_REGEX,
@@ -45,8 +40,8 @@ import {
   USERS_EDIT,
   USERS_VIEW,
   computeEffectivePermissions,
-  hasPermission,
 } from "@/lib/permissions";
+import { useCan } from "@/stores/use-session-store";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -200,17 +195,11 @@ function isOverrideMode(value: string): value is OverrideMode {
  * AlertDialog (antes, tudo era `window.confirm`).
  */
 export default function AccessSection() {
-  const session = useSyncExternalStore(
-    subscribeSession,
-    getSessionSnapshot,
-    getServerSessionSnapshot,
-  );
-
-  const canView = hasPermission(session, USERS_VIEW);
-  const canCreate = hasPermission(session, USERS_CREATE);
-  const canEdit = hasPermission(session, USERS_EDIT);
-  const canDelete = hasPermission(session, USERS_DELETE);
-  const canManageRoles = hasPermission(session, ROLES_MANAGE);
+  const canView = useCan(USERS_VIEW);
+  const canCreate = useCan(USERS_CREATE);
+  const canEdit = useCan(USERS_EDIT);
+  const canDelete = useCan(USERS_DELETE);
+  const canManageRoles = useCan(ROLES_MANAGE);
 
   const [tab, setTab] = useState("usuarios");
   const [roles, setRoles] = useState<RoleRecord[]>([]);

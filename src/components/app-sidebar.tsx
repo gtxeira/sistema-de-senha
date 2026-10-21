@@ -8,7 +8,7 @@ import { SearchForm } from "@/components/search-form"
 import { SECTORS } from "@/lib/constants"
 import type { SectorInfo } from "@/lib/constants"
 import { canAccessSector } from "@/lib/permissions"
-import type { SessionSnapshot } from "@/lib/queue"
+import type { User } from "next-auth"
 import {
   Sidebar,
   SidebarContent,
@@ -42,7 +42,7 @@ export function AppSidebar({
   routeGroups,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
-  session: SessionSnapshot | null
+  session: User | null
   sectorInfo?: SectorInfo
   activeRoute: string,
   routeGroups: readonly RouteGroup[]

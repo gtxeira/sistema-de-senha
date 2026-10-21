@@ -11,11 +11,11 @@
  *     (permissões stale) ou `session_expired`, renova e repete a chamada.
  *
  * Se o refresh falhar de vez (janela de 12h do refresh token encerrada,
- * conta desativada), o snapshot é limpo e a aba vai para /login.
+ * conta desativada), a store é limpa e a aba vai para /login.
  */
-import { SESSION_KEY, SESSION_REFRESH_INTERVAL } from "./constants";
-import { writeSessionSnapshot } from "./queue";
+import { SESSION_REFRESH_INTERVAL } from "./constants";
 import { readJson } from "./json";
+import { useSessionStore } from "@/stores/use-session-store";
 import type { ApiErrorBody, AuthSessionBody } from "@/types/api";
 
 let inflight: Promise<boolean> | null = null;
@@ -31,14 +31,14 @@ function netFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Respons
   return (originalFetch ?? globalThis.fetch)(input, init);
 }
 
-/** Busca a sessão do Auth.js e persiste o snapshot local. */
-async function syncSessionSnapshot(): Promise<boolean> {
+/** Busca a sessão do Auth.js e publica na store. */
+async function syncSession(): Promise<boolean> {
   try {
     const res = await netFetch("/api/auth/session", { cache: "no-store" });
     if (!res.ok) return false;
     const session = await readJson<AuthSessionBody>(res);
     if (session?.user?.id) {
-      writeSessionSnapshot(session.user);
+      useSessionStore.getState().setUser(session.user);
       return true;
     }
   } catch {
@@ -49,7 +49,9 @@ async function syncSessionSnapshot(): Promise<boolean> {
 
 function forceLogin(): void {
   if (typeof window === "undefined") return;
-  window.localStorage.removeItem(SESSION_KEY);
+  // Limpa a store (e o espelho local) antes de sair: a sessão morta não
+  // pode continuar authorizing a UI.
+  useSessionStore.getState().clear();
   if (window.location.pathname !== "/login") {
     // Navegação hard intencional: helper de módulo (sem acesso a useRouter) e
     // queremos descartar todo o estado da aba ao perder a sessão.
@@ -70,14 +72,14 @@ export function refreshSession(): Promise<boolean> {
     try {
       const res = await netFetch("/api/auth/refresh", { method: "POST" });
       if (res.ok) {
-        await syncSessionSnapshot();
+        await syncSession();
         return true;
       }
       const data = await readJson<ApiErrorBody>(res).catch<ApiErrorBody>(() => ({}));
       // Corrida: outro fluxo do mesmo cliente renovou primeiro — a sessão
       // está viva, só precisa reler os cookies/claims.
       if (data?.code === "refresh_conflict") {
-        await syncSessionSnapshot();
+        await syncSession();
         return true;
       }
       forceLogin();

@@ -4,8 +4,8 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Eye, EyeOff, LockKeyhole } from "lucide-react";
-import { writeSessionSnapshot } from "@/lib/queue";
 import { readJson } from "@/lib/json";
+import { useSessionStore } from "@/stores/use-session-store";
 import type { AuthSessionBody } from "@/types/api";
 import brandIcon from "@/app/icon.ico";
 import Image from "next/image";
@@ -46,7 +46,9 @@ export default function LoginPage() {
       const session = await readJson<AuthSessionBody>(res);
 
       if (session?.user) {
-        writeSessionSnapshot(session.user);
+        // Publica a sessão na store (e no espelho local) — é o que os
+        // guards de tela e os filtros de UI leem.
+        useSessionStore.getState().setUser(session.user);
 
         // Emite o refresh token (12h) junto com o login — é ele que permite
         // "acordar" a sessão após 15min de idle sem digitar a senha de novo.

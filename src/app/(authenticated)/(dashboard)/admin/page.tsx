@@ -3,19 +3,15 @@
 import { useEffect, useRef, useState, useSyncExternalStore, } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { AlertTriangle, ImagePlus, Monitor, RotateCcw, Save, Trash2, } from "lucide-react";
-import type { SessionSnapshot } from "@/lib/queue";
+import type { User } from "next-auth";
 import {
   getQueueSnapshot,
   getServerQueueSnapshot,
-  getServerSessionSnapshot,
-  getSessionSnapshot,
   MIN_QUEUE_NUMBER,
   normalizeQueue,
   saveQueueState,
   subscribeQueue,
-  subscribeSession,
 } from "@/lib/queue";
 import { CALL_TYPES, DEFAULT_SECTOR, getSector, MAX_QUEUE_NUMBER, NO_PASSWORD, SECTORS, } from "@/lib/constants";
 import type { NewsItem } from "@/lib/repositories/types";
@@ -29,12 +25,12 @@ import {
   NEWS_DELETE,
   QUEUE_RESET,
   QUEUE_SYNC,
-  SCREEN_ADMIN,
   SCREEN_ADMIN_FILAS,
   SCREEN_ADMIN_NOTICIAS,
   SCREEN_ADMIN_USUARIOS,
   SECTORS_MANAGE_ALL,
 } from "@/lib/permissions";
+import { useSession } from "@/stores/use-session-store";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -135,13 +131,7 @@ export default function AdminPage() {
     subtitle: "Gerencie as filas de atendimento e as notícias do monitor."
   });
 
-  const router = useRouter();
-
-  const session = useSyncExternalStore(
-    subscribeSession,
-    getSessionSnapshot,
-    getServerSessionSnapshot,
-  );
+  const session = useSession();
   const state = useSyncExternalStore(
     subscribeQueue,
     getQueueSnapshot,
@@ -165,17 +155,6 @@ export default function AdminPage() {
   const [deleteNewsTarget, setDeleteNewsTarget] = useState<AdminNews | null>(null);
   const [, refreshNews] = useState(0);
   const pendingFileRef = useRef<File | null>(null);
-
-  /* segurança: a seção /admin exige a permissão de tela `tela.admin`
-     (o proxy também bloqueia no servidor — aqui é só a camada visual) */
-  useEffect(() => {
-    const storedSession = getSessionSnapshot();
-    if (!storedSession) {
-      router.push("/login");
-    } else if (!hasPermission(storedSession, SCREEN_ADMIN)) {
-      router.push("/home");
-    }
-  }, [router]);
 
   /* notícias */
   useEffect(() => {
@@ -587,7 +566,7 @@ export default function AdminPage() {
    SEÇÃO DE SINCRONIZAÇÃO DE SENHAS
 ═══════════════════════════════════════════════════════════ */
 interface SyncSectionProps {
-  readonly session: SessionSnapshot;
+  readonly session: User;
   readonly canSync: boolean;
 }
 

@@ -4,14 +4,12 @@ import {
   SECTORS,
   GUICHES,
   QUEUE_KEY,
-  SESSION_KEY,
   formatQueueNumber,
   nextQueueNumber,
   getInitialState,
   readQueueState,
   saveQueueState,
   invalidateQueueState,
-  readSession,
   normalizeQueue,
   clearHistoryFromNewDay,
   cleanHistory,
@@ -19,8 +17,6 @@ import {
   subscribeQueue,
   withQueueLock,
   getQueueSnapshot,
-  getSessionSnapshot,
-  subscribeSession,
   NO_PASSWORD,
 } from "@/lib/queue";
 import type {
@@ -76,7 +72,6 @@ describe("SECTORS / GUICHES / keys", () => {
 
   it("expõe as chaves de storage", () => {
     expect(QUEUE_KEY).toBe("saude-queue-state");
-    expect(SESSION_KEY).toBe("saude-attendant-session");
   });
 });
 
@@ -316,25 +311,6 @@ describe("clearHistoryFromNewDay", () => {
   });
 });
 
-describe("readSession", () => {
-  it("retorna null sem sessão", () => {
-    expect(readSession()).toBeNull();
-  });
-
-  it("ler sessão salva", () => {
-    window.localStorage.setItem(
-      SESSION_KEY,
-      JSON.stringify({ id: "u1", name: "João" }),
-    );
-    expect(readSession()).toEqual({ id: "u1", name: "João" });
-  });
-
-  it("retorna null em JSON inválido", () => {
-    window.localStorage.setItem(SESSION_KEY, "not-json");
-    expect(readSession()).toBeNull();
-  });
-});
-
 describe("subscribeQueue", () => {
   it("retorna função de unsubscribe", () => {
     const unsub = subscribeQueue(() => {});
@@ -414,16 +390,6 @@ describe("getQueueSnapshot / getSessionSnapshot (cache)", () => {
     expect(first.farmacia.normalCurrent).toBe(1);
     expect(second.farmacia.normalCurrent).toBe(2);
     expect(first).not.toBe(second);
-  });
-
-  it("getSessionSnapshot retorna null sem storage", () => {
-    expect(getSessionSnapshot()).toBeNull();
-  });
-
-  it("subscribeSession retorna unsubscribe", () => {
-    const unsub = subscribeSession(() => {});
-    expect(typeof unsub).toBe("function");
-    unsub();
   });
 });
 

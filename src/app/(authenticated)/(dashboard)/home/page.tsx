@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Monitor, Settings2, Headphones, History } from "lucide-react";
-import { getSessionSnapshot, SECTORS } from "@/lib/queue";
+import { SECTORS } from "@/lib/constants";
 import { SCREEN_ADMIN, canAccessSector, hasPermission } from "@/lib/permissions";
+import { useSession } from "@/stores/use-session-store";
 import { NavCard, type NavCardProps } from "./NavCard";
 import type { Route } from "next";
 import { useSetDashboardLayoutInfo } from "@/hooks/use-set-dashboard-layout-info";
@@ -19,13 +18,7 @@ export default function HomePage() {
     title: "O que deseja fazer?",
   });
 
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!getSessionSnapshot()) router.push("/login");
-  }, [router]);
-
-  const session = getSessionSnapshot();
+  const session = useSession();
   if (!session) return null;
 
   const navItems: NavItem[] = [

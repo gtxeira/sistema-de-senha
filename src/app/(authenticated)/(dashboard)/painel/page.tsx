@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   Bell,
   CheckCircle2,
@@ -13,18 +12,17 @@ import {
   formatQueueNumber,
   getQueueSnapshot,
   getServerQueueSnapshot,
-  getServerSessionSnapshot,
-  getSessionSnapshot, nextQueueNumber,
+  nextQueueNumber,
   normalizeQueue,
   readQueueState,
   reconcileQueueFromCalls,
   saveQueueState,
   subscribeQueue,
-  subscribeSession,
 } from "@/lib/queue";
 import { SECTORS, CALL_TYPES, TYPE_FIELDS, TYPE_LABELS, HISTORY_LIMITS, PAGE_SIZES, DEFAULT_SECTOR, DEFAULT_NAME, KEYBOARD_SHORTCUTS, API_ROUTES, isSectorId, getSector } from "@/lib/constants";
 import type { CallType, SectorId, SectorScope } from "@/lib/constants";
 import { SECTORS_VIEW_ALL, hasPermission } from "@/lib/permissions";
+import { useSession } from "@/stores/use-session-store";
 import { useQueueEvents } from "@/lib/hooks/useQueueEvents";
 import { SidebarLayout } from "@/components/SidebarLayout/SidebarLayout";
 import { convertToBrazilTimeString } from "@/lib/date-utils";
@@ -79,14 +77,9 @@ function useIsClient() {
 }
 
 export default function PainelPage() {
-  const router    = useRouter();
   const isClient  = useIsClient();
 
-  const session = useSyncExternalStore(
-    subscribeSession,
-    getSessionSnapshot,
-    getServerSessionSnapshot
-  );
+  const session = useSession();
   const state = useSyncExternalStore(
     subscribeQueue,
     getQueueSnapshot,
@@ -128,11 +121,6 @@ export default function PainelPage() {
 
   const { calls, lastCall } = useQueueEvents(activeSector);
   const lastCallIdRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    const storedSession = getSessionSnapshot();
-    if (!storedSession) { router.push("/login"); }
-  }, [router]);
 
   useEffect(() => {
     if (!activeSector || calls == null) return;

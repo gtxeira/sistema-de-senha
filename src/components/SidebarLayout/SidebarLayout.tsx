@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { CheckCircle2, Headphones, History, Home, type LucideIcon, Settings2 } from "lucide-react";
 import type { SectorInfo } from "@/lib/constants";
-import type { SessionSnapshot } from "@/lib/queue";
+import type { User } from "next-auth";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -37,7 +37,7 @@ export interface RouteGroup {
 export interface SidebarLayoutProps {
   /** Rota ativa, para destacar no menu. */
   readonly activeRoute: string;
-  readonly session: SessionSnapshot | null;
+  readonly session: User | null;
   /** Setor exibido no switcher/rodapé; `null` = sem setor. */
   readonly sectorInfo?: SectorInfo;
   readonly headerActions?: ReactNode;

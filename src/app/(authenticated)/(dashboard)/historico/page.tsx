@@ -1,21 +1,19 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { useRouter } from "next/navigation";
 import {
   Filter,
 } from "lucide-react";
 import {
   formatQueueNumber,
-  getServerSessionSnapshot,
-  getSessionSnapshot,
-  subscribeSession, TYPE_LABELS,
+  TYPE_LABELS,
 } from "@/lib/queue";
 import { SECTORS, CALL_TYPES, PAGE_SIZES, DEFAULT_SECTOR, ALL_SECTORS, getSector, getSectorScope, isSectorId } from "@/lib/constants";
 import type { SectorScope } from "@/lib/constants";
 import { readJson } from "@/lib/json";
 import type { QueueStats } from "@/lib/repositories/types";
 import { SECTORS_VIEW_ALL, hasPermission } from "@/lib/permissions";
+import { useSession } from "@/stores/use-session-store";
 import { convertToBrazilTimeString } from "@/lib/date-utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -59,14 +57,9 @@ function useIsClient() {
 }
 
 export default function HistoricoPage() {
-  const router   = useRouter();
   const isClient = useIsClient();
 
-  const session = useSyncExternalStore(
-    subscribeSession,
-    getSessionSnapshot,
-    getServerSessionSnapshot
-  );
+  const session = useSession();
 
   // Sem escopo de "todos os setores", a sessão trava no próprio setor
   const canViewAllSectors = hasPermission(session, SECTORS_VIEW_ALL);
@@ -88,11 +81,6 @@ export default function HistoricoPage() {
   // começa carregando: o effect de montagem busca sem setState síncrono
   const [loading, setLoading]       = useState(true);
   const [page, setPage]             = useState(1);
-
-  useEffect(() => {
-    const stored = getSessionSnapshot();
-    if (!stored) router.push("/login");
-  }, [router]);
 
   const statsUrl = (days: string, scope: SectorScope) => {
     const params = new URLSearchParams({ days });

@@ -25,8 +25,8 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import * as React from "react";
-import { SESSION_KEY } from "@/lib/constants";
 import { signOut } from "next-auth/react";
+import { useSessionStore } from "@/stores/use-session-store";
 
 export function NavUser({
   user,
@@ -56,7 +56,9 @@ export function NavUser({
       // segue o signOut mesmo sem a revogação (rede)
     }
 
-    window.localStorage.removeItem(SESSION_KEY)
+    // Limpa a sessão local (store + espelho no storage) antes de sair: a
+    // aba não pode continuar exibindo os dados do usuário que saiu.
+    useSessionStore.getState().clear();
     void signOut({ callbackUrl: "/login" })
   }
 

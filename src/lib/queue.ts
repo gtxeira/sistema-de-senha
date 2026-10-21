@@ -2,7 +2,6 @@ import {
   SECTORS,
   GUICHES,
   QUEUE_KEY,
-  SESSION_KEY,
   DEFAULT_SECTOR,
   ALL_SECTORS,
   MAX_QUEUE_NUMBER,
@@ -15,7 +14,6 @@ import {
   NO_PASSWORD,
 } from "./constants";
 import type { CallType } from "./constants";
-import type { User } from "next-auth";
 import { parseJson, readJson } from "./json";
 import type { QueueCallBody } from "@/types/api";
 
@@ -23,7 +21,6 @@ export {
   SECTORS,
   GUICHES,
   QUEUE_KEY,
-  SESSION_KEY,
   DEFAULT_SECTOR,
   ALL_SECTORS,
   MAX_QUEUE_NUMBER,
@@ -80,20 +77,6 @@ export interface QueueEntry {
  */
 export type QueueState = Record<string, QueueEntry>;
 
-/**
- * Snapshot persistido da sessão no client (guardado por `writeSessionSnapshot`).
- * `name` é opcional porque `JSON.stringify` descarta a chave quando é
- * `undefined`.
- */
-export interface SessionSnapshot {
-  readonly id: string;
-  readonly name?: string | null;
-  readonly initials?: string;
-  readonly sector: string | null;
-  readonly guiche: string;
-  readonly permissions: readonly string[];
-}
-
 /** Resultado de `callNextNumber` — união discriminada por `ok`. */
 export type CallNextResult =
   | { readonly ok: true; readonly next: number; readonly type: CallType }
@@ -123,8 +106,6 @@ const serverQueueSnapshot: QueueState = {
 let clientQueueSnapshot: QueueState | null = null;
 let clientQueueRaw: string | null = null;
 let hasClientQueueSnapshot = false;
-let clientSessionSnapshot: SessionSnapshot | null = null;
-let clientSessionRaw: string | null = null;
 
 // Usuários movidos para o banco de dados (tabela profiles + auth.users)
 
@@ -391,18 +372,6 @@ export function reconcileQueueFromCalls(
   });
 }
 
-export function readSession(): SessionSnapshot | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(SESSION_KEY);
-    if (!raw) return null;
-    const parsed = parseJson<SessionSnapshot | null>(raw);
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
 export function normalizeQueue(
   queue?: Partial<QueueEntry> | null,
 ): QueueEntry {
@@ -469,46 +438,6 @@ export function getQueueSnapshot(): QueueState {
 
 export function getServerQueueSnapshot(): QueueState {
   return serverQueueSnapshot;
-}
-
-export function subscribeSession(callback: () => void): () => void {
-  window.addEventListener("storage", callback);
-  return () => window.removeEventListener("storage", callback);
-}
-
-export function getSessionSnapshot(): SessionSnapshot | null {
-  if (typeof window === "undefined") return null;
-  const raw = window.localStorage.getItem(SESSION_KEY);
-  if (raw === clientSessionRaw) return clientSessionSnapshot;
-  clientSessionRaw = raw;
-  clientSessionSnapshot = readSession();
-  return clientSessionSnapshot;
-}
-
-/**
- * Persiste o snapshot da sessão (localStorage) a partir do `session.user`
- * do Auth.js — usado no login e após cada refresh, para que guards e
- * filtros de UI (permissões/setores) enxerguem os claims atualizados.
- * Dispara "storage" para os assinantes (useSyncExternalStore) re-renderizarem.
- */
-export function writeSessionSnapshot(user: User | null | undefined): void {
-  if (typeof window === "undefined" || !user?.id) return;
-  const snapshot: SessionSnapshot = {
-    id: user.id,
-    name: user.name,
-    initials: user.initials,
-    sector: user.sector,
-    guiche: user.guiche,
-    permissions: Array.isArray(user.permissions) ? user.permissions : [],
-  };
-  window.localStorage.setItem(SESSION_KEY, JSON.stringify(snapshot));
-  clientSessionRaw = null;
-  clientSessionSnapshot = null;
-  window.dispatchEvent(new Event("storage"));
-}
-
-export function getServerSessionSnapshot(): null {
-  return null;
 }
 
 export async function callNextNumber({
