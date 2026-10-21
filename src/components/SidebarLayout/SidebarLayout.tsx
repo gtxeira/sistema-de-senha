@@ -70,8 +70,15 @@ export function SidebarLayout({
     { title: "Chamadas", items: mainItems },
   ];
 
-  const currentGroupItem = groups.flatMap((group) => group.items).find((item) => item.route === activeRoute)!;
-  const currentGroup = groups.find((group) => group.items.includes(currentGroupItem))!;
+  /* Sem sessão (prerender do build) o item da rota ativa não existe nos
+     grupos — "Administração" só entra no menu com a permissão `tela.admin`.
+     O breadcrumb precisa tolerar isso em vez de estourar no `undefined`. */
+  const currentGroupItem = groups
+    .flatMap((group) => group.items)
+    .find((item) => item.route === activeRoute);
+  const currentGroup = currentGroupItem
+    ? groups.find((group) => group.items.includes(currentGroupItem))
+    : undefined;
 
   return (
     <SidebarProvider
@@ -84,32 +91,44 @@ export function SidebarLayout({
         routeGroups={groups}
       />
 
-      <SidebarInset>
-        <header className="sticky top-0 flex shrink-0 items-center justify-between gap-2 border-b bg-background p-3 px-6">
-          <div className="flex items-center gap-2">
+      {/* `min-w-0` no inset: sem ele o flex item não encolhe abaixo da
+          largura do conteúdo e a página inteira passa a vazar na
+          horizontal quando há sidebar aberta. */}
+      <SidebarInset className="min-w-0">
+        <header className="sticky top-0 flex shrink-0 flex-wrap items-center justify-between gap-x-2 gap-y-2 border-b bg-background p-3 sm:px-6">
+          <div className="flex min-w-0 items-center gap-2">
             <SidebarTrigger className="-ml-1 mt-1 shrink-0" />
 
             <Separator
               orientation="vertical"
-              className=" data-vertical:h-6 data-vertical:self-auto"
+              className="data-vertical:h-6 data-vertical:self-auto"
             />
 
-            <Breadcrumb className="pointer-events-none">
-              <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">{currentGroup.title}</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>{currentGroupItem.label}</BreadcrumbPage>
+            <Breadcrumb className="pointer-events-none min-w-0">
+              <BreadcrumbList className="min-w-0">
+                {currentGroup && (
+                  <BreadcrumbItem className="hidden md:block">
+                    <BreadcrumbLink href="#">{currentGroup.title}</BreadcrumbLink>
+                  </BreadcrumbItem>
+                )}
+                {currentGroup && (
+                  <BreadcrumbSeparator className="hidden md:block" />
+                )}
+                <BreadcrumbItem className="min-w-0">
+                  <BreadcrumbPage className="truncate">
+                    {currentGroupItem?.label ?? ""}
+                  </BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           </div>
 
-          <div className="flex items-center gap-4.5 text-[12px] text-[#658296] max-[900px]:flex-wrap max-[900px]:justify-end max-[560px]:justify-start max-[560px]:mt-4.5">
+          {/* Status, ações da tela e relógio: uma linha própria no mobile
+              (o header tem largura de ~342px lá) e na mesma linha do
+              breadcrumb a partir de `sm`. */}
+          <div className="flex w-full items-center gap-3 text-[12px] text-[#658296] sm:w-auto sm:justify-end sm:gap-4.5">
             <div className="flex items-center gap-1.75 font-bold text-[#159883]">
-              <CheckCircle2 size={16} /> Sistema online
+              <CheckCircle2 size={16} className="shrink-0" /> Sistema online
             </div>
 
             {headerActions}
@@ -118,7 +137,7 @@ export function SidebarLayout({
           </div>
         </header>
 
-        <main className="flex flex-1 flex-col gap-4 p-6 pt-2 overflow-y-auto w-full max-w-full min-w-0">
+        <main className="flex w-full max-w-full min-w-0 flex-1 flex-col gap-4 overflow-y-auto p-3 pt-2 sm:p-6 sm:pt-2">
           {children}
         </main>
       </SidebarInset>

@@ -71,11 +71,13 @@ import { useSetDashboardLayoutInfo } from "@/hooks/use-set-dashboard-layout-info
 
 /* ── classes locais desta tela (as comuns vêm de ./admin-styles) ── */
 
-/** Cartões de setor: grid duplo que vira coluna no mobile. */
-const sectorsStyle = "mt-5 grid grid-cols-2 gap-3.5 max-[700px]:grid-cols-1";
+/** Cartões de setor: grid duplo que vira coluna no mobile.
+ *  O corte é em `lg` (1024px) e não em `sm`: entre 768px e 1024px a
+ *  sidebar continua aberta e sobra pouca largura para duas colunas. */
+const sectorsStyle = "mt-5 grid grid-cols-1 gap-3.5 lg:grid-cols-2";
 const sectorCardStyle =
-  "flex justify-between gap-3 rounded-[8px] border border-[#e1ebee] p-[18px] max-[700px]:block";
-const cardActionsStyle = "flex flex-col gap-2 max-[700px]:mt-[15px]";
+  "flex flex-col justify-between gap-3 rounded-[8px] border border-[#e1ebee] p-[18px] lg:flex-row";
+const cardActionsStyle = "flex flex-col gap-2";
 
 /** Faixa laranja de "resetar todos os setores". */
 const resetAllWrapperStyle =
@@ -85,7 +87,7 @@ const resetAllInfoStyle =
 
 /** Formulário e grade de notícias do monitor. */
 const newsFormStyle =
-  "mt-5 grid grid-cols-[1.3fr_1fr_auto] gap-2.5 max-[700px]:grid-cols-1";
+  "mt-5 grid grid-cols-1 gap-2.5 lg:grid-cols-[1.3fr_1fr_auto]";
 const uploadStyle =
   "flex h-8 cursor-pointer items-center gap-[7px] rounded-lg border border-input px-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent";
 const newsGridStyle = "mt-5 flex flex-wrap gap-3";
@@ -96,7 +98,7 @@ const newsTitleStyle = "block p-[9px] text-[11px]";
 /** Seção de sincronização de senha. */
 const syncInfoStyle = "mb-4 text-[13px] leading-normal text-[#5a7a8a]";
 const syncRowStyle =
-  "grid grid-cols-[1fr_1fr_1fr_auto] items-end gap-3 max-[700px]:grid-cols-1";
+  "grid grid-cols-1 items-end gap-3 lg:grid-cols-[1fr_1fr_1fr_auto]";
 
 /**
  * Item do carrossel de notícias da tela de administração: o que vem do

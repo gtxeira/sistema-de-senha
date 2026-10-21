@@ -234,7 +234,7 @@ export default function HistoricoPage() {
       )}
 
       {/* ── Tabela ── */}
-      <section className="mt-6 rounded-[14px] border border-[#dde9ed] bg-white p-7">
+      <section className="mt-6 rounded-[14px] border border-[#dde9ed] bg-white p-4 sm:p-7">
         <div className="mb-5 flex items-start justify-between">
           <div>
             <span className={labelStyle}>REGISTROS</span>

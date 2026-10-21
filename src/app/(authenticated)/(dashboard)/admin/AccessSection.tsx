@@ -121,12 +121,15 @@ const formRowStyle =
 const permMatrixStyle =
   "mb-[18px] rounded-[10px] border border-[#dde9ed] bg-[#f9fcfe] p-[18px]";
 const permMatrixTitleStyle =
-  "flex items-center justify-between gap-3 text-[12px] font-bold uppercase tracking-[0.5px] text-[#416477]";
+  "flex flex-wrap items-center justify-between gap-2 text-[12px] font-bold uppercase tracking-[0.5px] text-[#416477]";
 const permGroupStyle = "mb-4";
 const permGroupTitleStyle =
   "mb-2 text-[11px] font-extrabold uppercase tracking-[0.8px] text-[#7a9aad]";
+/* No mobile a permissão e o seletor Herdar/Conceder/Negar empilham: lado a
+   lado o trio de botões não cabia na largura do diálogo e o "Negar"
+   ficava cortado. */
 const permRowStyle =
-  "flex items-center justify-between gap-3 border-b border-dashed border-[#eaf1f4] py-1.5 last:border-b-0";
+  "flex flex-col items-stretch justify-between gap-2 border-b border-dashed border-[#eaf1f4] py-2.5 last:border-b-0 sm:flex-row sm:items-center sm:gap-3 sm:py-1.5";
 const permOnStyle =
   "inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#1c7c4a]";
 const permOffStyle =
@@ -136,11 +139,26 @@ const permCheckStyle =
 const formActionsStyle = "flex gap-2.5 justify-end";
 
 /* Tabelas e estados de lista. */
-const usersTableStyle = "mt-3 w-full max-w-full overflow-x-auto";
+const usersTableStyle = "mt-3 w-full max-w-full";
 const loadingMsgStyle = "mt-5 text-[13px] text-[#7a9aad]";
 const emptyMsgStyle = "p-6 text-center text-[13px] text-[#7a9aad]";
 const roleDescriptionStyle =
   "mt-[3px] text-[12px] font-normal tracking-normal text-[#7a9aad]";
+
+/* Cartões (mobile): a lista vira cartões empilhados abaixo de `xl`,
+   porque a tabela de 7 colunas não cabe na largura útil da tela com a
+   sidebar aberta e o scroll horizontal escondia os botões de ação. */
+const cardListStyle = "mt-3 flex flex-col gap-3 xl:hidden";
+const listCardStyle =
+  "rounded-[10px] border border-[#dde9ed] bg-white p-3.5";
+const cardActionsStyle =
+  "mt-3 flex gap-2 border-t border-[#eaf1f4] pt-3";
+
+/** Rótulo → valor dentro do cartão mobile. */
+const cardFieldStyle = "min-w-0 flex-1";
+const cardFieldLabelStyle =
+  "block text-[10px] font-extrabold uppercase tracking-[1px] text-[#7895a3]";
+const cardFieldValueStyle = "mt-0.5 block text-[13px] text-[#23445b]";
 
 const ROLE_CONFIG: Record<string, { icon: LucideIcon; className: string }> = {
   admin: {
@@ -472,9 +490,13 @@ export default function AccessSection() {
             <p className={sectionEyebrowStyle}>ACESSO</p>
             <h2 className={`font-bold ${sectionHeadingStyle}`}>Usuários e permissões</h2>
           </div>
-          <TabsList>
-            <TabsTrigger value="usuarios">Usuários</TabsTrigger>
-            <TabsTrigger value="cargos">Cargos e permissões</TabsTrigger>
+          <TabsList className="w-full sm:w-auto">
+            <TabsTrigger value="usuarios" className="flex-1 sm:flex-none">
+              Usuários
+            </TabsTrigger>
+            <TabsTrigger value="cargos" className="flex-1 sm:flex-none">
+              Cargos e permissões
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -503,7 +525,11 @@ export default function AccessSection() {
                   {editingUserId ? "Editar usuário" : "Novo usuário"}
                 </DialogTitle>
               </DialogHeader>
-              <form onSubmit={(e) => void handleUserSubmit(e)}>
+              {/* `min-w-0` impede que a matriz de permissões (larga demais
+                  para o diálogo estreito) estoure a coluna do grid do
+                  DialogContent — sem isso o diálogo ganhava scroll
+                  horizontal no mobile. */}
+              <form onSubmit={(e) => void handleUserSubmit(e)} className="min-w-0">
                 <div className={formRowStyle}>
                   <FilterGroup label="Usuário">
                     <Input
@@ -618,7 +644,7 @@ export default function AccessSection() {
                   <CollapsibleTrigger className="group flex w-full cursor-pointer items-center justify-between rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                     <p className={permMatrixTitleStyle}>
                       Permissões individuais — valem além do cargo
-                      <Badge variant="outline" className="ml-2">
+                      <Badge variant="outline" className="ml-2 shrink-0">
                         {effectivePerms.length}/{ALL_PERMISSIONS.length} efetivas
                       </Badge>
                     </p>
@@ -631,17 +657,19 @@ export default function AccessSection() {
 
                   <CollapsibleContent className="pt-3">
                     <Tabs defaultValue={PERMISSION_GROUPS[0]?.key} className="w-full">
-                      {/* Barra de Seleção das Abas */}
-                      <TabsList className="grid w-full grid-cols-3 rounded-md!">
+                      {/* Barra de Seleção das Abas — no mobile os três
+                          grupos quebram em duas linhas (rolar uma lista de
+                          abas escondida não é descobrível). */}
+                      <TabsList className="flex h-auto! w-full flex-wrap justify-start rounded-md! sm:grid sm:h-8! sm:grid-cols-3">
                         {PERMISSION_GROUPS.map((group) => {
                           const activeInGroup = group.items.filter((item) =>
                             effectivePerms.includes(item.permission)
                           ).length;
 
                           return (
-                            <TabsTrigger key={group.key} value={group.key} className="gap-2 text-xs rounded-md!">
+                            <TabsTrigger key={group.key} value={group.key} className="flex-none gap-2 rounded-md! text-xs sm:flex-1">
                               {group.label}
-                              <Badge variant="secondary" className="px-1.5 py-0.5 text-[10px] font-semibold">
+                              <Badge variant="secondary" className="shrink-0 px-1.5 py-0.5 text-[10px] font-semibold">
                                 {activeInGroup}/{group.items.length}
                               </Badge>
                             </TabsTrigger>
@@ -677,17 +705,17 @@ export default function AccessSection() {
                                     }
                                   }}
                                   className={cn(
-                                    "min-w-47.5",
+                                    "w-full sm:w-fit sm:min-w-47.5",
                                     userForm.username === 'admin' && 'hidden'
                                   )}
                                 >
-                                  <ToggleGroupItem value={INHERIT} className="text-xs data-pressed:brightness-95 hover:brightness-95">
+                                  <ToggleGroupItem value={INHERIT} className="flex-1 text-xs data-pressed:brightness-95 hover:brightness-95 sm:flex-none">
                                     Herdar
                                   </ToggleGroupItem>
-                                  <ToggleGroupItem value={GRANT} className="text-xs data-pressed:brightness-95 hover:brightness-95">
+                                  <ToggleGroupItem value={GRANT} className="flex-1 text-xs data-pressed:brightness-95 hover:brightness-95 sm:flex-none">
                                     Conceder
                                   </ToggleGroupItem>
-                                  <ToggleGroupItem value={DENY} className="text-xs data-pressed:brightness-95 hover:brightness-95">
+                                  <ToggleGroupItem value={DENY} className="flex-1 text-xs data-pressed:brightness-95 hover:brightness-95 sm:flex-none">
                                     Negar
                                   </ToggleGroupItem>
                                 </ToggleGroup>
@@ -718,23 +746,31 @@ export default function AccessSection() {
               <p className={emptyMsgStyle}>Nenhum usuário cadastrado.</p>
             )}
             {!loading && users.length > 0 && (
-              <Table className="overflow-auto">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Usuário</TableHead>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Cargo</TableHead>
-                    <TableHead>Setor</TableHead>
-                    <TableHead>Situação</TableHead>
-                    <TableHead>Permissões extras</TableHead>
-                    <TableHead>Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.map((u) => {
-                    const grants = (u.permissions || []).filter((p) => p.granted).length;
-                    const denies = (u.permissions || []).filter((p) => !p.granted).length;
-                    return (
+              <>
+                {/* Tabela — a partir de `xl` (1280px), onde as 7 colunas
+                    cabem na largura útil com a sidebar aberta. O padding
+                    das células é apertado de propósito: a coluna "Ações"
+                    é a última e não pode ficar fora da tela. */}
+                <Table className="hidden xl:table [&_td]:px-1.5 [&_th]:px-1.5">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Usuário</TableHead>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Cargo</TableHead>
+                      <TableHead>Setor</TableHead>
+                      <TableHead>Situação</TableHead>
+                      <TableHead className="whitespace-normal">
+                        Permissões extras
+                      </TableHead>
+                      {/* Coluna "Ações" fixa: se um nome longo empurrar a
+                          tabela, os botões continuam à vista. */}
+                      <TableHead className="sticky right-0 z-10 bg-white">
+                        Ações
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {users.map((u) => (
                       <TableRow key={u.id}>
                         <TableCell>{u.username || "—"}</TableCell>
                         <TableCell>{u.full_name}</TableCell>
@@ -747,44 +783,81 @@ export default function AccessSection() {
                             {u.active ? "Ativo" : "Inativo"}
                           </Badge>
                         </TableCell>
-                        <TableCell>
-                          {grants + denies === 0
-                            ? "—"
-                            : [
-                                grants ? `${grants} concedida(s)` : null,
-                                denies ? `${denies} negada(s)` : null,
-                              ]
-                                .filter(Boolean)
-                                .join(" · ")}
+                        <TableCell className="whitespace-normal">
+                          <UserPermissionSummary user={u} />
                         </TableCell>
-                        <TableCell className="whitespace-nowrap">
-                          {canEdit && (
-                            <Button
-                              variant="outline"
-                              size="xs"
-                              className="mr-1.5"
-                              onClick={() => openEditUser(u)}
-                              disabled={loading}
-                            >
-                              <Pencil /> Editar
-                            </Button>
-                          )}
-                          {canDelete && u.role !== "admin" && (
-                            <Button
-                              variant="destructive"
-                              size="xs"
-                              onClick={() => setDeleteUserTarget(u)}
-                              disabled={loading}
-                            >
-                              <Trash2 /> Excluir
-                            </Button>
-                          )}
+                        <TableCell className="sticky right-0 z-10 bg-white whitespace-nowrap">
+                          <UserActions
+                            user={u}
+                            canEdit={canEdit}
+                            canDelete={canDelete}
+                            loading={loading}
+                            onEdit={() => openEditUser(u)}
+                            onDelete={() => setDeleteUserTarget(u)}
+                            className="gap-1.5"
+                          />
                         </TableCell>
                       </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                    ))}
+                  </TableBody>
+                </Table>
+
+                {/* Cartões — abaixo de `xl` cada usuário vira um cartão com
+                    todos os campos e as ações visíveis (sem scroll
+                    horizontal, sem coluna escondida). */}
+                <ul className={cardListStyle}>
+                  {users.map((u) => (
+                    <li key={u.id} className={listCardStyle}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-[14px] font-bold text-[#13324d]">
+                            {u.username || "—"}
+                          </p>
+                          <p className="truncate text-[12px] text-[#7590a0]">
+                            {u.full_name}
+                          </p>
+                        </div>
+
+                        <Badge variant={u.active ? "outline" : "secondary"}>
+                          {u.active ? "Ativo" : "Inativo"}
+                        </Badge>
+                      </div>
+
+                      <div className="mt-2.5">
+                        <RoleBadge role={ { key: u.role!, name: u.role_name! } } />
+                      </div>
+
+                      <div className="mt-3 flex gap-3">
+                        <div className={cardFieldStyle}>
+                          <span className={cardFieldLabelStyle}>Setor</span>
+                          <span className={cardFieldValueStyle}>
+                            {u.sector_id
+                              ? getSector(u.sector_id)?.name || u.sector_id
+                              : "—"}
+                          </span>
+                        </div>
+
+                        <div className={cardFieldStyle}>
+                          <span className={cardFieldLabelStyle}>Permissões extras</span>
+                          <span className={cardFieldValueStyle}>
+                            <UserPermissionSummary user={u} />
+                          </span>
+                        </div>
+                      </div>
+
+                      <UserActions
+                        user={u}
+                        canEdit={canEdit}
+                        canDelete={canDelete}
+                        loading={loading}
+                        onEdit={() => openEditUser(u)}
+                        onDelete={() => setDeleteUserTarget(u)}
+                        className={cardActionsStyle}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </>
             )}
           </div>
       </TabsContent>
@@ -814,7 +887,7 @@ export default function AccessSection() {
                   {editingRoleId ? "Editar cargo" : "Novo cargo"}
                 </DialogTitle>
               </DialogHeader>
-              <form onSubmit={(e) => void handleRoleSubmit(e)}>
+              <form onSubmit={(e) => void handleRoleSubmit(e)} className="min-w-0">
                 <div className={formRowStyle}>
                   {!editingRoleId && (
                     <FilterGroup label="Chave">
@@ -898,57 +971,91 @@ export default function AccessSection() {
           <div className={usersTableStyle}>
             {roles.length === 0 && <p className={emptyMsgStyle}>Nenhum cargo cadastrado.</p>}
             {roles.length > 0 && (
-              <Table className="w-full max-w-full overflow-x-auto">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Cargo</TableHead>
-                    <TableHead>Chave</TableHead>
-                    <TableHead>Permissões</TableHead>
-                    <TableHead>Usuários</TableHead>
-                    <TableHead>Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {roles.map((r) => (
-                    <TableRow key={r.id}>
-                      <TableCell>
-                        <RoleBadge role={r} />
-
-                        {r.description && (
-                          <div className={roleDescriptionStyle}>{r.description}</div>
-                        )}
-                      </TableCell>
-                      <TableCell>{r.key}</TableCell>
-                      <TableCell>
-                        {r.permissions.length}/{ALL_PERMISSIONS.length}
-                      </TableCell>
-                      <TableCell>{roleUsersCount(r.id)}</TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        <Button
-                          variant="outline"
-                          size="xs"
-                          className="mr-1.5"
-                          onClick={() => openEditRole(r)}
-                          disabled={loading}
-                        >
-                          {r.built_in ? <Eye /> : <Pencil />}
-                          {r.built_in ? "Visualizar" : "Editar"}
-                        </Button>
-                        {canManageRoles && !r.built_in && (
-                          <Button
-                            variant="destructive"
-                            size="xs"
-                            onClick={() => setDeleteRoleTarget(r)}
-                            disabled={loading}
-                          >
-                            <Trash2 /> Excluir
-                          </Button>
-                        )}
-                      </TableCell>
+              <>
+                {/* Tabela — a partir de `xl`. */}
+                <Table className="hidden xl:table">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Cargo</TableHead>
+                      <TableHead>Chave</TableHead>
+                      <TableHead>Permissões</TableHead>
+                      <TableHead>Usuários</TableHead>
+                      <TableHead>Ações</TableHead>
                     </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {roles.map((r) => (
+                      <TableRow key={r.id}>
+                        <TableCell>
+                          <RoleBadge role={r} />
+
+                          {r.description && (
+                            <div className={roleDescriptionStyle}>{r.description}</div>
+                          )}
+                        </TableCell>
+                        <TableCell>{r.key}</TableCell>
+                        <TableCell>
+                          {r.permissions.length}/{ALL_PERMISSIONS.length}
+                        </TableCell>
+                        <TableCell>{roleUsersCount(r.id)}</TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          <RoleActions
+                            role={r}
+                            canManageRoles={canManageRoles}
+                            loading={loading}
+                            onEdit={() => openEditRole(r)}
+                            onDelete={() => setDeleteRoleTarget(r)}
+                            className="gap-1.5"
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+
+                {/* Cartões — abaixo de `xl`. */}
+                <ul className={cardListStyle}>
+                  {roles.map((r) => (
+                    <li key={r.id} className={listCardStyle}>
+                      <RoleBadge role={r} />
+
+                      {r.description && (
+                        <p className={roleDescriptionStyle}>{r.description}</p>
+                      )}
+
+                      <div className="mt-3 flex gap-3">
+                        <div className={cardFieldStyle}>
+                          <span className={cardFieldLabelStyle}>Chave</span>
+                          <span className={cardFieldValueStyle}>{r.key}</span>
+                        </div>
+
+                        <div className={cardFieldStyle}>
+                          <span className={cardFieldLabelStyle}>Permissões</span>
+                          <span className={cardFieldValueStyle}>
+                            {r.permissions.length}/{ALL_PERMISSIONS.length}
+                          </span>
+                        </div>
+
+                        <div className={cardFieldStyle}>
+                          <span className={cardFieldLabelStyle}>Usuários</span>
+                          <span className={cardFieldValueStyle}>
+                            {roleUsersCount(r.id)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <RoleActions
+                        role={r}
+                        canManageRoles={canManageRoles}
+                        loading={loading}
+                        onEdit={() => openEditRole(r)}
+                        onDelete={() => setDeleteRoleTarget(r)}
+                        className={cardActionsStyle}
+                      />
+                    </li>
                   ))}
-                </TableBody>
-              </Table>
+                </ul>
+              </>
             )}
           </div>
       </TabsContent>
@@ -1021,4 +1128,123 @@ function RoleBadge({ role }: { role: Pick<RoleRecord, 'name' | 'key'> }) {
       <Icon /> {role.name}
     </Badge>
   )
+}
+
+/**
+ * Resumo das permissões individuais do usuário (concedidas/negadas).
+ * Compartilhado entre a tabela e o cartão do mobile.
+ */
+function UserPermissionSummary({ user }: { user: UserRecord }) {
+  const grants = (user.permissions || []).filter((p) => p.granted).length;
+  const denies = (user.permissions || []).filter((p) => !p.granted).length;
+
+  if (grants + denies === 0) return <>—</>;
+
+  return (
+    <>
+      {[
+        grants ? `${grants} concedida(s)` : null,
+        denies ? `${denies} negada(s)` : null,
+      ]
+        .filter(Boolean)
+        .join(" · ")}
+    </>
+  );
+}
+
+/**
+ * Botões de ação de um usuário — a mesma linha na tabela e no cartão do
+ * mobile (o usuário `admin` nunca pode ser excluído).
+ */
+function UserActions({
+  user,
+  canEdit,
+  canDelete,
+  loading,
+  onEdit,
+  onDelete,
+  className,
+}: {
+  readonly user: UserRecord;
+  readonly canEdit: boolean;
+  readonly canDelete: boolean;
+  readonly loading: boolean;
+  readonly onEdit: () => void;
+  readonly onDelete: () => void;
+  readonly className?: string;
+}) {
+  const canDeleteUser = canDelete && user.role !== "admin";
+  if (!canEdit && !canDeleteUser) return null;
+
+  return (
+    <div className={cn("flex gap-2", className)}>
+      {canEdit && (
+        <Button
+          variant="outline"
+          size="xs"
+          className="flex-1 xl:flex-none"
+          onClick={onEdit}
+          disabled={loading}
+        >
+          <Pencil /> Editar
+        </Button>
+      )}
+      {canDeleteUser && (
+        <Button
+          variant="destructive"
+          size="xs"
+          className="flex-1 xl:flex-none"
+          onClick={onDelete}
+          disabled={loading}
+        >
+          <Trash2 /> Excluir
+        </Button>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Botões de ação de um cargo — cargo `built_in` é somente leitura.
+ */
+function RoleActions({
+  role,
+  canManageRoles,
+  loading,
+  onEdit,
+  onDelete,
+  className,
+}: {
+  readonly role: RoleRecord;
+  readonly canManageRoles: boolean;
+  readonly loading: boolean;
+  readonly onEdit: () => void;
+  readonly onDelete: () => void;
+  readonly className?: string;
+}) {
+  return (
+    <div className={cn("flex gap-2", className)}>
+      <Button
+        variant="outline"
+        size="xs"
+        className="flex-1 xl:flex-none"
+        onClick={onEdit}
+        disabled={loading}
+      >
+        {role.built_in ? <Eye /> : <Pencil />}
+        {role.built_in ? "Visualizar" : "Editar"}
+      </Button>
+      {canManageRoles && !role.built_in && (
+        <Button
+          variant="destructive"
+          size="xs"
+          className="flex-1 xl:flex-none"
+          onClick={onDelete}
+          disabled={loading}
+        >
+          <Trash2 /> Excluir
+        </Button>
+      )}
+    </div>
+  );
 }

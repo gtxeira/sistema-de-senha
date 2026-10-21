@@ -72,9 +72,12 @@ const liveStyle =
   "flex items-center gap-1.5 text-[10px] font-extrabold tracking-[1px] text-[#159883]";
 /** Base comum dos botões CHAMAR NORMAL/PREFERENCIAL (`.normalButton`,
     `.priorityButton`); a elevação do hover não vale quando desabilitado
-    (daí `enabled:`), e `border-current` reproduz o `border: 0` antigo. */
+    (daí `enabled:`), e `border-current` reproduz o `border: 0` antigo.
+    O rótulo e a "próxima senha" empilham até `lg`: lado a lado eles
+    estouravam o botão nos cards estreitos (uma coluna) e no grid de
+    duas colunas. */
 const callButtonStyle =
-  "flex h-auto w-full items-center justify-between gap-1.5 rounded-[10px] px-5! py-[18px] text-[16px] font-extrabold transition-[transform,box-shadow] duration-[120ms] enabled:hover:-translate-y-0.5 enabled:hover:shadow-[0_6px_20px_rgba(0,0,0,0.12)] disabled:cursor-wait disabled:opacity-60";
+  "flex h-auto w-full flex-col items-start justify-center gap-1 rounded-[10px] px-4! py-4 text-[16px] font-extrabold transition-[transform,box-shadow] duration-[120ms] enabled:hover:-translate-y-0.5 enabled:hover:shadow-[0_6px_20px_rgba(0,0,0,0.12)] disabled:cursor-wait disabled:opacity-60 lg:flex-row lg:items-center lg:justify-between lg:gap-1.5 lg:px-5! lg:py-[18px]";
 const callButtonSmallStyle = "text-[12px] font-semibold opacity-80";
 
 const emptySubscribe = () => () => {};
@@ -261,7 +264,7 @@ export default function PainelPage() {
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-5 max-[900px]:grid-cols-1">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         <section className={`${cardStyle} flex flex-col gap-4`}>
           <div className={cardTopStyle}>
             <div>
@@ -272,7 +275,7 @@ export default function PainelPage() {
               <i className="inline-block size-2 rounded-[50%] bg-[#159883] animate-live-pulse" /> AO VIVO
             </span>
           </div>
-          <div className="text-[64px] font-black leading-none tracking-[2px] text-[#0b3555]">
+          <div className="text-[44px] font-black leading-none tracking-[2px] text-[#0b3555] sm:text-[64px]">
             {current.history[0]
               ? formatQueueNumber(current.history[0].number, current.history[0].type)
               : formatQueueNumber(null, "normal")}
@@ -329,7 +332,7 @@ export default function PainelPage() {
 
           <Button
             variant="outline"
-            className={cn(callButtonStyle, 'h-auto px-5 py-3 font-medium')}
+            className={cn(callButtonStyle, 'h-auto font-medium lg:py-3')}
             disabled={calling}
             onClick={() => void reCall()}
           >

@@ -36,14 +36,14 @@ export default function DashboardLayout({
       headerActions={headerActions}
     >
       {(eyebrow || title || subtitle) && (
-        <div className="mt-5 mb-3">
+        <div className="mt-4 mb-3 sm:mt-5">
           {eyebrow && (
             <p className="text-[10px] font-extrabold tracking-[1.25px] text-[#7990a1]">
               {eyebrow}
             </p>
           )}
           {title && (
-            <h1 className={cn("mt-2 text-[30px] font-bold text-[#13324d]", subtitle && "mb-1.25")}>
+            <h1 className={cn("mt-2 text-[24px] font-bold text-[#13324d] sm:text-[30px]", subtitle && "mb-1.25")}>
               {title}
             </h1>
           )}

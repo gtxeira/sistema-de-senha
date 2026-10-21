@@ -346,7 +346,7 @@ export default function MonitorPage({ params }: MonitorPageProps) {
             <Clock3 size={18} />
             {timeString}
           </div>
-          <div className="mt-1 whitespace-nowrap text-[10px] font-bold tracking-[1px] text-[#c5dce5]">
+          <div className="mt-1 whitespace-nowrap text-[10px] font-bold tracking-[1px] text-[#c5dce5] max-[420px]:whitespace-normal max-[420px]:text-[9px] max-[420px]:leading-tight">
             {dateString}
           </div>
         </div>

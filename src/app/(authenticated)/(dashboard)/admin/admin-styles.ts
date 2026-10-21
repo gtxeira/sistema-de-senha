@@ -7,12 +7,17 @@
  * consts locais no próprio componente.
  */
 
-/** Cartão branco padrão das seções da tela. */
+/** Cartão branco padrão das seções da tela.
+ *  O padding encolhe no mobile — 26px fixos comiam metade da largura
+ *  útil da tela emphones. */
 export const sectionStyle =
-  "mt-[25px] rounded-[12px] border border-[#dde9ed] bg-white p-[26px]";
+  "mt-[25px] rounded-[12px] border border-[#dde9ed] bg-white p-4 sm:p-[26px]";
 
-/** Cabeçalho da seção: eyebrow à esquerda, ações à direita. */
-export const sectionTitleStyle = "flex justify-between";
+/** Cabeçalho da seção: eyebrow à esquerda, ações à direita.
+ *  `flex-wrap` + `gap` deixam as ações (abas, botões) caírem para a
+ *  linha de baixo em vez de estourarem o card no mobile. */
+export const sectionTitleStyle =
+  "flex flex-wrap items-start justify-between gap-x-4 gap-y-3";
 
 /** O `<p>` do cabeçalho (eyebrow): minúsculo, largo e cinza-azulado. */
 export const sectionEyebrowStyle =
