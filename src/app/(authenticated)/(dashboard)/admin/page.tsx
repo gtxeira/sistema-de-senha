@@ -5,35 +5,26 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, ImagePlus, Monitor, RotateCcw, Save, Trash2, } from "lucide-react";
+import type { SessionSnapshot } from "@/lib/queue";
 import {
   getQueueSnapshot,
   getServerQueueSnapshot,
   getServerSessionSnapshot,
-  getSessionSnapshot, MIN_QUEUE_NUMBER,
+  getSessionSnapshot,
+  MIN_QUEUE_NUMBER,
   normalizeQueue,
   saveQueueState,
   subscribeQueue,
   subscribeSession,
 } from "@/lib/queue";
-import {
-  SECTORS,
-  DEFAULT_SECTOR,
-  CALL_TYPES,
-  MAX_QUEUE_NUMBER,
-  NO_PASSWORD,
-  getSector,
-} from "@/lib/constants";
-import type { SessionSnapshot } from "@/lib/queue";
+import { CALL_TYPES, DEFAULT_SECTOR, getSector, MAX_QUEUE_NUMBER, NO_PASSWORD, SECTORS, } from "@/lib/constants";
 import type { NewsItem } from "@/lib/repositories/types";
 import { errorMessage } from "@/lib/repositories/utils";
 import { readJson } from "@/lib/json";
-import type {
-  ApiErrorBody,
-  NewsCreateBody,
-  NewsListBody,
-  QueueSyncBody,
-} from "@/types/api";
+import type { ApiErrorBody, NewsCreateBody, NewsListBody, QueueSyncBody, } from "@/types/api";
 import {
+  canAccessSector,
+  hasPermission,
   NEWS_CREATE,
   NEWS_DELETE,
   QUEUE_RESET,
@@ -43,8 +34,6 @@ import {
   SCREEN_ADMIN_NOTICIAS,
   SCREEN_ADMIN_USUARIOS,
   SECTORS_MANAGE_ALL,
-  canAccessSector,
-  hasPermission,
 } from "@/lib/permissions";
 import { toast } from "sonner";
 import {
@@ -64,7 +53,8 @@ import {
   Select,
   SelectContent,
   SelectGroup,
-  SelectItem, SelectLabel,
+  SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -74,10 +64,10 @@ import {
   sectionHeadingStyle,
   sectionStyle,
   sectionTitleStyle,
-} from "./admin-styles";
-import { SidebarLayout } from "@/components/SidebarLayout/SidebarLayout";
-import AccessSection from "./AccessSection";
+} from "@/app/(authenticated)/(dashboard)/admin/admin-styles";
+import AccessSection from "@/app/(authenticated)/(dashboard)/admin/AccessSection";
 import { cn } from "@/lib/utils";
+import { useSetDashboardLayoutInfo } from "@/hooks/use-set-dashboard-layout-info";
 
 /* ── classes locais desta tela (as comuns vêm de ./admin-styles) ── */
 
@@ -137,6 +127,12 @@ function subscribeNews(callback: () => void) {
 }
 
 export default function AdminPage() {
+  useSetDashboardLayoutInfo({
+    eyebrow: "CONTROLE CENTRAL",
+    title: "Administração",
+    subtitle: "Gerencie as filas de atendimento e as notícias do monitor."
+  });
+
   const router = useRouter();
 
   const session = useSyncExternalStore(
@@ -362,19 +358,10 @@ export default function AdminPage() {
   }
 
   return (
-    <SidebarLayout
-      activeRoute="admin"
-      session={session}
-      sectorInfo={null}
-      eyebrow="CONTROLE CENTRAL"
-      title="Administração"
-      subtitle="Gerencie as filas de atendimento e as notícias do monitor."
-      headerActions={null}
-    >
-      <section>
-        {/* ── Controle de filas ── */}
-        {canManageFilas && (
-        <section className={sectionStyle}>
+    <section>
+      {/* ── Controle de filas ── */}
+      {canManageFilas && (
+        <section className={cn(sectionStyle, 'mt-0')}>
           <div className={sectionTitleStyle}>
             <div>
               <p className={sectionEyebrowStyle}>FILAS POR SERVIÇO</p>
@@ -386,46 +373,46 @@ export default function AdminPage() {
             {Object.values(SECTORS)
               .filter((item) => canAccessSector(session, item.id, "read"))
               .map((item) => {
-              const queue = normalizeQueue(state[item.id]);
-              const isReset = resettingSector[item.id];
-              const canResetSector = canReset && canAccessSector(session, item.id, "write");
-              return (
-                <article key={item.id} className={sectorCardStyle}>
-                  <div>
-                    <strong className="block">{item.name}</strong>
-                    <small className="mt-2 block text-[11px] text-[#7a919e]">
-                      Normal: {queue.normalCurrent === null || queue.normalCurrent === undefined
+                const queue = normalizeQueue(state[item.id]);
+                const isReset = resettingSector[item.id];
+                const canResetSector = canReset && canAccessSector(session, item.id, "write");
+                return (
+                  <article key={item.id} className={sectorCardStyle}>
+                    <div>
+                      <strong className="block">{item.name}</strong>
+                      <small className="mt-2 block text-[11px] text-[#7a919e]">
+                        Normal: {queue.normalCurrent === null || queue.normalCurrent === undefined
                         ? "N---"
                         : `N${String(queue.normalCurrent).padStart(3, "0")}`} ·
-                      Preferencial: {queue.priorityCurrent === null || queue.priorityCurrent === undefined
+                        Preferencial: {queue.priorityCurrent === null || queue.priorityCurrent === undefined
                         ? "P---"
                         : `P${String(queue.priorityCurrent).padStart(3, "0")}`}
-                    </small>
-                  </div>
-                  <div className={cardActionsStyle}>
-                    <Link
-                      href={`/monitor/${item.id}`}
-                      target="_blank"
-                      className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-                    >
-                      <Monitor data-icon="inline-start" /> Abrir Monitor
-                    </Link>
-
-                    {canResetSector && (
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => setResetPending(item.id)}
-                        disabled={isReset}
+                      </small>
+                    </div>
+                    <div className={cardActionsStyle}>
+                      <Link
+                        href={`/monitor/${item.id}`}
+                        target="_blank"
+                        className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
                       >
-                        <RotateCcw data-icon="inline-start" />
-                        {isReset ? "Resetando…" : "Resetar senhas"}
-                      </Button>
-                    )}
-                  </div>
-                </article>
-              );
-            })}
+                        <Monitor data-icon="inline-start"/> Abrir Monitor
+                      </Link>
+
+                      {canResetSector && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => setResetPending(item.id)}
+                          disabled={isReset}
+                        >
+                          <RotateCcw data-icon="inline-start"/>
+                          {isReset ? "Resetando…" : "Resetar senhas"}
+                        </Button>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
           </div>
 
           {canReset && canManageAllSectors && (
@@ -433,15 +420,15 @@ export default function AdminPage() {
               <div className={resetAllInfoStyle}>
                 <AlertTriangle size={16} className="shrink-0 text-[#c97a1e]"/>
                 <span>
-                  Resetar todos os setores de uma vez — numeração volta para {MIN_QUEUE_NUMBER.toString().padStart(3, "0")} em todos.
-                </span>
+                Resetar todos os setores de uma vez — numeração volta para {MIN_QUEUE_NUMBER.toString().padStart(3, "0")} em todos.
+              </span>
               </div>
               <Button
                 variant="destructive"
                 onClick={() => setResetPending("all")}
                 disabled={Object.keys(resettingSector).length > 0}
               >
-                <RotateCcw data-icon="inline-start" />
+                <RotateCcw data-icon="inline-start"/>
                 {Object.keys(resettingSector).length > 0
                   ? "Resetando…"
                   : "Resetar todos os setores"}
@@ -449,13 +436,13 @@ export default function AdminPage() {
             </div>
           )}
         </section>
-        )}
+      )}
 
-        {/* ── Sincronizar senhas ── */}
-        {canManageFilas && <SyncSection session={session} canSync={canSync} />}
+      {/* ── Sincronizar senhas ── */}
+      {canManageFilas && <SyncSection session={session} canSync={canSync}/>}
 
-        {/* ── Notícias do monitor ── */}
-        {canManageNews && (
+      {/* ── Notícias do monitor ── */}
+      {canManageNews && (
         <section className={sectionStyle}>
           <div className={sectionTitleStyle}>
             <div>
@@ -474,7 +461,7 @@ export default function AdminPage() {
                 required
               />
               <label className={uploadStyle}>
-                <ImagePlus data-icon="inline-start" className="size-4" />
+                <ImagePlus data-icon="inline-start" className="size-4"/>
                 {image ? "Imagem selecionada" : "Adicionar imagem"}
                 <input
                   type="file"
@@ -485,7 +472,7 @@ export default function AdminPage() {
                 />
               </label>
               <Button type="submit">
-                <ImagePlus data-icon="inline-start" /> Adicionar à lista
+                <ImagePlus data-icon="inline-start"/> Adicionar à lista
               </Button>
             </form>
           )}
@@ -509,7 +496,7 @@ export default function AdminPage() {
                     className="h-8 w-full justify-center rounded-none border-t border-[#e1ebee] text-destructive hover:bg-[#fdecea] hover:text-destructive"
                     onClick={() => setDeleteNewsTarget(item)}
                   >
-                    <Trash2 data-icon="inline-start" /> Excluir
+                    <Trash2 data-icon="inline-start"/> Excluir
                   </Button>
                 )}
               </article>
@@ -522,76 +509,75 @@ export default function AdminPage() {
               onClick={() => void saveNews()}
               disabled={savingNews}
             >
-              <Save data-icon="inline-start" /> {savingNews ? "Salvando…" : "Salvar notícias"}
+              <Save data-icon="inline-start"/> {savingNews ? "Salvando…" : "Salvar notícias"}
             </Button>
           )}
         </section>
-        )}
+      )}
 
-        {/* ── Gerenciamento de usuários e permissões ── */}
-        {canManageUsers && <AccessSection />}
+      {/* ── Gerenciamento de usuários e permissões ── */}
+      {canManageUsers && <AccessSection/>}
 
-        {/* Confirmação do reset — o antigo `window.confirm` */}
-        <AlertDialog
-          open={resetPending !== null}
-          onOpenChange={(open) => {
-            if (!open) setResetPending(null);
-          }}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>
-                {resetIsAll
-                  ? "ATENÇÃO"
-                  : `Zerar as senhas do setor "${resetLabel}"?`}
-              </AlertDialogTitle>
-              <AlertDialogDescription className="whitespace-pre-line">
-                {resetIsAll
-                  ? `Isso vai zerar as senhas de ${resetLabel}.\n\nA numeração voltará para ${MIN_QUEUE_NUMBER.toString().padStart(3, "0")}. Esta ação não pode ser desfeita.\n\nDeseja continuar?`
-                  : `A numeração voltará para ${MIN_QUEUE_NUMBER.toString().padStart(3, "0")}.`}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction
-                variant="destructive"
-                onClick={() => void confirmReset()}
-              >
-                Resetar
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+      {/* Confirmação do reset — o antigo `window.confirm` */}
+      <AlertDialog
+        open={resetPending !== null}
+        onOpenChange={(open) => {
+          if (!open) setResetPending(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {resetIsAll
+                ? "ATENÇÃO"
+                : `Zerar as senhas do setor "${resetLabel}"?`}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="whitespace-pre-line">
+              {resetIsAll
+                ? `Isso vai zerar as senhas de ${resetLabel}.\n\nA numeração voltará para ${MIN_QUEUE_NUMBER.toString().padStart(3, "0")}. Esta ação não pode ser desfeita.\n\nDeseja continuar?`
+                : `A numeração voltará para ${MIN_QUEUE_NUMBER.toString().padStart(3, "0")}.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => void confirmReset()}
+            >
+              Resetar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-        {/* Confirmação de exclusão de notícia — mesmo padrão do reset */}
-        <AlertDialog
-          open={deleteNewsTarget !== null}
-          onOpenChange={(open) => {
-            if (!open) setDeleteNewsTarget(null);
-          }}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Excluir esta notícia?</AlertDialogTitle>
-              <AlertDialogDescription>
-                {deleteNewsTarget
-                  ? `"${deleteNewsTarget.title}" sairá da lista exibida no monitor. A exclusão é efetivada ao clicar em "Salvar notícias".`
-                  : null}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction
-                variant="destructive"
-                onClick={() => confirmDeleteNews()}
-              >
-                Excluir
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </section>
-    </SidebarLayout>
+      {/* Confirmação de exclusão de notícia — mesmo padrão do reset */}
+      <AlertDialog
+        open={deleteNewsTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteNewsTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir esta notícia?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteNewsTarget
+                ? `"${deleteNewsTarget.title}" sairá da lista exibida no monitor. A exclusão é efetivada ao clicar em "Salvar notícias".`
+                : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => confirmDeleteNews()}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </section>
   );
 }
 
@@ -665,7 +651,7 @@ function SyncSection({ session, canSync }: SyncSectionProps) {
 
       {!canSync && (
         <Alert variant="destructive" className="mb-4">
-          <AlertTriangle />
+          <AlertTriangle/>
           <AlertTitle>Permissão ausente</AlertTitle>
           <AlertDescription>
             Sua sessão não tem a permissão <strong>filas.sincronizar</strong>.
@@ -674,73 +660,73 @@ function SyncSection({ session, canSync }: SyncSectionProps) {
       )}
 
       {canSync && (
-      <form className="mt-4" onSubmit={(e) => void handleSync(e)}>
-        <div className={syncRowStyle}>
-          <FilterGroup label="Setor">
-            <Select
-              value={syncSector}
-              onValueChange={(v) => v !== null && setSyncSector(v)}
-              items={Object.fromEntries(syncSectors.map((s) => [s.id, s.name]))}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectLabel>Setores</SelectLabel>
+        <form className="mt-4" onSubmit={(e) => void handleSync(e)}>
+          <div className={syncRowStyle}>
+            <FilterGroup label="Setor">
+              <Select
+                value={syncSector}
+                onValueChange={(v) => v !== null && setSyncSector(v)}
+                items={Object.fromEntries(syncSectors.map((s) => [s.id, s.name]))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue/>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Setores</SelectLabel>
 
-                  {syncSectors.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name}
+                    {syncSectors.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </FilterGroup>
+
+            <FilterGroup label="Tipo">
+              <Select
+                value={syncType}
+                onValueChange={(v) => v !== null && setSyncType(v)}
+                items={{ [CALL_TYPES.NORMAL]: "Normal", [CALL_TYPES.PREFERENCIAL]: "Preferencial" }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue/>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Tipos de Fila</SelectLabel>
+                    <SelectItem value={CALL_TYPES.NORMAL}>Normal</SelectItem>
+                    <SelectItem value={CALL_TYPES.PREFERENCIAL}>
+                      Preferencial
                     </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </FilterGroup>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </FilterGroup>
 
-          <FilterGroup label="Tipo">
-            <Select
-              value={syncType}
-              onValueChange={(v) => v !== null && setSyncType(v)}
-              items={{ [CALL_TYPES.NORMAL]: "Normal", [CALL_TYPES.PREFERENCIAL]: "Preferencial" }}
+            <FilterGroup label="Próximo número">
+              <Input
+                type="number"
+                min="1"
+                max="999"
+                value={syncNumber}
+                onChange={(e) => setSyncNumber(e.target.value)}
+                placeholder="Ex: 045"
+                required
+              />
+            </FilterGroup>
+
+            <Button
+              type="submit"
+              disabled={syncing || !syncNumber}
+              className="mb-[1px] self-end"
             >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectLabel>Tipos de Fila</SelectLabel>
-                  <SelectItem value={CALL_TYPES.NORMAL}>Normal</SelectItem>
-                  <SelectItem value={CALL_TYPES.PREFERENCIAL}>
-                    Preferencial
-                  </SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </FilterGroup>
-
-          <FilterGroup label="Próximo número">
-            <Input
-              type="number"
-              min="1"
-              max="999"
-              value={syncNumber}
-              onChange={(e) => setSyncNumber(e.target.value)}
-              placeholder="Ex: 045"
-              required
-            />
-          </FilterGroup>
-
-          <Button
-            type="submit"
-            disabled={syncing || !syncNumber}
-            className="mb-[1px] self-end"
-          >
-            {syncing ? "Sincronizando…" : "Sincronizar"}
-          </Button>
-        </div>
-      </form>
+              {syncing ? "Sincronizando…" : "Sincronizar"}
+            </Button>
+          </div>
+        </form>
       )}
     </section>
   );

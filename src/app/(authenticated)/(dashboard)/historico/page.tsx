@@ -15,7 +15,6 @@ import { SECTORS, CALL_TYPES, PAGE_SIZES, DEFAULT_SECTOR, getSector } from "@/li
 import { readJson } from "@/lib/json";
 import type { QueueStats } from "@/lib/repositories/types";
 import { SECTORS_VIEW_ALL, hasPermission } from "@/lib/permissions";
-import { SidebarLayout } from "@/components/SidebarLayout/SidebarLayout";
 import { convertToBrazilTimeString } from "@/lib/date-utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,6 +38,7 @@ import { FilterGroup } from "@/components/filter-group";
 import { Pagination } from "@/components/pagination";
 import { StatCard } from "@/components/stat-card";
 import { cn } from "@/lib/utils";
+import { useSetDashboardLayoutInfo } from "@/hooks/use-set-dashboard-layout-info";
 
 const ITEMS_PER_PAGE = PAGE_SIZES.historico;
 
@@ -130,51 +130,52 @@ export default function HistoricoPage() {
   const totalPages = Math.max(1, Math.ceil(allCalls.length / ITEMS_PER_PAGE));
   const pagedCalls = allCalls.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useSetDashboardLayoutInfo({
+    eyebrow: "HISTÓRICO DE ATENDIMENTOS",
+    title: "Histórico completo",
+    subtitle: "Consulte todas as chamadas de senhas realizadas.",
+    sectorInfo,
+    headerActions: (
+      <>
+        {canViewAllSectors && (
+          <Select
+            value={activeSector}
+            onValueChange={(v) => {
+              if (v === null) return;
+              setActiveSector(v);
+              setPage(1);
+              setLoading(true);
+            }}
+            items={{
+              null: 'Todos',
+              ...Object.fromEntries(Object.values(SECTORS).map((s) => [s.id, s.name]))
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Setores</SelectLabel>
+
+                <SelectItem value="null">Todos</SelectItem>
+
+                {Object.values(SECTORS).map((s) => (
+                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        )}
+      </>
+    )
+  });
+
   return (
-    <SidebarLayout
-      activeRoute="historico"
-      session={session}
-      sectorInfo={sectorInfo}
-      eyebrow="HISTÓRICO DE ATENDIMENTOS"
-      title="Histórico completo"
-      subtitle="Consulte todas as chamadas de senhas realizadas."
-      headerActions={
-        <>
-          {canViewAllSectors && (
-            <Select
-              value={activeSector}
-              onValueChange={(v) => {
-                if (v === null) return;
-                setActiveSector(v);
-                setPage(1);
-                setLoading(true);
-              }}
-              items={{
-                null: 'Todos',
-                ...Object.fromEntries(Object.values(SECTORS).map((s) => [s.id, s.name]))
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectLabel>Setores</SelectLabel>
-
-                  <SelectItem value="null">Todos</SelectItem>
-
-                  {Object.values(SECTORS).map((s) => (
-                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          )}
-        </>
-      }
-    >
+    <div>
       {/* ── Filtros ── */}
-      <div className="mt-7 flex flex-wrap items-end gap-3 rounded-[12px] border border-[#dde9ed] bg-white px-5 py-[18px] max-[560px]:flex-col max-[560px]:items-stretch">
+      <div className="flex flex-wrap items-end gap-3 rounded-[12px] border border-[#dde9ed] bg-white px-5 py-[18px] max-[560px]:flex-col max-[560px]:items-stretch">
         <FilterGroup label="Período" className="min-w-[140px] max-w-[280px] flex-1 max-[560px]:max-w-none">
           <Select
             value={filterDays}
@@ -295,6 +296,6 @@ export default function HistoricoPage() {
           </>
         )}
       </section>
-    </SidebarLayout>
+    </div>
   );
 }

@@ -92,7 +92,7 @@ import {
   sectionHeadingStyle,
   sectionStyle,
   sectionTitleStyle,
-} from "./admin-styles";
+} from "@/app/(authenticated)/(dashboard)/admin/admin-styles";
 import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -136,7 +136,7 @@ const permCheckStyle =
 const formActionsStyle = "flex gap-2.5 justify-end";
 
 /* Tabelas e estados de lista. */
-const usersTableStyle = "mt-3";
+const usersTableStyle = "mt-3 w-full max-w-full overflow-x-auto";
 const loadingMsgStyle = "mt-5 text-[13px] text-[#7a9aad]";
 const emptyMsgStyle = "p-6 text-center text-[13px] text-[#7a9aad]";
 const roleDescriptionStyle =
@@ -718,7 +718,7 @@ export default function AccessSection() {
               <p className={emptyMsgStyle}>Nenhum usuário cadastrado.</p>
             )}
             {!loading && users.length > 0 && (
-              <Table>
+              <Table className="overflow-auto">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Usuário</TableHead>
@@ -898,7 +898,7 @@ export default function AccessSection() {
           <div className={usersTableStyle}>
             {roles.length === 0 && <p className={emptyMsgStyle}>Nenhum cargo cadastrado.</p>}
             {roles.length > 0 && (
-              <Table>
+              <Table className="w-full max-w-full overflow-x-auto">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Cargo</TableHead>

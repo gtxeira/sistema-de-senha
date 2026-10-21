@@ -49,6 +49,7 @@ import {
 } from "@/components/ui/table";
 import { Pagination } from "@/components/pagination";
 import { cn } from "@/lib/utils";
+import { useSetDashboardLayoutInfo } from "@/hooks/use-set-dashboard-layout-info";
 
 const HISTORY_LIMIT = HISTORY_LIMITS.painel;
 const ITEMS_PER_PAGE = PAGE_SIZES.painel;
@@ -227,40 +228,40 @@ export default function PainelPage() {
 
   if (!isClient) return null;
 
-  return (
-    <SidebarLayout
-      activeRoute="painel"
-      session={session}
-      sectorInfo={sectorInfo}
-      eyebrow="PAINEL DE ATENDIMENTO"
-      title={`Olá, ${session?.name || DEFAULT_NAME}`}
-      subtitle="Controle as chamadas da sua unidade em tempo real."
-      headerActions={
-        <>
-          {canViewAllSectors && (
-            <Select
-              value={activeSector}
-              onValueChange={(v) => { if (v !== null) handleSectorChange(v); }}
-              items={Object.fromEntries(Object.values(SECTORS).map((s) => [s.id, s.name]))}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectLabel>Setores</SelectLabel>
+  useSetDashboardLayoutInfo({
+    eyebrow: "PAINEL DE ATENDIMENTO",
+    title: `Olá, ${session?.name || DEFAULT_NAME}`,
+    subtitle: "Controle as chamadas da sua unidade em tempo real.",
+    sectorInfo,
+    headerActions: (
+      <>
+        {canViewAllSectors && (
+          <Select
+            value={activeSector}
+            onValueChange={(v) => { if (v !== null) handleSectorChange(v); }}
+            items={Object.fromEntries(Object.values(SECTORS).map((s) => [s.id, s.name]))}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Setores</SelectLabel>
 
-                  {Object.values(SECTORS).map((s) => (
-                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          )}
-        </>
-      }
-    >
-      <div className="mt-8 grid grid-cols-2 gap-5 max-[900px]:grid-cols-1">
+                {Object.values(SECTORS).map((s) => (
+                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        )}
+      </>
+    )
+  });
+
+  return (
+    <>
+      <div className="grid grid-cols-2 gap-5 max-[900px]:grid-cols-1">
         <section className={`${cardStyle} flex flex-col gap-4`}>
           <div className={cardTopStyle}>
             <div>
@@ -403,6 +404,6 @@ export default function PainelPage() {
           </>
         )}
       </section>
-    </SidebarLayout>
+    </>
   );
 };

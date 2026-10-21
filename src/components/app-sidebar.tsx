@@ -3,11 +3,11 @@
 import * as React from "react"
 import Link from "next/link"
 import type { Route } from "next"
-import { ChevronRight, Headphones, History, Home, type LucideIcon, Monitor, Settings2 } from "lucide-react"
+import { ChevronRight, Monitor } from "lucide-react"
 import { SearchForm } from "@/components/search-form"
 import { SECTORS } from "@/lib/constants"
 import type { SectorInfo } from "@/lib/constants"
-import { SCREEN_ADMIN, canAccessSector, hasPermission } from "@/lib/permissions"
+import { canAccessSector } from "@/lib/permissions"
 import type { SessionSnapshot } from "@/lib/queue"
 import {
   Sidebar,
@@ -29,13 +29,7 @@ import brandIcon from "@/app/icon.ico";
 import Image from "next/image";
 import { NavUser } from "@/components/nav-user";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-
-interface NavItem {
-  readonly route: string
-  readonly href: Route
-  readonly label: string
-  readonly icon: LucideIcon
-}
+import type { RouteGroup } from "@/components/SidebarLayout/SidebarLayout";
 
 /** Busca sem acento/caixa: "hist" e "Histórico" casam. */
 const normalize = (value: string) =>
@@ -45,41 +39,22 @@ export function AppSidebar({
   session,
   sectorInfo,
   activeRoute,
+  routeGroups,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   session: SessionSnapshot | null
-  /** Setor exibido no switcher do header; `null` = sem setor. */
-  sectorInfo: SectorInfo | null
-  /** Rota ativa, para destacar no menu. */
-  activeRoute: string
+  sectorInfo?: SectorInfo
+  activeRoute: string,
+  routeGroups: readonly RouteGroup[]
 }) {
   const [query, setQuery] = React.useState("")
 
-  const principalItems: readonly NavItem[] = [
-    { route: "home", href: "/home", label: "Home", icon: Home },
-  ]
-
-  const mainItems: readonly NavItem[] = [
-    { route: "painel", href: "/painel", label: "Painel de Atendimentos", icon: Headphones },
-    { route: "historico", href: "/historico", label: "Histórico", icon: History },
-  ]
-
-  const manageItems: readonly NavItem[] = hasPermission(session, SCREEN_ADMIN)
-    ? [{ route: "admin", href: "/admin", label: "Administração", icon: Settings2 }]
-    : []
-
-  const groups = [
-    { title: "Principal", items: principalItems },
-    { title: "Gestão", items: manageItems },
-    { title: "Chamadas", items: mainItems },
-  ]
-    .map((group) => ({
-      ...group,
-      items: group.items.filter((item) =>
-        normalize(item.label).includes(normalize(query.trim())),
-      ),
-    }))
-    .filter((group) => group.items.length > 0)
+  const groups = routeGroups.map((group) => ({
+    ...group,
+    items: group.items.filter((item) =>
+      normalize(item.label).includes(normalize(query.trim())),
+    ),
+  })).filter((group) => group.items.length > 0);
 
   const visibleSectors = Object.values(SECTORS).filter((s) =>
     canAccessSector(session, s.id, "read"),

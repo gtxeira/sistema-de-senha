@@ -1,30 +1,24 @@
 "use client";
 
-import { JSX, useEffect } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Monitor, Settings2, Headphones, History } from "lucide-react";
 import { getSessionSnapshot, SECTORS } from "@/lib/queue";
 import { SCREEN_ADMIN, canAccessSector, hasPermission } from "@/lib/permissions";
-import { SidebarLayout } from "@/components/SidebarLayout/SidebarLayout";
 import { NavCard, type NavCardProps } from "./NavCard";
 import type { Route } from "next";
-
-// type NavItem = {
-//   id: string;
-//   href: string;
-//   title: string;
-//   description: string;
-//   icon: JSX.Element;
-//   iconBgClass: string;
-//   iconColorClass: string;
-//   colSpanFull: boolean;
-// };
+import { useSetDashboardLayoutInfo } from "@/hooks/use-set-dashboard-layout-info";
 
 type NavItem = {
   id: string;
 } & NavCardProps;
 
 export default function HomePage() {
+  useSetDashboardLayoutInfo({
+    eyebrow: "BEM-VINDO",
+    title: "O que deseja fazer?",
+  });
+
   const router = useRouter();
 
   useEffect(() => {
@@ -80,22 +74,12 @@ export default function HomePage() {
   ].filter((item) => typeof item === 'object' && item !== null); // Remove os itens 'false' (ex: Admin sem permissão)
 
   return (
-    <SidebarLayout
-      activeRoute="home"
-      session={session}
-      sectorInfo={null}
-      eyebrow="BEM-VINDO"
-      title="O que deseja fazer?"
-      subtitle=""
-      headerActions={null}
-    >
-      <div className="mt-5 w-full flex-1">
-        <div className="grid grid-cols-2 gap-4 max-[500px]:grid-cols-1">
-          {navItems.map((item) => (
-            <NavCard key={item.id} {...item} />
-          ))}
-        </div>
+    <div className="w-full flex-1">
+      <div className="grid grid-cols-2 gap-4 max-[500px]:grid-cols-1">
+        {navItems.map((item) => (
+          <NavCard key={item.id} {...item} />
+        ))}
       </div>
-    </SidebarLayout>
+    </div>
   );
 }
