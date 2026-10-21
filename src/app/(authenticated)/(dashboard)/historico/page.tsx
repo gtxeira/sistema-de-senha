@@ -11,7 +11,8 @@ import {
   getSessionSnapshot,
   subscribeSession, TYPE_LABELS,
 } from "@/lib/queue";
-import { SECTORS, CALL_TYPES, PAGE_SIZES, DEFAULT_SECTOR, getSector } from "@/lib/constants";
+import { SECTORS, CALL_TYPES, PAGE_SIZES, DEFAULT_SECTOR, ALL_SECTORS, getSector, getSectorScope, isSectorId } from "@/lib/constants";
+import type { SectorScope } from "@/lib/constants";
 import { readJson } from "@/lib/json";
 import type { QueueStats } from "@/lib/repositories/types";
 import { SECTORS_VIEW_ALL, hasPermission } from "@/lib/permissions";
@@ -36,6 +37,7 @@ import {
 } from "@/components/ui/table";
 import { FilterGroup } from "@/components/filter-group";
 import { Pagination } from "@/components/pagination";
+import { SectorSelect } from "@/components/sector-select";
 import { StatCard } from "@/components/stat-card";
 import { cn } from "@/lib/utils";
 import { useSetDashboardLayoutInfo } from "@/hooks/use-set-dashboard-layout-info";
@@ -68,11 +70,17 @@ export default function HistoricoPage() {
 
   // Sem escopo de "todos os setores", a sessão trava no próprio setor
   const canViewAllSectors = hasPermission(session, SECTORS_VIEW_ALL);
-  const initialSector = (!canViewAllSectors && session?.sector)
-    ? session.sector
-    : DEFAULT_SECTOR;
+  const sessionSector = session?.sector;
 
-  const [activeSector, setActiveSector] = useState(initialSector);
+  const initialSector: SectorScope =
+    canViewAllSectors
+      ? ALL_SECTORS
+      : !canViewAllSectors && isSectorId(sessionSector)
+        ? sessionSector
+        : DEFAULT_SECTOR;
+
+  // Escopo ativo: um setor real ou "Todos" (visão agregada).
+  const [activeSector, setActiveSector] = useState<SectorScope>(initialSector);
 
   const [filterDays, setFilterDays] = useState("30");
   const [filterType, setFilterType] = useState("");
@@ -86,14 +94,16 @@ export default function HistoricoPage() {
     if (!stored) router.push("/login");
   }, [router]);
 
-  const statsUrl = (days: string, sector: string) => {
+  const statsUrl = (days: string, scope: SectorScope) => {
     const params = new URLSearchParams({ days });
-    if (sector) params.set("sector", sector);
+    // "Todos" = visão agregada: a API lê a ausência de `sector` como
+    // "todos os setores" (e exige `setores.todos.ver`).
+    if (scope !== ALL_SECTORS) params.set("sector", scope);
     return `/api/stats?${params}`;
   };
 
   // Uso em handlers de evento (Filtrar): setState síncrono é permitido lá
-  const fetchStats = (overrides: { days?: string; sector?: string } = {}) => {
+  const fetchStats = (overrides: { days?: string; sector?: SectorScope } = {}) => {
     const days   = overrides.days !== undefined ? overrides.days : filterDays;
     const sector = overrides.sector !== undefined ? overrides.sector : activeSector;
 
@@ -116,7 +126,9 @@ export default function HistoricoPage() {
 
   if (!isClient || !session) return null;
 
-  const sectorInfo = getSector(activeSector) ?? SECTORS.farmacia;
+  // "Todos" resolve para o pseudo-setor — a sidebar mostra "Todos os Setores"
+  // em vez de cair num setor qualquer.
+  const sectorInfo = getSectorScope(activeSector) ?? SECTORS.farmacia;
 
   let allCalls = (stats?.recent || []).map((c) => ({
     ...c,
@@ -134,39 +146,23 @@ export default function HistoricoPage() {
   useSetDashboardLayoutInfo({
     eyebrow: "HISTÓRICO DE ATENDIMENTOS",
     title: "Histórico completo",
-    subtitle: "Consulte todas as chamadas de senhas realizadas.",
+    subtitle:
+      activeSector === ALL_SECTORS
+        ? "Consulte todas as chamadas de senhas realizadas em todos os setores."
+        : `Consulte todas as chamadas de senhas realizadas do setor ${sectorInfo.name}.`,
     sectorInfo,
     headerActions: (
       <>
         {canViewAllSectors && (
-          <Select
+          <SectorSelect
             value={activeSector}
+            allowAll
             onValueChange={(v) => {
-              if (v === null) return;
               setActiveSector(v);
               setPage(1);
               setLoading(true);
             }}
-            items={{
-              null: 'Todos',
-              ...Object.fromEntries(Object.values(SECTORS).map((s) => [s.id, s.name]))
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectLabel>Setores</SelectLabel>
-
-                <SelectItem value="null">Todos</SelectItem>
-
-                {Object.values(SECTORS).map((s) => (
-                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+          />
         )}
       </>
     )

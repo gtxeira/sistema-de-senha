@@ -2,6 +2,12 @@
 // Chaves válidas das entidades do sistema. Servem de fonte única para os
 // unions usados por repositórios, rotas e componentes.
 export type SectorId = "farmacia" | "recepcao";
+/**
+ * Escopo de setor selecionado numa tela: um setor real ou o pseudo-setor
+ * "Todos" (`ALL_SECTORS`) — a visão agregada de todos os setores, que só
+ * faz sentido para quem tem `setores.todos.ver`.
+ */
+export type SectorScope = SectorId | typeof ALL_SECTORS;
 export type RoleKey = "admin" | "attendant";
 export type CallType = "normal" | "preferencial" | "preferential";
 // Tipo da sequência (banco) — diferente de `callType`: o banco guarda a
@@ -9,7 +15,7 @@ export type CallType = "normal" | "preferencial" | "preferential";
 export type SequenceType = "normal" | "preferencial";
 
 export interface SectorInfo {
-  readonly id: SectorId;
+  readonly id: SectorScope;
   readonly name: string;
   readonly shortName: string;
 }
@@ -21,6 +27,18 @@ export const SECTORS = {
 } as const satisfies Record<SectorId, SectorInfo>;
 export const DEFAULT_SECTOR = "farmacia";
 export const ALL_SECTORS = "all";
+
+/**
+ * Info do pseudo-setor "Todos". Ele não existe no banco — é a visão
+ * agregada de todos os setores (histórico/estatísticas). Aparece na UI
+ * (seletor e sidebar) para o caso "nenhum setor selecionado" ficar
+ * explícito em vez de cair num setor por padrão.
+ */
+export const ALL_SECTORS_INFO: SectorInfo = {
+  id: ALL_SECTORS,
+  name: "Todos os Setores",
+  shortName: "TODOS",
+};
 
 /**
  * Checagem de setor que o TS enxerga.
@@ -38,6 +56,22 @@ export function isSectorId(value: unknown): value is SectorId {
 /** Lookup tolerante: `undefined` para setor inválido, em vez de estourar. */
 export function getSector(id: string): SectorInfo | undefined {
   return isSectorId(id) ? SECTORS[id] : undefined;
+}
+
+/**
+ * Lookup de escopo: resolve um setor real (`getSector`) e também o
+ * pseudo-setor "Todos" (`ALL_SECTORS_INFO`).
+ *
+ * @returns `undefined` para valor inválido, em vez de estourar.
+ */
+export function getSectorScope(id: string): SectorInfo | undefined {
+  if (id === ALL_SECTORS) return ALL_SECTORS_INFO;
+  return getSector(id);
+}
+
+/** Predicado de escopo: setor real ou "Todos". */
+export function isSectorScope(value: unknown): value is SectorScope {
+  return value === ALL_SECTORS || isSectorId(value);
 }
 
 // ── Roles ──

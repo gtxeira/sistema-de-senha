@@ -23,7 +23,7 @@ import {
   subscribeSession,
 } from "@/lib/queue";
 import { SECTORS, CALL_TYPES, TYPE_FIELDS, TYPE_LABELS, HISTORY_LIMITS, PAGE_SIZES, DEFAULT_SECTOR, DEFAULT_NAME, KEYBOARD_SHORTCUTS, API_ROUTES, isSectorId, getSector } from "@/lib/constants";
-import type { CallType, SectorId } from "@/lib/constants";
+import type { CallType, SectorId, SectorScope } from "@/lib/constants";
 import { SECTORS_VIEW_ALL, hasPermission } from "@/lib/permissions";
 import { useQueueEvents } from "@/lib/hooks/useQueueEvents";
 import { SidebarLayout } from "@/components/SidebarLayout/SidebarLayout";
@@ -31,14 +31,6 @@ import { convertToBrazilTimeString } from "@/lib/date-utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem, SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -48,6 +40,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Pagination } from "@/components/pagination";
+import { SectorSelect } from "@/components/sector-select";
 import { cn } from "@/lib/utils";
 import { useSetDashboardLayoutInfo } from "@/hooks/use-set-dashboard-layout-info";
 
@@ -112,11 +105,11 @@ export default function PainelPage() {
 
   const [activeSector, setActiveSector] = useState<SectorId>(initialSector);
 
-  const handleSectorChange = (newSector: string) => {
-    // O Select só monta opções de SECTORS; o predicado é o que dá ao TS o
-    // estreitamento que `Object.hasOwn` não dá.
-    if (!isSectorId(newSector)) return;
-    setActiveSector(newSector);
+  const handleSectorChange = (scope: SectorScope) => {
+    // O painel opera uma fila por vez: "Todos" não faz sentido aqui.
+    // O predicado é o que dá ao TS o estreitamento que `Object.hasOwn` não dá.
+    if (!isSectorId(scope)) return;
+    setActiveSector(scope);
     setHistoryPage(1); // Mapeia a redefinição da página no evento de troca
   };
 
@@ -239,24 +232,10 @@ export default function PainelPage() {
     headerActions: (
       <>
         {canViewAllSectors && (
-          <Select
+          <SectorSelect
             value={activeSector}
-            onValueChange={(v) => { if (v !== null) handleSectorChange(v); }}
-            items={Object.fromEntries(Object.values(SECTORS).map((s) => [s.id, s.name]))}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectLabel>Setores</SelectLabel>
-
-                {Object.values(SECTORS).map((s) => (
-                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+            onValueChange={handleSectorChange}
+          />
         )}
       </>
     )
