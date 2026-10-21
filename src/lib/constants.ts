@@ -158,6 +158,13 @@ export const REFRESH_TOKEN_MAX_AGE = 12 * 60 * 60; // segundos: janela absoluta 
 // renovou". Fora da graça é tratado como roubo de token.
 export const REFRESH_REUSE_GRACE = 10; // segundos
 export const REFRESH_COOKIE_NAME = "app.refresh-token";
+// Rota de login — a página de sign-in do Auth.js.
+//
+// Vive no código (e não só em `pages.signIn`, no config do Auth.js) porque
+// o `proxy.ts` precisa dela em dois pontos: para não redirecionar o
+// usuário para a própria página de login (auto-loop) e para devolver quem
+// já está autenticado para a home.
+export const SIGN_IN_PATH = "/login";
 // Intervalo de renovação proativa no client (menor que PERMISSIONS_MAX_AGE
 // para que o refresh nunca fique stale com a aba aberta).
 export const SESSION_REFRESH_INTERVAL = 10 * 60 * 1000; // ms

@@ -1,7 +1,7 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { USERNAME_REGEX, DEFAULT_GUICHE, ACCESS_TOKEN_MAX_AGE } from "./lib/constants";
+import { USERNAME_REGEX, DEFAULT_GUICHE, ACCESS_TOKEN_MAX_AGE, SIGN_IN_PATH } from "./lib/constants";
 import { computeEffectivePermissions } from "./lib/permissions";
 import { initials } from "./lib/repositories/utils";
 import type { PrismaClient } from "./generated/prisma/client";
@@ -50,7 +50,7 @@ function asCredential(value: unknown): string {
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: {
-    signIn: "/login",
+    signIn: SIGN_IN_PATH,
   },
   cookies: {
     sessionToken: { name: SESSION_COOKIE_NAME },

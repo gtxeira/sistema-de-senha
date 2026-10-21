@@ -193,28 +193,70 @@ export function canAccessSector(
   return !!sector && ownSector === sector;
 }
 
-/** Rota de tela → permissão exigida pelo proxy. */
-const SCREEN_RULES = [
+/* ── Rotas ── */
+
+/**
+ * Registro canônico de rotas de tela: prefixo da URL → o que a rota exige.
+ *
+ * É a **única** fonte de verdade sobre "qual rota existe e o que ela
+ * exige". Antes o `proxy.ts` mantinha duas listas paralelas (`PUBLIC` e
+ * `PROTECTED`) que duplicavam este registro — duplicação perigosa, porque
+ * uma tela registrada aqui e esquecida lá caía no `catch-all` do proxy:
+ * a checagem de permissão nem era consultada e a página abria para
+ * qualquer usuário autenticado.
+ *
+ * `sectorScoped` marca as rotas cujo alvo é um setor da URL
+ * (`/monitor/<setor>`): o setor é extraído da própria URL e vale para o
+ * usuário do setor ou para quem tem a permissão de escopo.
+ */
+export const ROUTE_RULES = [
   { prefix: "/home", permission: SCREEN_HOME },
   { prefix: "/painel", permission: SCREEN_PAINEL },
   { prefix: "/historico", permission: SCREEN_HISTORICO },
-  { prefix: "/monitor", permission: SCREEN_MONITOR },
+  { prefix: "/monitor", permission: SCREEN_MONITOR, sectorScoped: true },
   { prefix: "/admin", permission: SCREEN_ADMIN },
 ] as const;
 
-/** @returns permissão de tela exigida (null = não é rota de tela) */
-export function screenPermissionFor(pathname: string): Permission | null {
-  const rule = SCREEN_RULES.find(
-    (r) => pathname === r.prefix || pathname.startsWith(r.prefix + "/"),
-  );
-  return rule ? rule.permission : null;
+/** O que uma rota exige de quem a acessa. */
+export interface RouteRequirement {
+  /** Permissão de tela exigida pela rota. */
+  readonly permission: Permission;
+  /**
+   * Setor alvo da rota, quando ela é escopada (`/monitor/<setor>`).
+   * `null` = rota sem escopo de setor.
+   */
+  readonly sector: string | null;
 }
 
-/** Extrai o setor alvo de `/monitor/<sector>`. */
-export function monitorSectorFor(pathname: string): string | null {
-  if (!pathname.startsWith("/monitor/")) return null;
-  const segment = pathname.slice("/monitor/".length).split("/")[0];
+/**
+ * Primeiro segmento depois do prefixo da rota (`/monitor/farmacia` →
+ * `farmacia`). `null` quando a URL não tem o segmento.
+ */
+function segmentAfter(pathname: string, prefix: string): string | null {
+  if (!pathname.startsWith(prefix + "/")) return null;
+  const segment = pathname.slice(prefix.length + 1).split("/")[0];
   return segment || null;
+}
+
+/**
+ * Casa a URL com o registro de rotas.
+ *
+ * @returns o que a rota exige, ou `null` quando a rota **não está
+ *   registrada** — o proxy trata "não registrada" como negado
+ *   (fail-closed), e um teste varre `src/app` para garantir que toda
+ *   página do app está classificada aqui.
+ */
+export function matchRoute(pathname: string): RouteRequirement | null {
+  const rule = ROUTE_RULES.find(
+    (r) => pathname === r.prefix || pathname.startsWith(r.prefix + "/"),
+  );
+  if (!rule) return null;
+
+  const sectorScoped = "sectorScoped" in rule && rule.sectorScoped === true;
+  return {
+    permission: rule.permission,
+    sector: sectorScoped ? segmentAfter(pathname, rule.prefix) : null,
+  };
 }
 
 /** Claims de frescor lidos de `session.user` (vêm do JWT). */

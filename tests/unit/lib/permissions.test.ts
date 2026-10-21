@@ -11,8 +11,7 @@ import {
   canAccessSector,
   computeEffectivePermissions,
   hasPermission,
-  monitorSectorFor,
-  screenPermissionFor,
+  matchRoute,
   sessionFreshnessProblem,
 } from "@/lib/permissions";
 import {
@@ -146,41 +145,37 @@ describe("canAccessSector (escopo de setor)", () => {
   });
 });
 
-describe("screenPermissionFor (regras do proxy)", () => {
+describe("matchRoute (registro canônico de rotas)", () => {
   it("mapeia as rotas de tela", () => {
-    expect(screenPermissionFor("/home")).toBe(SCREEN_HOME);
-    expect(screenPermissionFor("/painel")).toBe("tela.painel");
-    expect(screenPermissionFor("/historico")).toBe("tela.historico");
-    expect(screenPermissionFor("/monitor")).toBe("tela.monitor");
-    expect(screenPermissionFor("/admin")).toBe(SCREEN_ADMIN);
+    expect(matchRoute("/home")?.permission).toBe(SCREEN_HOME);
+    expect(matchRoute("/painel")?.permission).toBe("tela.painel");
+    expect(matchRoute("/historico")?.permission).toBe("tela.historico");
+    expect(matchRoute("/monitor")?.permission).toBe("tela.monitor");
+    expect(matchRoute("/admin")?.permission).toBe(SCREEN_ADMIN);
   });
 
   it("casa subrotas", () => {
-    expect(screenPermissionFor("/admin/qualquer")).toBe(SCREEN_ADMIN);
-    expect(screenPermissionFor("/monitor/farmacia")).toBe("tela.monitor");
+    expect(matchRoute("/admin/qualquer")?.permission).toBe(SCREEN_ADMIN);
+    expect(matchRoute("/monitor/farmacia")?.permission).toBe("tela.monitor");
   });
 
   it("não casa prefixo parcial", () => {
-    expect(screenPermissionFor("/homem")).toBeNull();
-    expect(screenPermissionFor("/administracao")).toBeNull();
+    expect(matchRoute("/homem")).toBeNull();
+    expect(matchRoute("/administracao")).toBeNull();
   });
 
   it("rotas fora de telas retornam null", () => {
-    expect(screenPermissionFor("/login")).toBeNull();
-    expect(screenPermissionFor("/")).toBeNull();
-  });
-});
-
-describe("monitorSectorFor", () => {
-  it("extrai o setor de /monitor/<setor>", () => {
-    expect(monitorSectorFor("/monitor/farmacia")).toBe("farmacia");
-    expect(monitorSectorFor("/monitor/recepcao")).toBe("recepcao");
+    expect(matchRoute("/login")).toBeNull();
+    expect(matchRoute("/")).toBeNull();
   });
 
-  it("retorna null fora do monitor", () => {
-    expect(monitorSectorFor("/home")).toBeNull();
-    expect(monitorSectorFor("/monitor/")).toBeNull();
-    expect(monitorSectorFor("/monitor")).toBeNull();
+  it("só /monitor é escopada por setor", () => {
+    expect(matchRoute("/monitor/farmacia")?.sector).toBe("farmacia");
+    expect(matchRoute("/monitor/recepcao")?.sector).toBe("recepcao");
+    expect(matchRoute("/monitor")?.sector).toBeNull();
+    expect(matchRoute("/monitor/")?.sector).toBeNull();
+    expect(matchRoute("/admin")?.sector).toBeNull();
+    expect(matchRoute("/home")?.sector).toBeNull();
   });
 });
 

@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const painelPath = resolve(__dirname, "../../../src/app/painel/page.tsx");
+const painelPath = resolve(__dirname, "../../../src/app/(authenticated)/(dashboard)/painel/page.tsx");
 const painelCode = readFileSync(painelPath, "utf-8");
 
 describe("Painel page — audio isolation", () => {

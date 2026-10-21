@@ -199,7 +199,7 @@ describe("useServerClock — leitura do código-fonte", () => {
 });
 
 describe("useServerClock — SidebarLayout usa o hook", () => {
-  it("SidebarLayout importa useServerClock", async () => {
+  it("SidebarLayout renderiza o ServerClock, que usa o hook", async () => {
     const { readFileSync } = await import("node:fs");
     const { resolve } = await import("node:path");
     const sidebarPath = resolve(
@@ -208,8 +208,18 @@ describe("useServerClock — SidebarLayout usa o hook", () => {
     );
     const code = readFileSync(sidebarPath, "utf-8");
 
-    expect(code).toContain('from "@/lib/hooks/useServerClock"');
-    expect(code).toContain("useServerClock()");
+    // O relógio do cabeçalho vive no componente `ServerClock` (a migração
+    // para shadcn o extraiu do layout).
+    expect(code).toContain("<ServerClock />");
+
+    const clockPath = resolve(
+      __dirname,
+      "../../../src/components/server-clock.tsx",
+    );
+    const clockCode = readFileSync(clockPath, "utf-8");
+
+    expect(clockCode).toContain('from "@/lib/hooks/useServerClock"');
+    expect(clockCode).toContain("useServerClock()");
   });
 
   it("SidebarLayout não usa mais new Date() para relógio", async () => {
@@ -232,7 +242,7 @@ describe("useServerClock — Monitor usa o hook", () => {
     const { resolve } = await import("node:path");
     const monitorPath = resolve(
       __dirname,
-      "../../../src/app/monitor/[sector]/page.tsx",
+      "../../../src/app/(authenticated)/monitor/[sector]/page.tsx",
     );
     const code = readFileSync(monitorPath, "utf-8");
 
@@ -245,7 +255,7 @@ describe("useServerClock — Monitor usa o hook", () => {
     const { resolve } = await import("node:path");
     const monitorPath = resolve(
       __dirname,
-      "../../../src/app/monitor/[sector]/page.tsx",
+      "../../../src/app/(authenticated)/monitor/[sector]/page.tsx",
     );
     const code = readFileSync(monitorPath, "utf-8");
 
@@ -258,7 +268,7 @@ describe("useServerClock — Monitor usa o hook", () => {
     const { resolve } = await import("node:path");
     const monitorPath = resolve(
       __dirname,
-      "../../../src/app/monitor/[sector]/page.tsx",
+      "../../../src/app/(authenticated)/monitor/[sector]/page.tsx",
     );
     const code = readFileSync(monitorPath, "utf-8");
 

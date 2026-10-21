@@ -93,22 +93,9 @@ function locationHeader(res: Response): string | null {
 }
 
 describe("proxy", () => {
-  it("redireciona raiz para /home quando há sessão válida", () => {
+  it("deixa a raiz passar (quem decide é o server component da home)", () => {
     const res = proxy(makeRequest("/", freshUser()));
-    expect(res.status).toBe(307);
-    expect(locationHeader(res)).toMatch(/\/home$/);
-  });
-
-  it("redireciona raiz para /login sem sessão e sem refresh", () => {
-    const res = proxy(makeRequest("/"));
-    expect(res.status).toBe(307);
-    expect(locationHeader(res)).toMatch(/\/login$/);
-  });
-
-  it("redireciona raiz para o refresh quando há refresh token", () => {
-    const res = proxy(makeRequest("/", null, "refresh-opaco"));
-    expect(locationHeader(res)).toContain("/api/auth/refresh");
-    expect(locationHeader(res)).toContain(encodeURIComponent("/home"));
+    expect(locationHeader(res)).toBeNull();
   });
 
   it("ignora rotas estáticas e _next", () => {
@@ -156,6 +143,22 @@ describe("proxy", () => {
   it("redireciona rotas desconhecidas para /login", () => {
     const res = proxy(makeRequest("/qualquer-outra", freshUser()));
     expect(locationHeader(res)).toMatch(/\/login$/);
+  });
+
+  it("rota desconhecida sem sessão também vai para /login", () => {
+    const res = proxy(makeRequest("/qualquer-outra"));
+    expect(locationHeader(res)).toMatch(/\/login$/);
+  });
+
+  // Regressão: rota não registrada não pode passar pelo refresh — a rota
+  // de refresh devolveria o browser para a mesma URL e o proxy repetiria
+  // o ciclo (ERR_TOO_MANY_REDIRECTS).
+  it("rota desconhecida não tenta o refresh (evita loop de redirect)", () => {
+    const res = proxy(
+      makeRequest("/qualquer-outra", freshUser(), "refresh-opaco"),
+    );
+    expect(locationHeader(res)).toMatch(/\/login$/);
+    expect(locationHeader(res)).not.toContain("/api/auth/refresh");
   });
 
   it("protege /admin e /monitor", () => {
@@ -212,8 +215,10 @@ describe("proxy — frescor da sessão (auth_at / perms_at)", () => {
   it("cadeia / → /login termina mesmo com sessão stale sem refresh", () => {
     const stale = { id: "u1", name: "Legado" };
 
+    // A raiz é resolvida pelo server component (que manda para /login
+    // quando não há sessão válida) — o proxy só abre espaço.
     const first = proxy(makeRequest("/", stale));
-    expect(locationHeader(first)).toMatch(/\/login$/);
+    expect(locationHeader(first)).toBeNull();
 
     const second = proxy(makeRequest("/login", stale));
     expect(locationHeader(second)).toBeNull();

@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const monitorPath = resolve(__dirname, "../../../src/app/monitor/[sector]/page.tsx");
+const monitorPath = resolve(__dirname, "../../../src/app/(authenticated)/monitor/[sector]/page.tsx");
 const monitorCode = readFileSync(monitorPath, "utf-8");
 
 describe("Monitor page — audio on SSE events", () => {
