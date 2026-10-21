@@ -96,6 +96,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PasswordInput } from "@/components/ui/password-input";
 
 const INHERIT = "inherit";
 const GRANT = "grant";
@@ -544,8 +545,7 @@ export default function AccessSection() {
                     />
                   </FilterGroup>
                   <FilterGroup label={editingUserId ? "Senha (deixe em branco para manter)" : "Senha"}>
-                    <Input
-                      type="password"
+                    <PasswordInput
                       value={userForm.password}
                       onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
                       placeholder="••••••••"

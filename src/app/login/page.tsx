@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/components/ui/input-group";
+import { PasswordInput } from "@/components/ui/password-input";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -141,28 +142,15 @@ export default function LoginPage() {
                   Senha
                 </FieldLabel>
 
-                <InputGroup className="h-10">
-                  <InputGroupInput
-                    id="password"
-                    type={isVisible ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    autoComplete="current-password"
-                    required
-                  />
-
-                  <InputGroupAddon align="inline-end">
-                    <InputGroupButton
-                      aria-label={isVisible ? "Ocultar senha" : "Mostrar senha"}
-                      title={isVisible ? "Ocultar senha" : "Mostrar senha"}
-                      size="icon-xs"
-                      onClick={() => setIsVisible(!isVisible)}
-                    >
-                      {isVisible ? <EyeOff /> : <Eye />}
-                    </InputGroupButton>
-                  </InputGroupAddon>
-                </InputGroup>
+                <PasswordInput
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  className="h-10"
+                  required
+                />
               </Field>
             </FieldGroup>
 
