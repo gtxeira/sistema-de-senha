@@ -5,7 +5,7 @@ import { SECTORS } from "@/lib/constants";
 import { SCREEN_ADMIN, canAccessSector, hasPermission } from "@/lib/permissions";
 import { useEffectiveSession } from "@/hooks/use-effective-session";
 import { PageHeader } from "@/components/page-header";
-import { NavCard, type NavCardProps } from "src/app/(authenticated)/(dashboard)/home/nav-card";
+import { NavCard, type NavCardProps } from "@/app/(authenticated)/(dashboard)/home/nav-card";
 import type { Route } from "next";
 
 type NavItem = {

@@ -198,13 +198,13 @@ describe("useServerClock — leitura do código-fonte", () => {
   });
 });
 
-describe("useServerClock — sidebar-layout usa o hook", () => {
-  it("sidebar-layout renderiza o ServerClock, que usa o hook", async () => {
+describe("useServerClock — SidebarLayout usa o hook", () => {
+  it("SidebarLayout renderiza o ServerClock, que usa o hook", async () => {
     const { readFileSync } = await import("node:fs");
     const { resolve } = await import("node:path");
     const sidebarPath = resolve(
       __dirname,
-      "../../../src/components/sidebar-layout/sidebar-layout.tsx",
+      "../../../src/components/sidebar/sidebar.tsx",
     );
     const code = readFileSync(sidebarPath, "utf-8");
 
@@ -222,12 +222,12 @@ describe("useServerClock — sidebar-layout usa o hook", () => {
     expect(clockCode).toContain("useServerClock()");
   });
 
-  it("sidebar-layout não usa mais new Date() para relógio", async () => {
+  it("SidebarLayout não usa mais new Date() para relógio", async () => {
     const { readFileSync } = await import("node:fs");
     const { resolve } = await import("node:path");
     const sidebarPath = resolve(
       __dirname,
-      "../../../src/components/sidebar-layout/sidebar-layout.tsx",
+      "../../../src/components/sidebar/sidebar.tsx",
     );
     const code = readFileSync(sidebarPath, "utf-8");
 

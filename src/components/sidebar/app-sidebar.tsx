@@ -27,9 +27,9 @@ import {
 } from "@/components/ui/sidebar"
 import brandIcon from "@/app/icon.ico";
 import Image from "next/image";
-import { NavUser } from "@/components/nav-user";
+import { NavUser } from "@/components/sidebar/nav-user";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import type { RouteGroup } from "@/components/sidebar-layout/sidebar-layout";
+import type { RouteGroup } from "@/components/sidebar/sidebar-layout";
 
 /** Busca sem acento/caixa: "hist" e "Histórico" casam. */
 const normalize = (value: string) =>

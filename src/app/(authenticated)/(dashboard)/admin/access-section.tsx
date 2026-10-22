@@ -194,7 +194,7 @@ function isOverrideMode(value: string): value is OverrideMode {
  * Formulários abrem em Dialog e as exclusões pedem confirmação em
  * AlertDialog (antes, tudo era `window.confirm`).
  */
-export default function AccessSection() {
+export function AccessSection() {
   const canView = useCan(USERS_VIEW);
   const canCreate = useCan(USERS_CREATE);
   const canEdit = useCan(USERS_EDIT);

@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { CheckCircle2, Headphones, History, Home, type LucideIcon, Settings2 } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { AppSidebar } from "@/components/app-sidebar";
+import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import { useDashboardLayoutStore } from "@/stores/use-dashboard-layout-store";
 import { useEffectiveSession } from "@/hooks/use-effective-session";
 import { Separator } from "@/components/ui/separator";

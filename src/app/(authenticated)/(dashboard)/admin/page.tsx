@@ -61,7 +61,7 @@ import {
   sectionStyle,
   sectionTitleStyle,
 } from "@/app/(authenticated)/(dashboard)/admin/admin-styles";
-import AccessSection from "@/app/(authenticated)/(dashboard)/admin/access-section";
+import { AccessSection } from "@/app/(authenticated)/(dashboard)/admin/access-section";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 

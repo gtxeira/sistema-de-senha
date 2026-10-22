@@ -26,7 +26,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const read = (path: string) => readFileSync(resolve(ROOT, path), "utf-8");
 
 const LAYOUT = "src/app/(authenticated)/(dashboard)/layout.tsx";
-const SIDEBAR_LAYOUT = "src/components/sidebar-layout/sidebar-layout.tsx";
+const SIDEBAR_LAYOUT = "src/components/sidebar/sidebar.tsx";
 const LAYOUT_STORE = "src/stores/use-dashboard-layout-store.ts";
 const LAYOUT_HOOK = "src/hooks/use-set-dashboard-layout-info.ts";
 
@@ -61,18 +61,18 @@ describe("layout do dashboard — server component", () => {
 });
 
 describe("layout do dashboard — o client herda o que precisa", () => {
-  it("sidebar-layout lê a rota ativa com usePathname", () => {
+  it("SidebarLayout lê a rota ativa com usePathname", () => {
     const code = read(SIDEBAR_LAYOUT);
     expect(code).toContain("usePathname");
     expect(code).toContain("activeRoute");
   });
 
-  it("sidebar-layout usa a sessão efetiva (servidor + store)", () => {
+  it("SidebarLayout usa a sessão efetiva (servidor + store)", () => {
     const code = read(SIDEBAR_LAYOUT);
     expect(code).toContain("useEffectiveSession");
   });
 
-  it("sidebar-layout lê o setor e as ações do cabeçalho na store", () => {
+  it("SidebarLayout lê o setor e as ações do cabeçalho na store", () => {
     const code = read(SIDEBAR_LAYOUT);
     expect(code).toContain("useDashboardLayoutStore");
     expect(code).toContain("s.sectorInfo");
