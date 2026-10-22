@@ -1,4 +1,6 @@
 import { normalizeCallType } from "@/lib/repositories/utils";
+import { MIN_DAYS, MAX_DAYS } from "@/lib/constants";
+import { dayWindow, startOfDay } from "@/lib/time";
 import type {
   HistoryCall,
   QueueStats,
@@ -46,21 +48,28 @@ export class InMemoryReadRepository implements ReadRepository {
     // Rebuild to pick up any new calls added to the raw array
     this.#rebuild();
 
-    const { sector = null, since = null, until = null, limit = 200, days = 30 } = options;
+    const {
+      sector = null,
+      limit = 200,
+      days = 30,
+      now = new Date(),
+    } = options;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Mesma janela do Postgres: dias-calendário BRT (a meia-noite BRT
+    // de `days - 1` dias atrás até a meia-noite BRT do dia seguinte).
+    const window = dayWindow(days, now);
+    const sinceDate = options.since ?? window.since;
+    const untilDate =
+      options.until !== undefined ? options.until : window.until;
 
-    const sinceDate = since
-      ? new Date(since)
-      : new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-    const untilDate = until ? new Date(until) : null;
+    // "Hoje" = desde a meia-noite BRT de hoje.
+    const todayStart = startOfDay(now);
 
     // Filter calls
     const filtered = this.#calls.filter((c) => {
       const d = new Date(c.created_at);
       if (d < sinceDate) return false;
-      if (untilDate && d > untilDate) return false;
+      if (untilDate && d >= untilDate) return false;
       if (sector && c.sector_id !== sector) return false;
       return true;
     });
@@ -71,7 +80,7 @@ export class InMemoryReadRepository implements ReadRepository {
     const total = filtered.length;
     const todayCount = filtered.filter((c) => {
       const d = new Date(c.created_at);
-      return d >= today;
+      return d >= todayStart;
     }).length;
 
     // By sector
@@ -105,10 +114,8 @@ export class InMemoryReadRepository implements ReadRepository {
         // `normalizeCallType` aceita as duas grafias e devolve `SequenceType`
         // — é o mesmo encurtamento de `formatCallRecord` no Postgres.
         type: normalizeCallType(c.type).sequenceType,
-        time: new Intl.DateTimeFormat("pt-BR", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }).format(new Date(c.created_at)),
+        // O INSTANTE, não "HH:mm": quem exibe formata em BRT.
+        createdAt: new Date(c.created_at).toISOString(),
       }));
 
     // Recent by sector — alinhado ao Postgres: o item de `recent` já carrega
@@ -120,8 +127,16 @@ export class InMemoryReadRepository implements ReadRepository {
       recentBySector[s].push(c);
     }
 
+    // A extensão real da janela — igual ao Postgres (a janela BRT de N
+    // dias mede exatamente N dias-calendário).
+    const windowDays = untilDate
+      ? Math.ceil(
+          (untilDate.getTime() - sinceDate.getTime()) / (24 * 60 * 60 * 1000),
+        )
+      : days;
+
     return {
-      days,
+      days: Math.min(MAX_DAYS, Math.max(MIN_DAYS, windowDays)),
       summary: { total, today: todayCount, preferencial, normal },
       bySector,
       byType,

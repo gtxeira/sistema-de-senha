@@ -68,7 +68,8 @@ describe("/api/queue/recent — integration", () => {
       expect(body.calls[0]).toHaveProperty("id");
       expect(body.calls[0]).toHaveProperty("number");
       expect(body.calls[0]).toHaveProperty("type");
-      expect(body.calls[0]).toHaveProperty("time");
+      // O INSTANTE (ISO), não "HH:mm".
+      expect(body.calls[0]).toHaveProperty("createdAt");
     });
 
     it("respeta limite (limit)", async () => {

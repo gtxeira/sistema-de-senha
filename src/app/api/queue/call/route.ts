@@ -11,7 +11,7 @@ import { assertSectorAccess, requirePermission } from "@/lib/api-auth";
 import { QUEUE_CALL } from "@/lib/permissions";
 import { readJson } from "@/lib/json";
 import type { CallRequestBody } from "@/types/api";
-import { LOCALE, isSectorId } from "@/lib/constants";
+import { isSectorId } from "@/lib/constants";
 
 /* ─────────────────────────────────────────────────
    POST — chama próxima senha de um setor
@@ -70,10 +70,9 @@ export async function POST(request: Request) {
       number: nextNum,
       type: sequenceType,
       wraparound: isWraparound,
-      time: new Intl.DateTimeFormat(LOCALE, {
-        hour: "2-digit",
-        minute: "2-digit",
-      }).format(new Date()),
+      // O instante gravado pelo banco, não "agora": o SSE propaga o
+      // registro, e quem formata em BRT é o cliente.
+      createdAt: saved.createdAt,
     };
     eventManager.emitQueueCall(
       sector,

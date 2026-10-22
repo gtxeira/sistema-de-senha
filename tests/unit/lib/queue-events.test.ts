@@ -8,6 +8,7 @@ import {
 import type { ClientQueueCall } from "@/lib/queue-events";
 import { RESET_MARKER_KEY, SSE_EVENT_TYPES } from "@/lib/constants";
 import type { SectorId } from "@/lib/constants";
+import { formatClock } from "@/lib/time";
 import {
   getInitialState,
   normalizeQueue,
@@ -67,7 +68,7 @@ function queueCalls(_sector = "farmacia", count = 1): ClientQueueCall[] {
     id: `call-${i + 1}`,
     number: 40 + i,
     type: "normal",
-    time: "14:30",
+    createdAt: "2026-10-22T17:30:00.000Z",
   }));
 }
 
@@ -120,7 +121,7 @@ function seedQueue(sector: SectorId, number: number): void {
   state[sector] = {
     ...state[sector],
     normalCurrent: number,
-    history: [{ number, type: "normal", time: "14:30" }],
+    history: [{ number, type: "normal", createdAt: "2026-10-22T17:30:00.000Z" }],
   };
   saveQueueState(state);
 }
@@ -225,7 +226,7 @@ describe("queue-events (singleton)", () => {
 
       FakeEventSource.latest().emit({
         type: SSE_EVENT_TYPES.CALL,
-        call: { id: "x", number: 7, type: "normal", time: "14:30" },
+        call: { id: "x", number: 7, type: "normal", createdAt: "2026-10-22T17:30:00.000Z" },
         resetAt: null,
       });
 
@@ -239,7 +240,7 @@ describe("queue-events (singleton)", () => {
 
       FakeEventSource.latest().emit({
         type: SSE_EVENT_TYPES.RECALL,
-        call: { id: "x", number: 7, type: "normal", time: "14:30" },
+        call: { id: "x", number: 7, type: "normal", createdAt: "2026-10-22T17:30:00.000Z" },
         resetAt: null,
       });
 
@@ -255,7 +256,7 @@ describe("queue-events (singleton)", () => {
 
       FakeEventSource.latest().emit({
         type: SSE_EVENT_TYPES.CALL,
-        call: { id: "x", number: 7, type: "normal", time: "14:30" },
+        call: { id: "x", number: 7, type: "normal", createdAt: "2026-10-22T17:30:00.000Z" },
         resetAt: null,
       });
 
@@ -298,14 +299,14 @@ describe("queue-events (singleton)", () => {
 
       FakeEventSource.latest().emit({
         type: SSE_EVENT_TYPES.CALL,
-        call: { id: "c1", number: 40, type: "normal", time: "14:30" },
+        call: { id: "c1", number: 40, type: "normal", createdAt: "2026-10-22T17:30:00.000Z" },
         resetAt: null,
       });
       expect(getQueueEventsSnapshot().calls.farmacia).toHaveLength(1);
 
       FakeEventSource.latest().emit({
         type: SSE_EVENT_TYPES.RECALL,
-        call: { id: "c1", number: 40, type: "normal", time: "14:30" },
+        call: { id: "c1", number: 40, type: "normal", createdAt: "2026-10-22T17:30:00.000Z" },
         resetAt: null,
       });
 
@@ -338,7 +339,7 @@ describe("queue-events (singleton)", () => {
         id: `c${100 - i}`,
         number: 100 - i,
         type: "normal",
-        time: "14:30",
+        createdAt: "2026-10-22T17:30:00.000Z",
       }));
       let servedPortrait = false;
       globalScope.fetch = vi.fn(async (url: unknown) => {
@@ -409,7 +410,7 @@ describe("queue-events (singleton)", () => {
         return {
           ok: true,
           json: async () => ({
-            calls: [{ id: `${sector}-1`, number: 40, type: "normal", time: "14:30" }],
+            calls: [{ id: `${sector}-1`, number: 40, type: "normal", createdAt: "2026-10-22T17:30:00.000Z" }],
             resetAt: null,
           }),
         };
@@ -454,7 +455,7 @@ describe("queue-events (singleton)", () => {
       // O servidor foi resetado em outro dispositivo.
       FakeEventSource.latest().emit({
         type: SSE_EVENT_TYPES.CALL,
-        call: { id: "novo", number: 1, type: "normal", time: "15:00" },
+        call: { id: "novo", number: 1, type: "normal", createdAt: "2026-10-22T18:00:00.000Z" },
         resetAt: "2026-09-30T10:00:00.000Z",
       });
 
@@ -477,7 +478,7 @@ describe("queue-events (singleton)", () => {
       // Reset + chamada no mesmo instante: a fila antiga não pode sobreviver.
       FakeEventSource.latest().emit({
         type: SSE_EVENT_TYPES.CALL,
-        call: { id: "novo", number: 3, type: "normal", time: "15:00" },
+        call: { id: "novo", number: 3, type: "normal", createdAt: "2026-10-22T18:00:00.000Z" },
         resetAt: "2026-09-30T10:00:00.000Z",
       });
 
@@ -513,7 +514,7 @@ describe("queue-events (singleton)", () => {
       // Adota o marcador.
       FakeEventSource.latest().emit({
         type: SSE_EVENT_TYPES.CALL,
-        call: { id: "a", number: 1, type: "normal", time: "15:00" },
+        call: { id: "a", number: 1, type: "normal", createdAt: "2026-10-22T18:00:00.000Z" },
         resetAt: "2026-09-30T10:00:00.000Z",
       });
       seedQueue("farmacia", 99);
@@ -521,7 +522,7 @@ describe("queue-events (singleton)", () => {
       // Mesma chamada, mesmo marcador: nada a invalidar.
       FakeEventSource.latest().emit({
         type: SSE_EVENT_TYPES.CALL,
-        call: { id: "b", number: 2, type: "normal", time: "15:01" },
+        call: { id: "b", number: 2, type: "normal", createdAt: "2026-10-22T18:01:00.000Z" },
         resetAt: "2026-09-30T10:00:00.000Z",
       });
 
@@ -584,7 +585,7 @@ describe("queue-events (singleton)", () => {
 
       FakeEventSource.latest().emit({
         type: SSE_EVENT_TYPES.CALL,
-        call: { id: "n", number: 1, type: "normal", time: "15:00" },
+        call: { id: "n", number: 1, type: "normal", createdAt: "2026-10-22T18:00:00.000Z" },
         resetAt: "2026-09-30T10:00:00.000Z",
       });
 
@@ -621,7 +622,12 @@ describe("queue-events (singleton)", () => {
           ...latest,
           [field]: lastCall.number,
           history: [
-            { number: lastCall.number, type: callType, time: lastCall.time },
+            {
+              number: lastCall.number,
+              type: callType,
+              time: formatClock(lastCall.createdAt),
+              createdAt: lastCall.createdAt,
+            },
             ...latest.history,
           ],
         },
@@ -649,7 +655,7 @@ describe("queue-events (singleton)", () => {
       await vi.advanceTimersByTimeAsync(0);
       FakeEventSource.latest().emit({
         type: SSE_EVENT_TYPES.CALL,
-        call: { id: "c40", number: 40, type: "normal", time: "14:30" },
+        call: { id: "c40", number: 40, type: "normal", createdAt: "2026-10-22T17:30:00.000Z" },
         resetAt: null,
       });
       applyLiveCall("farmacia", lastEventOf("farmacia"));
@@ -687,7 +693,7 @@ describe("queue-events (singleton)", () => {
 
       FakeEventSource.latest().emit({
         type: SSE_EVENT_TYPES.CALL,
-        call: { id: "c1", number: 40, type: "normal", time: "14:30" },
+        call: { id: "c1", number: 40, type: "normal", createdAt: "2026-10-22T17:30:00.000Z" },
         resetAt: null,
       });
       expect(lastEventOf("farmacia")).toBeTruthy();
@@ -713,7 +719,7 @@ describe("queue-events (singleton)", () => {
 
       FakeEventSource.latest().emit({
         type: SSE_EVENT_TYPES.CALL,
-        call: { id: "c1", number: 40, type: "normal", time: "14:30" },
+        call: { id: "c1", number: 40, type: "normal", createdAt: "2026-10-22T17:30:00.000Z" },
         resetAt: null,
       });
       expect(lastEventOf("farmacia")).toBeTruthy();

@@ -49,9 +49,14 @@ export interface ClientQueueCall {
   readonly id: string;
   readonly number: number;
   readonly type: CallType;
-  readonly time: string;
-  /** Só no payload de `/recent` (ISO ou `null`). */
-  readonly createdAt?: string | null;
+  /**
+   * Instante da chamada em ISO-8601 (UTC).
+   *
+   * O wire carrega o instante, nunca "HH:mm": é o cliente que formata
+   * em BRT (`@/lib/time`), e ele precisa do dia para virar o histórico
+   * à meia-noite BRT.
+   */
+  readonly createdAt: string;
   /** Só na chamada corrente (999 → 000). */
   readonly wraparound?: boolean;
   /** Marcado quando o evento é um recall. */

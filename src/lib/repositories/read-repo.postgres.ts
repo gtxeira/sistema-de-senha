@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma-client";
 import type { Prisma } from "@/generated/prisma/client";
-import { MIN_DAYS, MAX_DAYS, DEFAULT_DAYS, LOCALE, CALL_TYPES } from "@/lib/constants";
+import { MIN_DAYS, MAX_DAYS, DEFAULT_DAYS, CALL_TYPES } from "@/lib/constants";
+import { dayWindow, startOfDay } from "@/lib/time";
 import type { HistoryCall, QueueStats, ReadRepository, StatsOptions } from "./types";
 
 /** Linha como o `findMany` de `getRecentCalls` devolve. */
@@ -31,16 +32,6 @@ function emptyResponse(days: number): QueueStats {
 }
 
 /**
- * Format date for display (HH:mm)
- */
-function formatTime(date: Date): string {
-  return new Intl.DateTimeFormat(LOCALE, {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-}
-
-/**
  * Normalize a queue call record for frontend consumption
  */
 function formatCallRecord(call: RecentRow): HistoryCall {
@@ -53,7 +44,9 @@ function formatCallRecord(call: RecentRow): HistoryCall {
     type: call.type === CALL_TYPES.PREFERENCIAL
       ? CALL_TYPES.PREFERENCIAL
       : CALL_TYPES.NORMAL,
-    time: formatTime(new Date(call.created_at || Date.now())),
+    // O INSTANTE, não "HH:mm": um horário sem data não diz de que dia
+    // a chamada foi — e é o dia que decide se ela entra em "Hoje".
+    createdAt: new Date(call.created_at || Date.now()).toISOString(),
   };
 }
 
@@ -66,18 +59,28 @@ export class PostgresReadRepository implements ReadRepository {
     try {
       // Parse options
       const sector = options.sector || null;
-      const since = options.since
-        ? new Date(options.since)
-        : new Date(Date.now() - (options.days || DEFAULT_DAYS) * 24 * 60 * 60 * 1000);
-      const until = options.until ? new Date(options.until) : null;
+      const now = options.now ?? new Date();
+      const days = options.days || DEFAULT_DAYS;
       const limit = options.limit || 200;
 
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      // Janela em dias-calendário BRT: "Hoje" = da meia-noite BRT de
+      // hoje até a de amanhã. A janela antiga ("agora menos N×24h")
+      // não era o dia de hoje — e mudava de significado conforme a
+      // hora do dia em que a página era aberta.
+      const window = dayWindow(days, now);
+      const since = options.since ?? window.since;
+      // `until: null` (explícito) continua significando "sem limite
+      // superior"; ausente, vale o fim da janela.
+      const until = options.until !== undefined ? options.until : window.until;
+
+      // "Hoje" = desde a meia-noite BRT de hoje. O `setHours(0,0,0,0)`
+      // antigo cortava na meia-noite do SERVIDOR (UTC no Docker), e o
+      // contador virava de dia às 21:00 do horário brasileiro.
+      const todayStart = startOfDay(now);
 
       // Build where clause for all calls
       const createdAt: Prisma.DateTimeFilter = { gte: since.toISOString() };
-      if (until) createdAt.lte = until.toISOString();
+      if (until) createdAt.lt = until.toISOString();
 
       const whereClause: Prisma.queue_callsWhereInput = { created_at: createdAt };
       if (sector) {
@@ -119,7 +122,7 @@ export class PostgresReadRepository implements ReadRepository {
       // string resulta em NaN), então `summary.today` ficava preso em 0. A
       // implementação em memória já comparava os dois `Date`s — aqui passamos
       // a fazer o mesmo.
-      const todayCount = calls.filter((c) => c.created_at >= today).length;
+      const todayCount = calls.filter((c) => c.created_at >= todayStart).length;
       const prefCount = calls.filter((c) =>
         ["preferencial", "preferential"].includes(c.type),
       ).length;
@@ -155,11 +158,15 @@ export class PostgresReadRepository implements ReadRepository {
       }
 
       return {
+        // A extensão real da janela (e não o `days` pedido): com a
+        // janela BRT ela é exatamente `days` dias-calendário.
         days: Math.min(
           MAX_DAYS,
           Math.max(
             MIN_DAYS,
-            Math.ceil((Date.now() - since.getTime()) / (24 * 60 * 60 * 1000)),
+            until
+              ? Math.ceil((until.getTime() - since.getTime()) / (24 * 60 * 60 * 1000))
+              : days,
           ),
         ),
         summary: {

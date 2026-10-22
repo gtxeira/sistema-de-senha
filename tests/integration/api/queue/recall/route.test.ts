@@ -99,7 +99,9 @@ describe("/api/queue/recall — integration", () => {
         expect(received.recall).not.toBeNull();
         expect(received.recall?.number).toBe(0);
         expect(received.recall?.type).toBe("normal");
-        expect(received.recall?.time).toBeDefined();
+        expect(received.recall?.createdAt).toBeDefined();
+        // O INSTANTE da chamada repetida, em ISO — não "HH:mm".
+        expect(Number.isNaN(Date.parse(received.recall?.createdAt ?? ""))).toBe(false);
       } finally {
         unsubCall();
         unsubRecall();

@@ -18,18 +18,26 @@ import type { Permission, PermissionOverride } from "@/lib/permissions";
 
 /* ── Registros de fila ──────────────────────────────────────────── */
 
-/** Linha de chamada normalizada, no formato que a UI consome. */
+/**
+ * Linha de chamada normalizada, no formato que a UI consome.
+ *
+ * `createdAt` é o INSTANTE da chamada em ISO-8601 (UTC) — e não um
+ * "HH:mm" já formatado. A regra do sistema é uma só: o wire carrega
+ * instantes, e quem formata (em BRT) é o cliente, via `@/lib/time`.
+ *
+ * A diferença não é estética: um "HH:mm" não diz de que dia a chamada
+ * foi, e é justamente o dia que decide se ela entra em "Hoje".
+ */
 export interface QueueCallRecord {
   readonly id: string;
   readonly number: number;
   readonly type: SequenceType;
-  readonly time: string;
+  /** Instante da chamada em ISO-8601 (UTC). */
+  readonly createdAt: string;
 }
 
-/** Saída de `QueueRepository.getRecentCalls` — `createdAt` é ISO ou `null`. */
-export interface RecentCall extends QueueCallRecord {
-  readonly createdAt: string | null;
-}
+/** Saída de `QueueRepository.getRecentCalls`. */
+export type RecentCall = QueueCallRecord;
 
 /** Saída de `ReadRepository.getStats` — carrega o setor de origem. */
 export interface HistoryCall extends QueueCallRecord {
@@ -58,8 +66,13 @@ export interface QueueRepository {
     type: SequenceType,
   ): Promise<{ number: number; wraparound: boolean }>;
 
-  /** Persiste uma chamada e devolve o id gerado. */
-  saveCall(call: QueueCallInput): Promise<{ id: string }>;
+  /**
+   * Persiste uma chamada e devolve o id gerado + o instante gravado.
+   *
+   * O instante vem do banco (`created_at`), não de `new Date()`: é o
+   * valor que virou registro, e é ele que o SSE propaga adiante.
+   */
+  saveCall(call: QueueCallInput): Promise<{ id: string; createdAt: string }>;
 
   /** Marcador de reset do setor (`null` quando nunca foi resetado). */
   getSectorResetAt(sector: string): Promise<Date | null>;
@@ -88,10 +101,25 @@ export interface QueueRepository {
 
 export interface StatsOptions {
   readonly sector?: string | null;
+  /** Inclusivo — primeira chamada dentro da janela. */
   readonly since?: Date;
+  /**
+   * EXCLUSIVO — o instante da meia-noite BRT do dia seguinte.
+   *
+   * A janela padrão (quando `since`/`until` não vêm) é calculada por
+   * `dayWindow()` em `@/lib/time`: dia-calendário BRT, não "agora
+   * menos N×24h".
+   */
   readonly until?: Date | null;
   readonly limit?: number;
   readonly days?: number;
+  /**
+   * O "agora" da consulta (padrão: `new Date()`).
+   *
+   * Existe para a janela ser determinística nos testes — sem ele, um
+   * teste que roda perto da meia-noite BRT muda de resultado sozinho.
+   */
+  readonly now?: Date;
 }
 
 export interface QueueStats {

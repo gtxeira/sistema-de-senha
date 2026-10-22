@@ -36,7 +36,7 @@ import {
   speakText,
   unlockSpeech,
 } from "@/lib/speech";
-import { convertToBrazilTimeString } from "@/lib/date-utils";
+import { formatClock } from "@/lib/time";
 import { readJson } from "@/lib/json";
 import type { NewsListBody } from "@/types/api";
 
@@ -209,7 +209,8 @@ export default function MonitorPage({ params }: MonitorPageProps) {
       id: lastCall.id,
       number: lastCall.number,
       type: callType,
-      time: lastCall.time,
+      time: formatClock(lastCall.createdAt),
+      createdAt: lastCall.createdAt,
     };
 
     saveQueueState({
@@ -314,9 +315,11 @@ export default function MonitorPage({ params }: MonitorPageProps) {
   const info = getSector(sector) || SECTORS[DEFAULT_SECTOR];
   const current = state[sector] || monitorServerSnapshot[sector];
 
+  // A exibição sai do INSTANTE, em BRT. As entradas legadas do
+  // `localStorage` (sem `createdAt`) usam o `time` já gravado.
   const validHistory = cleanHistory(current.history || []).map((h) => ({
     ...h,
-    time: convertToBrazilTimeString(h.time),
+    time: h.createdAt ? formatClock(h.createdAt) : (h.time ?? "—"),
   }));
 
   const latest = validHistory[0] || { number: current.normalCurrent ?? NO_PASSWORD, type: CALL_TYPES.NORMAL };

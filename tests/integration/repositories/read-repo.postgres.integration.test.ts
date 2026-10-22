@@ -108,7 +108,39 @@ describeIfPostgres("ReadRepository — Postgres integration", () => {
       expect(stats.recent[0]).toHaveProperty("id");
       expect(stats.recent[0]).toHaveProperty("number");
       expect(stats.recent[0]).toHaveProperty("type");
-      expect(stats.recent[0]).toHaveProperty("time");
+      // O INSTANTE (ISO), não "HH:mm".
+      expect(stats.recent[0]).toHaveProperty("createdAt");
+    });
+
+    it("conta 'hoje' pela meia-noite BRT, não pela do servidor", async () => {
+      // 02:30 UTC = 23:30 de ONTEM em BRT (UTC−03:00).
+      await prisma.queue_calls.create({
+        data: {
+          sector_id: "farmacia",
+          type: "normal",
+          number_int: 1,
+          number_str: "N001",
+          created_at: new Date("2026-10-21T02:30:00.000Z"),
+        },
+      });
+      // 13:00 UTC = 10:00 de HOJE em BRT.
+      await prisma.queue_calls.create({
+        data: {
+          sector_id: "farmacia",
+          type: "normal",
+          number_int: 2,
+          number_str: "N002",
+          created_at: new Date("2026-10-22T13:00:00.000Z"),
+        },
+      });
+
+      const stats = await repo.getStats({
+        days: 30,
+        now: new Date("2026-10-22T16:00:00.000Z"),
+      });
+
+      expect(stats.summary.today).toBe(1);
+      expect(stats.summary.total).toBe(2);
     });
 
     it("lidar com erros graciosamente", async () => {

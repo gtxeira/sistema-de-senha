@@ -24,7 +24,7 @@ import type { CallType, SectorId, SectorScope } from "@/lib/constants";
 import { SECTORS_VIEW_ALL, hasPermission } from "@/lib/permissions";
 import { useEffectiveSession } from "@/hooks/use-effective-session";
 import { useQueueEvents } from "@/lib/hooks/useQueueEvents";
-import { convertToBrazilTimeString } from "@/lib/date-utils";
+import { formatClock } from "@/lib/time";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -108,12 +108,14 @@ export default function PainelPage() {
 
   // `normalizeQueue` devolve um objeto novo a cada render, então reconstruir
   // com o histórico convertido é equivalente (e imutável) ao mutar `.history`.
+  // A exibição sai do INSTANTE, em BRT; o `time` das entradas legadas
+  // (sem `createdAt`) é usado como está.
   const baseQueue = normalizeQueue(state[activeSector]);
   const current = {
     ...baseQueue,
     history: baseQueue.history.map((h) => ({
       ...h,
-      time: convertToBrazilTimeString(h.time),
+      time: h.createdAt ? formatClock(h.createdAt) : (h.time ?? "—"),
     })),
   };
 
@@ -150,7 +152,12 @@ export default function PainelPage() {
         ...latest,
         [field]: lastCall.number,
         history: [
-          { number: lastCall.number, type: callType, time: lastCall.time },
+          {
+            number: lastCall.number,
+            type: callType,
+            time: formatClock(lastCall.createdAt),
+            createdAt: lastCall.createdAt,
+          },
           ...latest.history,
         ].slice(0, HISTORY_LIMIT),
       },

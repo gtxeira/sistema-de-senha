@@ -2,6 +2,11 @@
 FROM oven/bun:1-alpine AS base
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
+# O processo roda em UTC. A exibição é convertida em BRT por
+# `src/lib/time.ts` (que sempre passa o `timeZone` explícito), mas
+# deixar o fuso do processo explícito evita que qualquer código legado
+# formate data no fuso da máquina em vez do fuso do app.
+ENV TZ=UTC
 
 # ── 2. Dependências dev/build (lint, testes, next build) ──
 FROM base AS deps

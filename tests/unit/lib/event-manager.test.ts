@@ -18,7 +18,7 @@ describe("EventManager", () => {
       const callback = vi.fn();
       manager.subscribeToQueue("farmacia", callback);
 
-      const call: QueueCallEvent = { id: "1", number: 42, type: "normal", time: "14:30" };
+      const call: QueueCallEvent = { id: "1", number: 42, type: "normal", createdAt: "2026-10-22T17:30:00.000Z" };
       manager.emitQueueCall("farmacia", call);
 
       expect(callback).toHaveBeenCalledOnce();
@@ -29,7 +29,7 @@ describe("EventManager", () => {
       const callback = vi.fn();
       manager.subscribeToQueue("farmacia", callback);
 
-      const call: QueueCallEvent = { id: "1", number: 42, type: "normal", time: "14:30" };
+      const call: QueueCallEvent = { id: "1", number: 42, type: "normal", createdAt: "2026-10-22T17:30:00.000Z" };
       manager.emitQueueCall("farmacia", call, "2026-09-30T10:00:00.000Z");
 
       expect(callback).toHaveBeenCalledWith(call, "2026-09-30T10:00:00.000Z");
@@ -39,7 +39,7 @@ describe("EventManager", () => {
       const callback = vi.fn();
       manager.subscribeToQueue("farmacia", callback);
 
-      const call: QueueCallEvent = { id: "1", number: 42, type: "normal", time: "14:30" };
+      const call: QueueCallEvent = { id: "1", number: 42, type: "normal", createdAt: "2026-10-22T17:30:00.000Z" };
       manager.emitQueueCall("recepcao", call);
 
       expect(callback).not.toHaveBeenCalled();
@@ -51,7 +51,7 @@ describe("EventManager", () => {
       manager.subscribeToQueue("farmacia", callback1);
       manager.subscribeToQueue("farmacia", callback2);
 
-      const call: QueueCallEvent = { id: "1", number: 42, type: "normal", time: "14:30" };
+      const call: QueueCallEvent = { id: "1", number: 42, type: "normal", createdAt: "2026-10-22T17:30:00.000Z" };
       manager.emitQueueCall("farmacia", call);
 
       expect(callback1).toHaveBeenCalledOnce();
@@ -71,7 +71,7 @@ describe("EventManager", () => {
 
       unsub();
 
-      manager.emitQueueCall("farmacia", { id: "1", number: 1, type: "normal", time: "14:30" });
+      manager.emitQueueCall("farmacia", { id: "1", number: 1, type: "normal", createdAt: "2026-10-22T17:30:00.000Z" });
       expect(callback).not.toHaveBeenCalled();
     });
 
@@ -83,7 +83,7 @@ describe("EventManager", () => {
 
       unsub1();
 
-      manager.emitQueueCall("farmacia", { id: "1", number: 1, type: "normal", time: "14:30" });
+      manager.emitQueueCall("farmacia", { id: "1", number: 1, type: "normal", createdAt: "2026-10-22T17:30:00.000Z" });
       expect(callback1).not.toHaveBeenCalled();
       expect(callback2).toHaveBeenCalledOnce();
     });
@@ -94,7 +94,7 @@ describe("EventManager", () => {
       manager.subscribeToQueue("farmacia", farmaciaCb);
       manager.subscribeToQueue("recepcao", recepcaoCb);
 
-      const call: QueueCallEvent = { id: "1", number: 42, type: "normal", time: "14:30" };
+      const call: QueueCallEvent = { id: "1", number: 42, type: "normal", createdAt: "2026-10-22T17:30:00.000Z" };
       manager.emitQueueCall("farmacia", call);
 
       expect(farmaciaCb).toHaveBeenCalledOnce();
@@ -131,7 +131,7 @@ describe("EventManager", () => {
       const callback = vi.fn();
       manager.subscribeToRecall("farmacia", callback);
 
-      const call: QueueCallEvent = { id: "1", number: 42, type: "normal", time: "14:30" };
+      const call: QueueCallEvent = { id: "1", number: 42, type: "normal", createdAt: "2026-10-22T17:30:00.000Z" };
       manager.emitQueueRecall("farmacia", call);
 
       expect(callback).toHaveBeenCalledOnce();
@@ -142,7 +142,7 @@ describe("EventManager", () => {
       const callback = vi.fn();
       manager.subscribeToRecall("farmacia", callback);
 
-      const call: QueueCallEvent = { id: "1", number: 42, type: "normal", time: "14:30" };
+      const call: QueueCallEvent = { id: "1", number: 42, type: "normal", createdAt: "2026-10-22T17:30:00.000Z" };
       manager.emitQueueRecall("farmacia", call, "2026-09-30T10:00:00.000Z");
 
       expect(callback).toHaveBeenCalledWith(call, "2026-09-30T10:00:00.000Z");
@@ -152,7 +152,7 @@ describe("EventManager", () => {
       const callback = vi.fn();
       manager.subscribeToRecall("farmacia", callback);
 
-      const call: QueueCallEvent = { id: "1", number: 42, type: "normal", time: "14:30" };
+      const call: QueueCallEvent = { id: "1", number: 42, type: "normal", createdAt: "2026-10-22T17:30:00.000Z" };
       manager.emitQueueRecall("recepcao", call);
 
       expect(callback).not.toHaveBeenCalled();
@@ -164,7 +164,7 @@ describe("EventManager", () => {
       manager.subscribeToQueue("farmacia", callCb);
       manager.subscribeToRecall("farmacia", recallCb);
 
-      const call: QueueCallEvent = { id: "1", number: 42, type: "normal", time: "14:30" };
+      const call: QueueCallEvent = { id: "1", number: 42, type: "normal", createdAt: "2026-10-22T17:30:00.000Z" };
       manager.emitQueueCall("farmacia", call);
       manager.emitQueueRecall("farmacia", call);
 
@@ -185,7 +185,7 @@ describe("EventManager", () => {
 
       unsub();
 
-      manager.emitQueueRecall("farmacia", { id: "1", number: 1, type: "normal", time: "14:30" });
+      manager.emitQueueRecall("farmacia", { id: "1", number: 1, type: "normal", createdAt: "2026-10-22T17:30:00.000Z" });
       expect(callback).not.toHaveBeenCalled();
     });
 
@@ -197,7 +197,7 @@ describe("EventManager", () => {
 
       unsub1();
 
-      manager.emitQueueRecall("farmacia", { id: "1", number: 1, type: "normal", time: "14:30" });
+      manager.emitQueueRecall("farmacia", { id: "1", number: 1, type: "normal", createdAt: "2026-10-22T17:30:00.000Z" });
       expect(callback1).not.toHaveBeenCalled();
       expect(callback2).toHaveBeenCalledOnce();
     });
@@ -208,7 +208,7 @@ describe("EventManager", () => {
       manager.subscribeToRecall("farmacia", farmaciaCb);
       manager.subscribeToRecall("recepcao", recepcaoCb);
 
-      const call: QueueCallEvent = { id: "1", number: 42, type: "normal", time: "14:30" };
+      const call: QueueCallEvent = { id: "1", number: 42, type: "normal", createdAt: "2026-10-22T17:30:00.000Z" };
       manager.emitQueueRecall("farmacia", call);
 
       expect(farmaciaCb).toHaveBeenCalledOnce();
@@ -300,9 +300,9 @@ describe("EventManager", () => {
       const calls: QueueCallEvent[] = [];
       manager.subscribeToQueue("farmacia", (call) => calls.push(call));
 
-      manager.emitQueueCall("farmacia", { id: "1", number: 1, type: "normal", time: "14:30" });
-      manager.emitQueueCall("farmacia", { id: "2", number: 2, type: "preferencial", time: "14:31" });
-      manager.emitQueueCall("farmacia", { id: "3", number: 3, type: "normal", time: "14:32" });
+      manager.emitQueueCall("farmacia", { id: "1", number: 1, type: "normal", createdAt: "2026-10-22T17:30:00.000Z" });
+      manager.emitQueueCall("farmacia", { id: "2", number: 2, type: "preferencial", createdAt: "2026-10-22T17:31:00.000Z" });
+      manager.emitQueueCall("farmacia", { id: "3", number: 3, type: "normal", createdAt: "2026-10-22T17:32:00.000Z" });
 
       expect(calls).toHaveLength(3);
       expect(calls[0].number).toBe(1);
@@ -314,9 +314,9 @@ describe("EventManager", () => {
       const calls: QueueCallEvent[] = [];
       manager.subscribeToRecall("farmacia", (call) => calls.push(call));
 
-      manager.emitQueueRecall("farmacia", { id: "1", number: 1, type: "normal", time: "14:30" });
-      manager.emitQueueRecall("farmacia", { id: "1", number: 1, type: "normal", time: "14:31" });
-      manager.emitQueueRecall("farmacia", { id: "2", number: 2, type: "normal", time: "14:32" });
+      manager.emitQueueRecall("farmacia", { id: "1", number: 1, type: "normal", createdAt: "2026-10-22T17:30:00.000Z" });
+      manager.emitQueueRecall("farmacia", { id: "1", number: 1, type: "normal", createdAt: "2026-10-22T17:31:00.000Z" });
+      manager.emitQueueRecall("farmacia", { id: "2", number: 2, type: "normal", createdAt: "2026-10-22T17:32:00.000Z" });
 
       expect(calls).toHaveLength(3);
       expect(calls[0].number).toBe(1);
@@ -334,7 +334,7 @@ describe("EventManager", () => {
         results.push("cb2");
       });
 
-      manager.emitQueueCall("farmacia", { id: "1", number: 1, type: "normal", time: "14:30" });
+      manager.emitQueueCall("farmacia", { id: "1", number: 1, type: "normal", createdAt: "2026-10-22T17:30:00.000Z" });
 
       expect(results).toContain("cb1");
       // cb2 pode ou não ser chamado dependendo da ordem interna

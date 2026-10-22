@@ -31,6 +31,12 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-sistema_de_senha}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      # `PGTZ` é o fuso padrão das sessões do Postgres. As colunas são
+      # TIMESTAMPTZ (instante UTC), mas deixar isso explícito garante
+      # que nenhuma comparação ou texto gerado no banco use o fuso da
+      # máquina que subiu o container.
+      PGTZ: UTC
+      TZ: UTC
     volumes:
       - pgdata:/var/lib/postgresql
     networks:

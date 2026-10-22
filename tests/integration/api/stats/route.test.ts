@@ -196,7 +196,8 @@ describe("/api/stats — integration", () => {
       expect(body.recent[0]).toHaveProperty("id");
       expect(body.recent[0]).toHaveProperty("number");
       expect(body.recent[0]).toHaveProperty("type");
-      expect(body.recent[0]).toHaveProperty("time");
+      // O INSTANTE (ISO), não "HH:mm".
+      expect(body.recent[0]).toHaveProperty("createdAt");
     });
 
     it("agrupa chamadas recentes por setor", async () => {

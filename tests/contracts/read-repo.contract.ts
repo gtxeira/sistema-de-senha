@@ -116,9 +116,53 @@ export function readRepoContract(
           expect(call).toHaveProperty("id");
           expect(call).toHaveProperty("number");
           expect(call).toHaveProperty("type");
-          expect(call).toHaveProperty("time");
+          // O INSTANTE (ISO), não "HH:mm": um horário sem data não diz de
+          // que dia a chamada foi.
+          expect(call).toHaveProperty("createdAt");
           expect(typeof call.number).toBe("number");
+          expect(Number.isNaN(Date.parse(call.createdAt))).toBe(false);
         }
+      });
+
+      it("summary.today conta o dia BRT, não o dia UTC", async () => {
+        // 02:30 UTC = 23:30 do dia ANTERIOR em BRT (UTC−03:00).
+        const yesterdayBrt = "2026-10-21T02:30:00.000Z";
+        // 13:00 UTC = 10:00 de HOJE em BRT.
+        const todayBrt = "2026-10-22T13:00:00.000Z";
+
+        await seedCalls([
+          { sector: "farmacia", type: "normal", number: 1, created_at: yesterdayBrt },
+          { sector: "farmacia", type: "normal", number: 2, created_at: todayBrt },
+        ]);
+
+        const stats = await repo.getStats({
+          days: 30,
+          now: new Date("2026-10-22T16:00:00.000Z"),
+        });
+
+        // Só a chamada das 13:00 UTC pertence a "hoje" (BRT).
+        expect(stats.summary.today).toBe(1);
+        expect(stats.summary.total).toBe(2);
+      });
+
+      it("a janela de 'Hoje' é o dia-calendário BRT", async () => {
+        // 02:30 UTC = 23:30 de ONTEM em BRT → fora da janela de "Hoje".
+        const yesterdayBrt = "2026-10-21T02:30:00.000Z";
+        const todayBrt = "2026-10-22T13:00:00.000Z";
+
+        await seedCalls([
+          { sector: "farmacia", type: "normal", number: 1, created_at: yesterdayBrt },
+          { sector: "farmacia", type: "normal", number: 2, created_at: todayBrt },
+        ]);
+
+        const stats = await repo.getStats({
+          days: 1,
+          now: new Date("2026-10-22T16:00:00.000Z"),
+        });
+
+        expect(stats.summary.total).toBe(1);
+        expect(stats.recent).toHaveLength(1);
+        expect(stats.recent[0].number).toBe(2);
       });
     });
   });

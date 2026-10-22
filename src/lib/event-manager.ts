@@ -5,12 +5,15 @@ import type { CallType } from "./constants";
 /**
  * Payload serializado no SSE. `wraparound` só existe na chamada corrente
  * (recall repete a última senha e não tem novo número), por isso opcional.
+ *
+ * `createdAt` é o INSTANTE da chamada em ISO-8601 (UTC) — o wire
+ * carrega instantes, e quem formata em BRT é o cliente.
  */
 export interface QueueCallEvent {
   readonly id: string;
   readonly number: number;
   readonly type: CallType;
-  readonly time: string;
+  readonly createdAt: string;
   readonly wraparound?: boolean;
 }
 

@@ -43,7 +43,7 @@ export async function insertQueueCall(
   /** Ignorado — mantido por compatibilidade com a assinatura antiga. */
   db: unknown,
   callData: QueueCallInput,
-): Promise<{ id: string }> {
+): Promise<{ id: string; createdAt: string }> {
   // Delegates to repository - db parameter is ignored for backward compatibility
   return queue.saveCall(callData);
 }

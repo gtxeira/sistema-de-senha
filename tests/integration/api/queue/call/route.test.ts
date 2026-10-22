@@ -120,7 +120,10 @@ describe("/api/queue/call — integration", () => {
         expect(receivedEvent).not.toBeNull();
         expect(receivedEvent?.number).toBe(0);
         expect(receivedEvent?.type).toBe("normal");
-        expect(receivedEvent?.time).toBeDefined();
+        expect(receivedEvent?.createdAt).toBeDefined();
+        // O evento carrega o INSTANTE (ISO), não "HH:mm" — quem formata
+        // em BRT é o cliente.
+        expect(Number.isNaN(Date.parse(receivedEvent?.createdAt ?? ""))).toBe(false);
       } finally {
         unsubscribe();
       }

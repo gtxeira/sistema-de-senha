@@ -2,12 +2,11 @@
 
 import { useEffect, useRef, useState, useCallback, useSyncExternalStore } from "react";
 import {
-  LOCALE,
-  APP_TIMEZONE,
   CLOCK_INTERVAL,
   SERVER_TIME_SYNC_INTERVAL,
   API_ROUTES,
 } from "@/lib/constants";
+import { formatClock, formatClockSeconds, formatLongDate } from "@/lib/time";
 import { readJson } from "@/lib/json";
 import type { TimeBody } from "@/types/api";
 
@@ -19,7 +18,7 @@ import type { TimeBody } from "@/types/api";
    2. Calcula offset = serverTime - Date.now() (diferença entre servidor e device)
    3. A cada SERVER_TIME_SYNC_INTERVAL (60s), recalcula o offset
    4. A cada CLOCK_INTERVAL (1s), exibe horário interpolado usando offset
-   5. Formata em America/Sao_Paulo via Intl.DateTimeFormat
+   5. Formata em America/Sao_Paulo via `@/lib/time` (único dono do fuso)
    6. Se servidor indisponível, fallback para horário local (offset = 0)
 
    Isso garante que:
@@ -29,35 +28,20 @@ import type { TimeBody } from "@/types/api";
    - O relógio continua fluido entre sincronizações (interpolação local)
 ───────────────────────────────────────────────── */
 
-function formatInTimezone(date: Date, options: Intl.DateTimeFormatOptions): string {
-  return new Intl.DateTimeFormat(LOCALE, {
-    ...options,
-    timeZone: APP_TIMEZONE,
-  }).format(date);
-}
-
+/**
+ * A formatação vive em `@/lib/time` — é lá que o fuso do app está
+ * fixado. Este hook só cuida do OFFSET entre servidor e device.
+ */
 function formatTime(date: Date): string {
-  return formatInTimezone(date, {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
+  return formatClockSeconds(date);
 }
 
 function formatDate(date: Date): string {
-  return formatInTimezone(date, {
-    weekday: "long",
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  }).toUpperCase();
+  return formatLongDate(date);
 }
 
 function formatTimeShort(date: Date): string {
-  return formatInTimezone(date, {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatClock(date);
 }
 
 async function fetchServerTime(): Promise<number> {

@@ -50,14 +50,18 @@ export class InMemoryQueueRepository implements QueueRepository {
     return { number: next, wraparound: false };
   }
 
-  async saveCall(call: QueueCallInput): Promise<{ id: string }> {
+  async saveCall(
+    call: QueueCallInput,
+  ): Promise<{ id: string; createdAt: string }> {
     const id = crypto.randomUUID();
+    const createdAt = this.#now();
     this.#calls.push({
       ...call,
       id,
-      created_at: this.#now(),
+      created_at: createdAt,
     });
-    return { id };
+    // O instante gravado, não "agora" — é o valor que virou registro.
+    return { id, createdAt: createdAt.toISOString() };
   }
 
   async resetSector(sector: string): Promise<void> {
@@ -87,10 +91,8 @@ export class InMemoryQueueRepository implements QueueRepository {
         id: c.id,
         number: c.number,
         type: c.sequenceType === "preferencial" ? "preferencial" : "normal",
-        time: new Intl.DateTimeFormat("pt-BR", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }).format(c.created_at),
+        // O INSTANTE, não "HH:mm": quem exibe formata em BRT, e o
+        // cliente precisa do dia para fazer a virada do histórico.
         createdAt: c.created_at.toISOString(),
       }));
   }

@@ -15,6 +15,7 @@ import {
 } from "./constants";
 import type { CallType } from "./constants";
 import { parseJson, readJson } from "./json";
+import { dayKey, dayKeyOrNull, formatClock } from "./time";
 import type { QueueCallBody } from "@/types/api";
 
 export {
@@ -47,9 +48,15 @@ export interface QueueHistoryEntry {
   readonly id?: string;
   readonly number: number | string;
   readonly type: CallType;
-  /** Hora `HH:mm`; a UI converte para o fuso, então precisa existir. */
-  readonly time: string;
-  /** ISO ou `null` (null quando o registro não tem reset_at). */
+  /**
+   * Hora `HH:mm` em BRT — cache de display, derivado do instante.
+   *
+   * As entradas novas trazem `createdAt` (a fonte da verdade); as
+   * legadas do `localStorage`, gravadas antes do instante passar a
+   * circular, só têm este campo.
+   */
+  readonly time?: string;
+  /** Instante ISO UTC da chamada — ausente quando desconhecido. */
   readonly createdAt?: string | null;
 }
 
@@ -109,9 +116,15 @@ let hasClientQueueSnapshot = false;
 
 // Usuários movidos para o banco de dados (tabela profiles + auth.users)
 
-function localDateKey(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+/**
+ * Dia-calendário de "agora" no fuso do APP.
+ *
+ * Não é o dia do DEVICE: um tablet em UTC (ou em qualquer outro fuso)
+ * viraria o histórico às 21:00 do horário brasileiro. A virada do dia é
+ * do sistema, e ela acontece à meia-noite BRT.
+ */
+function appDateKey(): string {
+  return dayKey(new Date());
 }
 
 export function nextQueueNumber(current?: CurrentPassword): number {
@@ -141,19 +154,19 @@ export function getInitialState(): QueueState {
       normalCurrent: NO_PASSWORD,
       priorityCurrent: NO_PASSWORD,
       history: [],
-      historyDate: localDateKey(),
+      historyDate: appDateKey(),
     },
     recepcao: {
       normalCurrent: NO_PASSWORD,
       priorityCurrent: NO_PASSWORD,
       history: [],
-      historyDate: localDateKey(),
+      historyDate: appDateKey(),
     },
   };
 }
 
 export function clearHistoryFromNewDay(state: QueueState): QueueState {
-  const today = localDateKey();
+  const today = appDateKey();
   let changed = false;
   const nextState: QueueState = Object.fromEntries(
     Object.entries(state).map(([sector, queue]) => {
@@ -226,7 +239,7 @@ export function invalidateQueueState(sector: string | null = null): void {
       normalCurrent: NO_PASSWORD,
       priorityCurrent: NO_PASSWORD,
       history: [],
-      historyDate: localDateKey(),
+      historyDate: appDateKey(),
     };
   }
 
@@ -270,15 +283,14 @@ function historyKey(call?: QueueHistoryEntry | null): string {
 }
 
 /**
- * Local day of an ISO timestamp, in the same format as `localDateKey`.
+ * Dia-calendário de um instante ISO, no fuso do APP.
  *
- * Comparing `createdAt.slice(0, 10)` would use UTC: a call placed at 22:00 in
- * UTC-3 belongs to tomorrow on the wire, and would be dropped as "tomorrow's".
+ * Comparar `createdAt.slice(0, 10)` usaria o dia UTC: uma chamada feita
+ * às 22:00 BRT pertence ao dia seguinte no fio e seria descartada como
+ * "amanhã".
  */
 function localDayKey(iso: string): string | null {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return null;
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  return dayKeyOrNull(iso);
 }
 
 /** Canonical call shape — the API has emitted both spellings of "preferential". */
@@ -352,9 +364,16 @@ export function reconcileQueueFromCalls(
 
   // Entries without a date are kept: payloads predating this field (and the
   // tests that build calls by hand) must not silently fall into case 2.
-  const todays = server.filter(
-    (call) => !call.createdAt || localDayKey(call.createdAt) === localDateKey(),
-  );
+  const todays = server
+    .filter(
+      (call) => !call.createdAt || localDayKey(call.createdAt) === appDateKey(),
+    )
+    // O `time` guardado localmente é derivado do instante, em BRT — o
+    // `localStorage` não guarda nenhum horário sem fuso.
+    .map((call) => ({
+      ...call,
+      time: call.createdAt ? formatClock(call.createdAt) : call.time,
+    }));
   if (todays.length === 0) return; // case 2
 
   const newest = todays[0];
@@ -379,7 +398,7 @@ export function normalizeQueue(
     normalCurrent: queue?.normalCurrent ?? queue?.current ?? NO_PASSWORD,
     priorityCurrent: queue?.priorityCurrent ?? NO_PASSWORD,
     history: queue?.history ?? [],
-    historyDate: queue?.historyDate ?? localDateKey(),
+    historyDate: queue?.historyDate ?? appDateKey(),
   };
 }
 

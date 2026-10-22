@@ -6,7 +6,7 @@ import { assertSectorAccess, requirePermission } from "@/lib/api-auth";
 import { QUEUE_RECALL } from "@/lib/permissions";
 import { readJson } from "@/lib/json";
 import type { RecallRequestBody } from "@/types/api";
-import { LOCALE, isSectorId } from "@/lib/constants";
+import { isSectorId } from "@/lib/constants";
 
 /* ─────────────────────────────────────────────────
    POST — repete a última senha chamada de um setor
@@ -47,10 +47,9 @@ export async function POST(request: Request) {
       id: last.id,
       number: last.number,
       type: last.type,
-      time: new Intl.DateTimeFormat(LOCALE, {
-        hour: "2-digit",
-        minute: "2-digit",
-      }).format(new Date()),
+      // O instante da chamada REPETIDA (o mesmo do retrato), não "agora":
+      // o SSE descreve a senha, e quem formata em BRT é o cliente.
+      createdAt: last.createdAt,
     };
 
     eventManager.emitQueueRecall(

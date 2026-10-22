@@ -14,7 +14,7 @@ import { readJson } from "@/lib/json";
 import type { QueueStats } from "@/lib/repositories/types";
 import { SECTORS_VIEW_ALL, hasPermission } from "@/lib/permissions";
 import { useEffectiveSession } from "@/hooks/use-effective-session";
-import { convertToBrazilTimeString } from "@/lib/date-utils";
+import { formatClock, formatDay } from "@/lib/time";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -142,14 +142,20 @@ export default function HistoricoPage() {
 
   if (!isClient || !session) return null;
 
+  // O wire traz o INSTANTE (`createdAt`); a exibição é em BRT, no fuso do
+  // app. A data só faz sentido quando o período cobre mais de um dia.
   let allCalls = (stats?.recent || []).map((c) => ({
     ...c,
-    time: convertToBrazilTimeString(c.time),
+    time: formatClock(c.createdAt),
+    day: formatDay(c.createdAt),
   }));
 
   if (filterType) {
     allCalls = allCalls.filter((c) => c.type === filterType);
   }
+
+  // "Hoje" já é todo do dia BRT — a coluna de data seria ruído.
+  const showDayColumn = Number(filterDays) > 1;
 
   const totalPages = Math.max(1, Math.ceil(allCalls.length / ITEMS_PER_PAGE));
   const pagedCalls = allCalls.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
@@ -249,6 +255,7 @@ export default function HistoricoPage() {
                     <TableHead className="w-[0.7fr]">Senha</TableHead>
                     <TableHead className="w-[1fr]">Tipo</TableHead>
                     <TableHead className="w-[1.2fr]">Horário</TableHead>
+                    {showDayColumn && <TableHead className="w-[0.9fr]">Data</TableHead>}
                     <TableHead className="w-[1fr] max-[560px]:hidden">Setor</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -269,6 +276,7 @@ export default function HistoricoPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>{item.time}</TableCell>
+                      {showDayColumn && <TableCell>{item.day}</TableCell>}
                       <TableCell className="max-[560px]:hidden">
                         <Badge variant="secondary">
                           {getSector(item.sector_id)?.shortName || item.sector_id || "—"}

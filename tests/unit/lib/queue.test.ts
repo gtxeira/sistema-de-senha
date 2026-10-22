@@ -19,6 +19,11 @@ import {
   getQueueSnapshot,
   NO_PASSWORD,
 } from "@/lib/queue";
+import {
+  addDays,
+  dayKey as dayKeyBrt,
+  startOfDay,
+} from "@/lib/time";
 import type {
   CurrentPassword,
   QueueEntry,
@@ -147,8 +152,8 @@ describe("normalizeQueue", () => {
 });
 
 describe("readQueueState / saveQueueState / invalidateQueueState", () => {
-  const now = new Date();
-  const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  // O dia do APP (BRT) — não o dia da máquina que roda o teste.
+  const todayKey = dayKeyBrt(new Date());
 
   it("retorna estado inicial quando storage vazio", () => {
     const state = readQueueState();
@@ -393,19 +398,26 @@ describe("getQueueSnapshot / getSessionSnapshot (cache)", () => {
   });
 });
 
-/** Espelha o `localDateKey` (module-private) de `queue.js`. */
+/**
+ * Espelha o `appDateKey` (module-private) de `queue.ts` — o dia-calendário
+ * do APP (BRT), não o do device.
+ */
 function dayKey(offsetDays = 0) {
-  const d = new Date();
-  d.setDate(d.getDate() + offsetDays);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return dayKeyBrt(addDays(new Date(), offsetDays));
 }
 
-/** Instante ISO numa hora LOCAL do dia pedido — o dia gravado é o dia local. */
+/**
+ * Instante ISO numa hora BRT do dia pedido — o dia gravado é o dia BRT.
+ *
+ * Parte da meia-noite BRT do dia (o instante que `startOfDay` devolve) e
+ * soma as horas: no Brasil o offset é fixo em −03:00, então somar horas
+ * reais avança o relógio-mural na mesma medida.
+ */
 function isoLocal(offsetDays = 0, hour = 12, minute = 0) {
-  const d = new Date();
-  d.setDate(d.getDate() + offsetDays);
-  d.setHours(hour, minute, 0, 0);
-  return d.toISOString();
+  const midnight = startOfDay(addDays(new Date(), offsetDays));
+  return new Date(
+    midnight.getTime() + (hour * 60 + minute) * 60 * 1000,
+  ).toISOString();
 }
 
 function seedSector(
@@ -626,18 +638,33 @@ describe("reconcileQueueFromCalls", () => {
     expect(readQueueState().farmacia.historyDate).toBe(dayKey(0));
   });
 
-  it("classifica o retrato pelo dia LOCAL do createdAt, não pelo do UTC", () => {
-    // 00:30 do dia local, expresso em UTC. Para quem está a leste de UTC a
-    // data gravada pertence ao dia anterior, e comparar o prefixo do ISO
+  it("classifica o retrato pelo dia BRT do createdAt, não pelo dia UTC", () => {
+    // 00:30 do dia BRT, expresso em UTC. Quem está a leste de UTC veria a
+    // data gravada no dia anterior, e comparar o prefixo do ISO
     // descartaria a chamada.
-    const localMorning = new Date();
-    localMorning.setHours(0, 30, 0, 0);
+    const brtMorning = new Date(
+      startOfDay(new Date()).getTime() + 30 * 60 * 1000,
+    );
 
     reconcileQueueFromCalls("farmacia", [
-      { ...call(41), createdAt: localMorning.toISOString() },
+      { ...call(41), createdAt: brtMorning.toISOString() },
       { ...call(40), createdAt: isoLocal(-1, 12) },
     ]);
 
     expect(readQueueState().farmacia.history.map((h) => h.number)).toEqual([41]);
+  });
+
+  it("descarta do histórico a chamada de ontem BRT", () => {
+    // 23:30 de ONTEM em BRT é 02:30 UTC de hoje — o prefixo do ISO diria
+    // "hoje", mas o dia BRT é o de ontem.
+    const yesterdayLate = new Date(
+      startOfDay(addDays(new Date(), -1)).getTime() + 23 * 60 * 60 * 1000 + 30 * 60 * 1000,
+    );
+
+    reconcileQueueFromCalls("farmacia", [
+      { ...call(40), createdAt: yesterdayLate.toISOString() },
+    ]);
+
+    expect(readQueueState().farmacia.history).toEqual([]);
   });
 });

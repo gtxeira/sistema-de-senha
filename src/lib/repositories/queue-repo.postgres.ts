@@ -3,22 +3,11 @@ import type { Prisma } from "@/generated/prisma/client";
 import { normalizeCallType } from "./utils";
 import {
   DEFAULT_RECENT_LIMIT,
-  LOCALE,
   MAX_QUEUE_NUMBER,
   MIN_QUEUE_NUMBER,
 } from "@/lib/constants";
 import type { SequenceType } from "@/lib/constants";
 import type { QueueCallInput, QueueRepository, RecentCall } from "./types";
-
-/**
- * Format time for display (HH:mm)
- */
-function formatTime(date: Date): string {
-  return new Intl.DateTimeFormat(LOCALE, {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-}
 
 export class PostgresQueueRepository implements QueueRepository {
   /**
@@ -77,7 +66,7 @@ export class PostgresQueueRepository implements QueueRepository {
   }
 
   /** Save a queue call */
-  async saveCall(call: QueueCallInput): Promise<{ id: string }> {
+  async saveCall(call: QueueCallInput): Promise<{ id: string; createdAt: string }> {
     const { sector, number, numberStr, sequenceType, attendantId } = call;
 
     // Validate attendantId format (UUID v1-v8)
@@ -99,7 +88,12 @@ export class PostgresQueueRepository implements QueueRepository {
       },
     });
 
-    return { id: String(created.id) };
+    // O instante gravado pelo banco (`created_at`), não `new Date()`: é
+    // o valor que virou registro, e é ele que o SSE propaga.
+    return {
+      id: String(created.id),
+      createdAt: new Date(created.created_at).toISOString(),
+    };
   }
 
   /**
@@ -217,13 +211,9 @@ export class PostgresQueueRepository implements QueueRepository {
         // O enum do banco só admite 'normal'|'preferencial'; a grafia
         // 'preferential' existe só na API e nunca chega a esta coluna.
         type: call.type === "preferencial" ? "preferencial" : "normal",
-        time: formatTime(new Date(call.created_at || Date.now())),
-        // `time` is HH:mm with no date, so a client could not tell a call it
-        // just received from one made yesterday. The consumer needs that to
-        // honour its own daily history rollover.
-        createdAt: call.created_at
-          ? new Date(call.created_at).toISOString()
-          : null,
+        // O INSTANTE, não "HH:mm": quem exibe formata em BRT, e o
+        // cliente precisa do dia para fazer a virada do histórico.
+        createdAt: new Date(call.created_at || Date.now()).toISOString(),
       }));
     } catch {
       return [];

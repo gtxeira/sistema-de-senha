@@ -159,7 +159,7 @@ describe("useServerClock — leitura do código-fonte", () => {
     expect(code).toContain("Date.now() + offsetRef.current");
   });
 
-  it("formata usando timeZone: APP_TIMEZONE", async () => {
+  it("formata usando o módulo de tempo (fuso APP_TIMEZONE)", async () => {
     const { readFileSync } = await import("node:fs");
     const { resolve } = await import("node:path");
     const hookPath = resolve(
@@ -168,7 +168,11 @@ describe("useServerClock — leitura do código-fonte", () => {
     );
     const code = readFileSync(hookPath, "utf-8");
 
-    expect(code).toContain("timeZone: APP_TIMEZONE");
+    // A formatação mora em `@/lib/time` — é lá que o fuso do app está
+    // fixado. O hook só cuida do offset servidor↔device.
+    expect(code).toContain('from "@/lib/time"');
+    expect(code).toContain("formatClockSeconds");
+    expect(code).not.toContain("Intl.DateTimeFormat");
   });
 
   it("fallback para offset 0 em caso de erro", async () => {
