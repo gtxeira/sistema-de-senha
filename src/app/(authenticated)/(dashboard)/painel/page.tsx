@@ -22,9 +22,8 @@ import {
 import { SECTORS, CALL_TYPES, TYPE_FIELDS, TYPE_LABELS, HISTORY_LIMITS, PAGE_SIZES, DEFAULT_SECTOR, DEFAULT_NAME, KEYBOARD_SHORTCUTS, API_ROUTES, isSectorId, getSector } from "@/lib/constants";
 import type { CallType, SectorId, SectorScope } from "@/lib/constants";
 import { SECTORS_VIEW_ALL, hasPermission } from "@/lib/permissions";
-import { useSession } from "@/stores/use-session-store";
+import { useEffectiveSession } from "@/hooks/use-effective-session";
 import { useQueueEvents } from "@/lib/hooks/useQueueEvents";
-import { SidebarLayout } from "@/components/SidebarLayout/SidebarLayout";
 import { convertToBrazilTimeString } from "@/lib/date-utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +38,7 @@ import {
 } from "@/components/ui/table";
 import { Pagination } from "@/components/pagination";
 import { SectorSelect } from "@/components/sector-select";
+import { PageHeader } from "@/components/page-header";
 import { cn } from "@/lib/utils";
 import { useSetDashboardLayoutInfo } from "@/hooks/use-set-dashboard-layout-info";
 
@@ -79,7 +79,7 @@ function useIsClient() {
 export default function PainelPage() {
   const isClient  = useIsClient();
 
-  const session = useSession();
+  const session = useEffectiveSession();
   const state = useSyncExternalStore(
     subscribeQueue,
     getQueueSnapshot,
@@ -210,12 +210,11 @@ export default function PainelPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [callNext, reCall]);
 
-  if (!isClient) return null;
-
+  // Publica o setor em foco e o seletor do cabeçalho. Fica **antes** do
+  // `return null` do `isClient`: hook não pode ser chamado condicionalmente
+  // (a regra `rules-of-hooks` acusa), e publicar antes do gate faz as ações
+  // do cabeçalho aparecerem no primeiro render do client.
   useSetDashboardLayoutInfo({
-    eyebrow: "PAINEL DE ATENDIMENTO",
-    title: `Olá, ${session?.name || DEFAULT_NAME}`,
-    subtitle: "Controle as chamadas da sua unidade em tempo real.",
     sectorInfo,
     headerActions: (
       <>
@@ -229,151 +228,161 @@ export default function PainelPage() {
     )
   });
 
+  if (!isClient) return null;
+
   return (
     <>
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-        <section className={`${cardStyle} flex flex-col gap-4`}>
-          <div className={cardTopStyle}>
-            <div>
-              <span className={labelStyle}>ÚLTIMA SENHA CHAMADA</span>
-              <p className="mt-1 text-[15px] font-extrabold text-[#23445b]">{sectorInfo.name}</p>
+      <PageHeader
+        eyebrow="PAINEL DE ATENDIMENTO"
+        title={`Olá, ${session?.name || DEFAULT_NAME}`}
+        subtitle="Controle as chamadas da sua unidade em tempo real."
+      />
+
+      <div>
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+          <section className={`${cardStyle} flex flex-col gap-4`}>
+            <div className={cardTopStyle}>
+              <div>
+                <span className={labelStyle}>ÚLTIMA SENHA CHAMADA</span>
+                <p className="mt-1 text-[15px] font-extrabold text-[#23445b]">{sectorInfo.name}</p>
+              </div>
+              <span className={liveStyle}>
+                <i className="inline-block size-2 rounded-[50%] bg-[#159883] animate-live-pulse" /> AO VIVO
+              </span>
             </div>
-            <span className={liveStyle}>
-              <i className="inline-block size-2 rounded-[50%] bg-[#159883] animate-live-pulse" /> AO VIVO
-            </span>
-          </div>
-          <div className="text-[44px] font-black leading-none tracking-[2px] text-[#0b3555] sm:text-[64px]">
-            {current.history[0]
-              ? formatQueueNumber(current.history[0].number, current.history[0].type)
-              : formatQueueNumber(null, "normal")}
-          </div>
-          <p className={cn(
-            'text-[12px] font-extrabold tracking-[1.5px] text-[#1972a0]',
-            current.history[0]?.type === CALL_TYPES.PREFERENCIAL && 'text-[#ef4444]'
-          )}>
-            {current.history[0]?.type === CALL_TYPES.PREFERENCIAL
-              ? "ATENDIMENTO PREFERENCIAL" : "ATENDIMENTO NORMAL"}
-          </p>
-          <Alert className="border-[#a8dbb9] bg-[#eaf7ef] text-[#1a6b3a]">
-            <CheckCircle2 />
-            <AlertDescription className="font-semibold text-[#1a6b3a]">{notice}</AlertDescription>
-          </Alert>
-        </section>
-
-        <section className={`${cardStyle} flex flex-col gap-3`}>
-          <div className={cardTopStyle}>
-            <div>
-              <span className={labelStyle}>PRÓXIMA CHAMADA</span>
-              <h2 className="font-bold">Escolha o tipo de atendimento</h2>
+            <div className="text-[44px] font-black leading-none tracking-[2px] text-[#0b3555] sm:text-[64px]">
+              {current.history[0]
+                ? formatQueueNumber(current.history[0].number, current.history[0].type)
+                : formatQueueNumber(null, "normal")}
             </div>
-            <Badge variant="secondary">{current.history.length} hoje</Badge>
+            <p className={cn(
+              'text-[12px] font-extrabold tracking-[1.5px] text-[#1972a0]',
+              current.history[0]?.type === CALL_TYPES.PREFERENCIAL && 'text-[#ef4444]'
+            )}>
+              {current.history[0]?.type === CALL_TYPES.PREFERENCIAL
+                ? "ATENDIMENTO PREFERENCIAL" : "ATENDIMENTO NORMAL"}
+            </p>
+            <Alert className="border-[#a8dbb9] bg-[#eaf7ef] text-[#1a6b3a]">
+              <CheckCircle2 />
+              <AlertDescription className="font-semibold text-[#1a6b3a]">{notice}</AlertDescription>
+            </Alert>
+          </section>
+
+          <section className={`${cardStyle} flex flex-col gap-3`}>
+            <div className={cardTopStyle}>
+              <div>
+                <span className={labelStyle}>PRÓXIMA CHAMADA</span>
+                <h2 className="font-bold">Escolha o tipo de atendimento</h2>
+              </div>
+              <Badge variant="secondary">{current.history.length} hoje</Badge>
+            </div>
+
+            <Button
+              className={cn(callButtonStyle, 'bg-[#1972a0] text-white hover:bg-[#1972a0]/90')}
+              disabled={calling}
+              onClick={() => void callNext(CALL_TYPES.NORMAL)}
+            >
+              <span className="flex items-center gap-1.5">
+                <Bell data-icon="inline-start" className="size-6" /> {calling ? "CHAMANDO..." : "CHAMAR NORMAL"}
+              </span>
+
+              <small className={callButtonSmallStyle}>
+                Próxima senha: {formatQueueNumber(nextQueueNumber(current.normalCurrent), "normal")}
+              </small>
+            </Button>
+
+            <Button
+              className={cn(callButtonStyle, 'bg-[#ef4444] text-white hover:bg-[#ef4444]/90')}
+              disabled={calling}
+              onClick={() => void callNext(CALL_TYPES.PREFERENCIAL)}
+            >
+              <span className="flex items-center gap-1.5">
+                <Bell data-icon="inline-start" className="size-6" /> {calling ? "CHAMANDO..." : "CHAMAR PREFERENCIAL"}
+              </span>
+
+              <small className={callButtonSmallStyle}>
+                Próxima senha: {formatQueueNumber(nextQueueNumber(current.priorityCurrent), "preferencial")}
+              </small>
+            </Button>
+
+            <Button
+              variant="outline"
+              className={cn(callButtonStyle, 'h-auto font-medium lg:py-3')}
+              disabled={calling}
+              onClick={() => void reCall()}
+            >
+              <span className="flex items-center gap-1.5">
+                <RotateCcw data-icon="inline-start" className="size-6" />
+                CHAMAR NOVAMENTE
+              </span>
+            </Button>
+          </section>
+        </div>
+
+        <section className={`${cardStyle} mt-8`}>
+          <div className="mb-5 flex items-start justify-between">
+            <div>
+              <span className={labelStyle}>ÚLTIMAS CHAMADAS</span>
+              <h2 className="font-bold">Histórico recente</h2>
+            </div>
+
+            <Link
+              href="/historico"
+              className={buttonVariants({ variant: "link", size: "sm" })}
+            >
+              Ver histórico completo →
+            </Link>
           </div>
-
-          <Button
-            className={cn(callButtonStyle, 'bg-[#1972a0] text-white hover:bg-[#1972a0]/90')}
-            disabled={calling}
-            onClick={() => void callNext(CALL_TYPES.NORMAL)}
-          >
-            <span className="flex items-center gap-1.5">
-              <Bell data-icon="inline-start" className="size-6" /> {calling ? "CHAMANDO..." : "CHAMAR NORMAL"}
-            </span>
-
-            <small className={callButtonSmallStyle}>
-              Próxima senha: {formatQueueNumber(nextQueueNumber(current.normalCurrent), "normal")}
-            </small>
-          </Button>
-
-          <Button
-            className={cn(callButtonStyle, 'bg-[#ef4444] text-white hover:bg-[#ef4444]/90')}
-            disabled={calling}
-            onClick={() => void callNext(CALL_TYPES.PREFERENCIAL)}
-          >
-            <span className="flex items-center gap-1.5">
-              <Bell data-icon="inline-start" className="size-6" /> {calling ? "CHAMANDO..." : "CHAMAR PREFERENCIAL"}
-            </span>
-
-            <small className={callButtonSmallStyle}>
-              Próxima senha: {formatQueueNumber(nextQueueNumber(current.priorityCurrent), "preferencial")}
-            </small>
-          </Button>
-
-          <Button
-            variant="outline"
-            className={cn(callButtonStyle, 'h-auto font-medium lg:py-3')}
-            disabled={calling}
-            onClick={() => void reCall()}
-          >
-            <span className="flex items-center gap-1.5">
-              <RotateCcw data-icon="inline-start" className="size-6" />
-              CHAMAR NOVAMENTE
-            </span>
-          </Button>
+          {current.history.length === 0 ? (
+            <p className="p-6 text-center text-[13px] text-[#9ab0bc]">Nenhuma chamada registrada ainda.</p>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[0.8fr]">Senha</TableHead>
+                    <TableHead className="w-[1.2fr]">Tipo</TableHead>
+                    <TableHead className="w-[1fr] max-[560px]:hidden">Horário</TableHead>
+                    <TableHead className="w-[1fr]">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {current.history
+                    .slice((historyPage - 1) * ITEMS_PER_PAGE, historyPage * ITEMS_PER_PAGE)
+                    .map((item, index) => (
+                      <TableRow key={`${item.number}-${item.type}-${item.time}-${(historyPage - 1) * ITEMS_PER_PAGE + index}`}>
+                        <TableCell>
+                          <strong className="text-[17px] font-extrabold tracking-[1px] text-[#163b52]">{formatQueueNumber(item.number, item.type)}</strong>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            className={cn(
+                              item.type === CALL_TYPES.NORMAL && 'bg-[#1972a0]',
+                              item.type === CALL_TYPES.PREFERENCIAL && 'bg-[#ef4444]/90'
+                            )}
+                          >
+                            {item.type === CALL_TYPES.PREFERENCIAL ? TYPE_LABELS.preferencial : TYPE_LABELS.normal}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="max-[560px]:hidden">{item.time}</TableCell>
+                        <TableCell>
+                          <span className="flex items-center gap-1.25 font-bold text-[#159883]"><CheckCircle2 size={15} /> Chamada</span>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                </TableBody>
+              </Table>
+              {current.history.length > ITEMS_PER_PAGE && (
+                <Pagination
+                  page={historyPage}
+                  totalPages={Math.ceil(current.history.length / ITEMS_PER_PAGE)}
+                  onPageChange={setHistoryPage}
+                />
+              )}
+            </>
+          )}
         </section>
       </div>
-
-      <section className={`${cardStyle} mt-8`}>
-        <div className="mb-5 flex items-start justify-between">
-          <div>
-            <span className={labelStyle}>ÚLTIMAS CHAMADAS</span>
-            <h2 className="font-bold">Histórico recente</h2>
-          </div>
-
-          <Link
-            href="/historico"
-            className={buttonVariants({ variant: "link", size: "sm" })}
-          >
-            Ver histórico completo →
-          </Link>
-        </div>
-        {current.history.length === 0 ? (
-          <p className="p-6 text-center text-[13px] text-[#9ab0bc]">Nenhuma chamada registrada ainda.</p>
-        ) : (
-          <>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[0.8fr]">Senha</TableHead>
-                  <TableHead className="w-[1.2fr]">Tipo</TableHead>
-                  <TableHead className="w-[1fr] max-[560px]:hidden">Horário</TableHead>
-                  <TableHead className="w-[1fr]">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {current.history
-                  .slice((historyPage - 1) * ITEMS_PER_PAGE, historyPage * ITEMS_PER_PAGE)
-                  .map((item, index) => (
-                    <TableRow key={`${item.number}-${item.type}-${item.time}-${(historyPage - 1) * ITEMS_PER_PAGE + index}`}>
-                      <TableCell>
-                        <strong className="text-[17px] font-extrabold tracking-[1px] text-[#163b52]">{formatQueueNumber(item.number, item.type)}</strong>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          className={cn(
-                            item.type === CALL_TYPES.NORMAL && 'bg-[#1972a0]',
-                            item.type === CALL_TYPES.PREFERENCIAL && 'bg-[#ef4444]/90'
-                          )}
-                        >
-                          {item.type === CALL_TYPES.PREFERENCIAL ? TYPE_LABELS.preferencial : TYPE_LABELS.normal}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="max-[560px]:hidden">{item.time}</TableCell>
-                      <TableCell>
-                        <span className="flex items-center gap-1.25 font-bold text-[#159883]"><CheckCircle2 size={15} /> Chamada</span>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-              </TableBody>
-            </Table>
-            {current.history.length > ITEMS_PER_PAGE && (
-              <Pagination
-                page={historyPage}
-                totalPages={Math.ceil(current.history.length / ITEMS_PER_PAGE)}
-                onPageChange={setHistoryPage}
-              />
-            )}
-          </>
-        )}
-      </section>
     </>
   );
 };

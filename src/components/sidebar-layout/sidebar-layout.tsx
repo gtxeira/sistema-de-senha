@@ -2,9 +2,10 @@
 
 import type { ReactNode } from "react";
 import { CheckCircle2, Headphones, History, Home, type LucideIcon, Settings2 } from "lucide-react";
-import type { SectorInfo } from "@/lib/constants";
-import type { User } from "next-auth";
+import { usePathname } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
+import { useDashboardLayoutStore } from "@/stores/use-dashboard-layout-store";
+import { useEffectiveSession } from "@/hooks/use-effective-session";
 import { Separator } from "@/components/ui/separator";
 import {
   SidebarInset,
@@ -35,22 +36,32 @@ export interface RouteGroup {
 }
 
 export interface SidebarLayoutProps {
-  /** Rota ativa, para destacar no menu. */
-  readonly activeRoute: string;
-  readonly session: User | null;
-  /** Setor exibido no switcher/rodapé; `null` = sem setor. */
-  readonly sectorInfo?: SectorInfo;
-  readonly headerActions?: ReactNode;
   readonly children?: ReactNode;
 }
 
-export function SidebarLayout({
-  activeRoute,
-  session,
-  sectorInfo,
-  headerActions,
-  children,
-}: SidebarLayoutProps) {
+/**
+ * Casca do dashboard: sidebar + cabeçalho + área de conteúdo.
+ *
+ * É um client component — e é aqui que mora o estado que o layout
+ * (server) não pode tocar:
+ *
+ * - **rota ativa**: `usePathname()`. A URL não é legível em server
+ *   component por design do App Router (o layout preserva o estado entre
+ *   navegações, então o pathname é do client).
+ * - **sessão**: `useEffectiveSession()` — a do servidor no primeiro paint,
+ *   a da store depois que o refresh renova as claims.
+ * - **setor em foco e ações do cabeçalho**: publicados pelas páginas na
+ *   store de layout.
+ */
+export function SidebarLayout({ children }: SidebarLayoutProps) {
+  const pathname = usePathname();
+  const activeRoute = pathname.split("/")[1] || "home";
+
+  const session = useEffectiveSession();
+
+  const sectorInfo = useDashboardLayoutStore((s) => s.sectorInfo);
+  const headerActions = useDashboardLayoutStore((s) => s.headerActions);
+
   const principalItems: readonly NavItem[] = [
     { route: "home", href: "/home", label: "Home", icon: Home },
   ]

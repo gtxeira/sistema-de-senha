@@ -1,7 +1,7 @@
 /**
  * Classes Tailwind compartilhadas da área de administração.
  *
- * Antes, `page.tsx` e `AccessSection.tsx` importavam o mesmo
+ * Antes, `page.tsx` e `access-section.tsx` importavam o mesmo
  * `Admin.module.css`; agora as regras usadas pelos dois arquivos viram
  * strings reutilizáveis aqui, e o que é específico de cada um fica em
  * consts locais no próprio componente.

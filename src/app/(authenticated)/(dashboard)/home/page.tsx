@@ -3,22 +3,17 @@
 import { Monitor, Settings2, Headphones, History } from "lucide-react";
 import { SECTORS } from "@/lib/constants";
 import { SCREEN_ADMIN, canAccessSector, hasPermission } from "@/lib/permissions";
-import { useSession } from "@/stores/use-session-store";
-import { NavCard, type NavCardProps } from "./NavCard";
+import { useEffectiveSession } from "@/hooks/use-effective-session";
+import { PageHeader } from "@/components/page-header";
+import { NavCard, type NavCardProps } from "src/app/(authenticated)/(dashboard)/home/nav-card";
 import type { Route } from "next";
-import { useSetDashboardLayoutInfo } from "@/hooks/use-set-dashboard-layout-info";
 
 type NavItem = {
   id: string;
 } & NavCardProps;
 
 export default function HomePage() {
-  useSetDashboardLayoutInfo({
-    eyebrow: "BEM-VINDO",
-    title: "O que deseja fazer?",
-  });
-
-  const session = useSession();
+  const session = useEffectiveSession();
   if (!session) return null;
 
   const navItems: NavItem[] = [
@@ -67,12 +62,16 @@ export default function HomePage() {
   ].filter((item) => typeof item === 'object' && item !== null); // Remove os itens 'false' (ex: Admin sem permissão)
 
   return (
-    <div className="w-full flex-1">
-      <div className="grid grid-cols-2 gap-4 max-[500px]:grid-cols-1">
-        {navItems.map((item) => (
-          <NavCard key={item.id} {...item} />
-        ))}
+    <>
+      <PageHeader eyebrow="BEM-VINDO" title="O que deseja fazer?" />
+
+      <div className="w-full flex-1">
+        <div className="grid grid-cols-2 gap-4 max-[500px]:grid-cols-1">
+          {navItems.map((item) => (
+            <NavCard key={item.id} {...item} />
+          ))}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

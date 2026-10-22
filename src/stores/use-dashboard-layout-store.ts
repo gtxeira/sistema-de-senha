@@ -2,42 +2,37 @@ import { create } from "zustand";
 import { ReactNode } from "react";
 import type { SectorInfo } from "@/lib/constants";
 
+/**
+ * Estado do "casco" do dashboard que as páginas publicam.
+ *
+ * Só o que a página **não** consegue renderizar por conta própria: o
+ * setor em foco (que aparece no rodapé da sidebar) e as ações do
+ * cabeçalho.
+ *
+ * O título da tela (eyebrow/título/subtítulo) não mora aqui — cada
+ * página renderiza o seu, via `<PageHeader>`. Guardar um `ReactNode`
+ * numa store global é o que obrigava o layout inteiro a ser client
+ * component.
+ */
 interface LayoutState {
   sectorInfo?: SectorInfo;
   headerActions: ReactNode;
-  eyebrow?: string;
-  title?: string;
-  subtitle?: string;
 
   setSectorInfo: (info?: SectorInfo) => void;
   setHeaderActions: (actions?: ReactNode) => void;
-  setHeaderTitle: (data: { eyebrow?: string; title?: string; subtitle?: string }) => void;
   resetLayout: () => void;
 }
 
 export const useDashboardLayoutStore = create<LayoutState>()((set) => ({
   sectorInfo: undefined,
   headerActions: undefined,
-  eyebrow: undefined,
-  title: undefined,
-  subtitle: undefined,
 
   setSectorInfo: (sectorInfo) => set({ sectorInfo }),
   setHeaderActions: (headerActions) => set({ headerActions: headerActions ?? null }),
-
-  setHeaderTitle: (data) =>
-    set({
-      eyebrow: data.eyebrow,
-      title: data.title,
-      subtitle: data.subtitle,
-    }),
 
   resetLayout: () =>
     set({
       sectorInfo: undefined,
       headerActions: undefined,
-      eyebrow: undefined,
-      title: undefined,
-      subtitle: undefined,
     }),
 }));

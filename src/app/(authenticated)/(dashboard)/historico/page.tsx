@@ -13,7 +13,7 @@ import type { SectorScope } from "@/lib/constants";
 import { readJson } from "@/lib/json";
 import type { QueueStats } from "@/lib/repositories/types";
 import { SECTORS_VIEW_ALL, hasPermission } from "@/lib/permissions";
-import { useSession } from "@/stores/use-session-store";
+import { useEffectiveSession } from "@/hooks/use-effective-session";
 import { convertToBrazilTimeString } from "@/lib/date-utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,7 @@ import { FilterGroup } from "@/components/filter-group";
 import { Pagination } from "@/components/pagination";
 import { SectorSelect } from "@/components/sector-select";
 import { StatCard } from "@/components/stat-card";
+import { PageHeader } from "@/components/page-header";
 import { cn } from "@/lib/utils";
 import { useSetDashboardLayoutInfo } from "@/hooks/use-set-dashboard-layout-info";
 
@@ -59,7 +60,7 @@ function useIsClient() {
 export default function HistoricoPage() {
   const isClient = useIsClient();
 
-  const session = useSession();
+  const session = useEffectiveSession();
 
   // Sem escopo de "todos os setores", a sessão trava no próprio setor
   const canViewAllSectors = hasPermission(session, SECTORS_VIEW_ALL);
@@ -112,32 +113,15 @@ export default function HistoricoPage() {
       .catch(() => setLoading(false));
   }, [activeSector]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!isClient || !session) return null;
-
   // "Todos" resolve para o pseudo-setor — a sidebar mostra "Todos os Setores"
   // em vez de cair num setor qualquer.
   const sectorInfo = getSectorScope(activeSector) ?? SECTORS.farmacia;
 
-  let allCalls = (stats?.recent || []).map((c) => ({
-    ...c,
-    time: convertToBrazilTimeString(c.time),
-  }));
-
-  if (filterType) {
-    allCalls = allCalls.filter((c) => c.type === filterType);
-  }
-
-  const totalPages = Math.max(1, Math.ceil(allCalls.length / ITEMS_PER_PAGE));
-  const pagedCalls = allCalls.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
+  // Publica o setor em foco e o seletor do cabeçalho. Fica **antes** do
+  // `return null` do `isClient`: hook não pode ser chamado condicionalmente
+  // (a regra `rules-of-hooks` acusa), e publicar antes do gate faz as ações
+  // do cabeçalho aparecerem no primeiro render do client.
   useSetDashboardLayoutInfo({
-    eyebrow: "HISTÓRICO DE ATENDIMENTOS",
-    title: "Histórico completo",
-    subtitle:
-      activeSector === ALL_SECTORS
-        ? "Consulte todas as chamadas de senhas realizadas em todos os setores."
-        : `Consulte todas as chamadas de senhas realizadas do setor ${sectorInfo.name}.`,
     sectorInfo,
     headerActions: (
       <>
@@ -156,130 +140,156 @@ export default function HistoricoPage() {
     )
   });
 
+  if (!isClient || !session) return null;
+
+  let allCalls = (stats?.recent || []).map((c) => ({
+    ...c,
+    time: convertToBrazilTimeString(c.time),
+  }));
+
+  if (filterType) {
+    allCalls = allCalls.filter((c) => c.type === filterType);
+  }
+
+  const totalPages = Math.max(1, Math.ceil(allCalls.length / ITEMS_PER_PAGE));
+  const pagedCalls = allCalls.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+
   return (
-    <div>
-      {/* ── Filtros ── */}
-      <div className="flex flex-wrap items-end gap-3 rounded-[12px] border border-[#dde9ed] bg-white px-5 py-[18px] max-[560px]:flex-col max-[560px]:items-stretch">
-        <FilterGroup label="Período" className="min-w-[140px] max-w-[280px] flex-1 max-[560px]:max-w-none">
-          <Select
-            value={filterDays}
-            onValueChange={(v) => { if (v !== null) { setFilterDays(v); setPage(1); } }}
-            items={{ "1": "Hoje", "7": "Últimos 7 dias", "30": "Últimos 30 dias", "90": "Últimos 90 dias" }}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectLabel>Período</SelectLabel>
-                <SelectItem value="1">Hoje</SelectItem>
-                <SelectItem value="7">Últimos 7 dias</SelectItem>
-                <SelectItem value="30">Últimos 30 dias</SelectItem>
-                <SelectItem value="90">Últimos 90 dias</SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </FilterGroup>
-        <FilterGroup label="Tipo" className="min-w-[140px] max-w-[280px] flex-1 max-[560px]:max-w-none">
-          <Select
-            value={filterType || "all"}
-            onValueChange={(v) => { if (v !== null) { setFilterType(v === "all" ? "" : v); setPage(1); } }}
-            items={{ all: "Todos", normal: "Normal", preferencial: "Preferencial" }}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectLabel>Tipos de Fila</SelectLabel>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="normal">Normal</SelectItem>
-                <SelectItem value="preferencial">Preferencial</SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </FilterGroup>
-        <Button
-          className="self-end max-[560px]:w-full"
-          onClick={() => fetchStats()}
-        >
-          <Filter data-icon="inline-start" /> Filtrar
-        </Button>
-      </div>
+    <>
+      <PageHeader
+        eyebrow="HISTÓRICO DE ATENDIMENTOS"
+        title="Histórico completo"
+        subtitle={
+          activeSector === ALL_SECTORS
+            ? "Consulte todas as chamadas de senhas realizadas em todos os setores."
+            : `Consulte todas as chamadas de senhas realizadas do setor ${sectorInfo.name}.`
+        }
+      />
 
-      {/* ── Stats ── */}
-      {stats && (
-        <div className="mt-6 grid grid-cols-4 gap-3.5 max-[900px]:grid-cols-2 max-[560px]:grid-cols-1">
-          <StatCard value={stats.summary?.total ?? 0} label="Total no período" />
-          <StatCard value={stats.summary?.today ?? 0} label="Atendimentos hoje" />
-          <StatCard tone="normal" value={stats.summary?.normal ?? 0} label="Senhas normais" />
-          <StatCard tone="preferencial" value={stats.summary?.preferencial ?? 0} label="Preferenciais" />
+      <div>
+        {/* ── Filtros ── */}
+        <div className="flex flex-wrap items-end gap-3 rounded-[12px] border border-[#dde9ed] bg-white px-5 py-[18px] max-[560px]:flex-col max-[560px]:items-stretch">
+          <FilterGroup label="Período" className="min-w-[140px] max-w-[280px] flex-1 max-[560px]:max-w-none">
+            <Select
+              value={filterDays}
+              onValueChange={(v) => { if (v !== null) { setFilterDays(v); setPage(1); } }}
+              items={{ "1": "Hoje", "7": "Últimos 7 dias", "30": "Últimos 30 dias", "90": "Últimos 90 dias" }}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel>Período</SelectLabel>
+                  <SelectItem value="1">Hoje</SelectItem>
+                  <SelectItem value="7">Últimos 7 dias</SelectItem>
+                  <SelectItem value="30">Últimos 30 dias</SelectItem>
+                  <SelectItem value="90">Últimos 90 dias</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </FilterGroup>
+          <FilterGroup label="Tipo" className="min-w-[140px] max-w-[280px] flex-1 max-[560px]:max-w-none">
+            <Select
+              value={filterType || "all"}
+              onValueChange={(v) => { if (v !== null) { setFilterType(v === "all" ? "" : v); setPage(1); } }}
+              items={{ all: "Todos", normal: "Normal", preferencial: "Preferencial" }}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel>Tipos de Fila</SelectLabel>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="normal">Normal</SelectItem>
+                  <SelectItem value="preferencial">Preferencial</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </FilterGroup>
+          <Button
+            className="self-end max-[560px]:w-full"
+            onClick={() => fetchStats()}
+          >
+            <Filter data-icon="inline-start" /> Filtrar
+          </Button>
         </div>
-      )}
 
-      {/* ── Tabela ── */}
-      <section className="mt-6 rounded-[14px] border border-[#dde9ed] bg-white p-4 sm:p-7">
-        <div className="mb-5 flex items-start justify-between">
-          <div>
-            <span className={labelStyle}>REGISTROS</span>
-            <h2 className="mt-1.75 text-[18px] font-bold">Chamadas de senhas</h2>
+        {/* ── Stats ── */}
+        {stats && (
+          <div className="mt-6 grid grid-cols-4 gap-3.5 max-[900px]:grid-cols-2 max-[560px]:grid-cols-1">
+            <StatCard value={stats.summary?.total ?? 0} label="Total no período" />
+            <StatCard value={stats.summary?.today ?? 0} label="Atendimentos hoje" />
+            <StatCard tone="normal" value={stats.summary?.normal ?? 0} label="Senhas normais" />
+            <StatCard tone="preferencial" value={stats.summary?.preferencial ?? 0} label="Preferenciais" />
           </div>
-        </div>
-
-        {loading && <p className="p-8 text-center text-[13px] text-[#7a9aad]">Carregando...</p>}
-
-        {!loading && pagedCalls.length === 0 && (
-          <p className="p-8 text-center text-[13px] text-[#9ab0bc]">Nenhuma chamada encontrada para os filtros selecionados.</p>
         )}
 
-        {!loading && pagedCalls.length > 0 && (
-          <>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[0.7fr]">Senha</TableHead>
-                  <TableHead className="w-[1fr]">Tipo</TableHead>
-                  <TableHead className="w-[1.2fr]">Horário</TableHead>
-                  <TableHead className="w-[1fr] max-[560px]:hidden">Setor</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pagedCalls.map((item, index) => (
-                  <TableRow key={`${item.id || item.number}-${index}`}>
-                    <TableCell>
-                      <strong className={rowStrongStyle}>{formatQueueNumber(item.number, item.type)}</strong>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        className={cn(
-                          item.type === CALL_TYPES.NORMAL && 'bg-[#1972a0]',
-                          item.type === CALL_TYPES.PREFERENCIAL && 'bg-[#ef4444]/90'
-                        )}
-                      >
-                        {item.type === CALL_TYPES.PREFERENCIAL ? TYPE_LABELS.preferencial : TYPE_LABELS.normal}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{item.time}</TableCell>
-                    <TableCell className="max-[560px]:hidden">
-                      <Badge variant="secondary">
-                        {getSector(item.sector_id)?.shortName || item.sector_id || "—"}
-                      </Badge>
-                    </TableCell>
+        {/* ── Tabela ── */}
+        <section className="mt-6 rounded-[14px] border border-[#dde9ed] bg-white p-4 sm:p-7">
+          <div className="mb-5 flex items-start justify-between">
+            <div>
+              <span className={labelStyle}>REGISTROS</span>
+              <h2 className="mt-1.75 text-[18px] font-bold">Chamadas de senhas</h2>
+            </div>
+          </div>
+
+          {loading && <p className="p-8 text-center text-[13px] text-[#7a9aad]">Carregando...</p>}
+
+          {!loading && pagedCalls.length === 0 && (
+            <p className="p-8 text-center text-[13px] text-[#9ab0bc]">Nenhuma chamada encontrada para os filtros selecionados.</p>
+          )}
+
+          {!loading && pagedCalls.length > 0 && (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[0.7fr]">Senha</TableHead>
+                    <TableHead className="w-[1fr]">Tipo</TableHead>
+                    <TableHead className="w-[1.2fr]">Horário</TableHead>
+                    <TableHead className="w-[1fr] max-[560px]:hidden">Setor</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {pagedCalls.map((item, index) => (
+                    <TableRow key={`${item.id || item.number}-${index}`}>
+                      <TableCell>
+                        <strong className={rowStrongStyle}>{formatQueueNumber(item.number, item.type)}</strong>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          className={cn(
+                            item.type === CALL_TYPES.NORMAL && 'bg-[#1972a0]',
+                            item.type === CALL_TYPES.PREFERENCIAL && 'bg-[#ef4444]/90'
+                          )}
+                        >
+                          {item.type === CALL_TYPES.PREFERENCIAL ? TYPE_LABELS.preferencial : TYPE_LABELS.normal}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{item.time}</TableCell>
+                      <TableCell className="max-[560px]:hidden">
+                        <Badge variant="secondary">
+                          {getSector(item.sector_id)?.shortName || item.sector_id || "—"}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
 
-            {totalPages > 1 && (
-              <Pagination
-                page={page}
-                totalPages={totalPages}
-                onPageChange={setPage}
-              />
-            )}
-          </>
-        )}
-      </section>
-    </div>
+              {totalPages > 1 && (
+                <Pagination
+                  page={page}
+                  totalPages={totalPages}
+                  onPageChange={setPage}
+                />
+              )}
+            </>
+          )}
+        </section>
+      </div>
+    </>
   );
 }
