@@ -1,4 +1,8 @@
-import { normalizeCallType } from "@/lib/repositories/utils";
+import {
+  normalizeCallType,
+  normalizePage,
+  normalizePageSize,
+} from "@/lib/repositories/utils";
 import { MIN_DAYS, MAX_DAYS } from "@/lib/constants";
 import { dayWindow, startOfDay } from "@/lib/time";
 import type {
@@ -50,10 +54,13 @@ export class InMemoryReadRepository implements ReadRepository {
 
     const {
       sector = null,
-      limit = 200,
+      type = null,
       days = 30,
       now = new Date(),
     } = options;
+
+    const pageSize = normalizePageSize(options.pageSize);
+    const requestedPage = normalizePage(options.page);
 
     // Mesma janela do Postgres: dias-calendário BRT (a meia-noite BRT
     // de `days - 1` dias atrás até a meia-noite BRT do dia seguinte).
@@ -65,7 +72,7 @@ export class InMemoryReadRepository implements ReadRepository {
     // "Hoje" = desde a meia-noite BRT de hoje.
     const todayStart = startOfDay(now);
 
-    // Filter calls
+    // Janela + setor: a base dos CARDS (`summary`).
     const filtered = this.#calls.filter((c) => {
       const d = new Date(c.created_at);
       if (d < sinceDate) return false;
@@ -74,38 +81,33 @@ export class InMemoryReadRepository implements ReadRepository {
       return true;
     });
 
-    // Summary
+    // Summary — ignora o filtro de tipo, igual ao Postgres.
     const preferencial = filtered.filter((c) => c.type === "preferencial").length;
-    const normal = filtered.filter((c) => c.type === "normal").length;
     const total = filtered.length;
+    const normal = total - preferencial;
     const todayCount = filtered.filter((c) => {
       const d = new Date(c.created_at);
       return d >= todayStart;
     }).length;
 
-    // By sector
-    const sectorMap = new Map<string, number>();
-    for (const c of filtered) {
-      sectorMap.set(c.sector_id, (sectorMap.get(c.sector_id) || 0) + 1);
-    }
-    // Mesmo critério do Postgres: total decrescente, desempate pelo nome.
-    const bySector = Array.from(sectorMap.entries())
-      .map(([sector, total]) => ({ sector, total }))
-      .sort((a, b) => b.total - a.total || a.sector.localeCompare(b.sector));
+    // A TABELA acrescenta o filtro de tipo.
+    const pageCalls = type ? filtered.filter((c) => c.type === type) : filtered;
+    const filteredTotal = pageCalls.length;
+    const totalPages = Math.max(1, Math.ceil(filteredTotal / pageSize));
+    const page = Math.min(requestedPage, totalPages);
 
-    // By type
-    const typeMap = new Map<string, number>();
-    for (const c of filtered) {
-      typeMap.set(c.type, (typeMap.get(c.type) || 0) + 1);
-    }
-    const byType = Array.from(typeMap.entries())
-      .map(([type, total]) => ({ type, total }))
-      .sort((a, b) => b.total - a.total || a.type.localeCompare(b.type));
-
-    // Recent (most recent first)
-    const recent: HistoryCall[] = [...filtered]
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      .slice(0, limit)
+    // Ordenação `created_at DESC` + `id DESC` — o mesmo desempate do
+    // Postgres. Lá o `id` é uuid; aqui é a string sequencial, então a ordem
+    // entre timestamps IGUAIS difere. O contrato não afirma ordem nesse
+    // caso (ver `read-repo.contract.ts`).
+    const calls: HistoryCall[] = [...pageCalls]
+      .sort((a, b) => {
+        const byTime =
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        if (byTime !== 0) return byTime;
+        return a.id < b.id ? 1 : a.id > b.id ? -1 : 0;
+      })
+      .slice((page - 1) * pageSize, page * pageSize)
       .map((c) => ({
         id: c.id,
         sector_id: c.sector_id,
@@ -116,15 +118,6 @@ export class InMemoryReadRepository implements ReadRepository {
         // O INSTANTE, não "HH:mm": quem exibe formata em BRT.
         createdAt: new Date(c.created_at).toISOString(),
       }));
-
-    // Recent by sector — alinhado ao Postgres: o item de `recent` já carrega
-    // `sector_id`, então não é preciso procurar de volta em `filtered`.
-    const recentBySector: Record<string, HistoryCall[]> = {};
-    for (const c of recent) {
-      const s = c.sector_id || "unknown";
-      if (!recentBySector[s]) recentBySector[s] = [];
-      recentBySector[s].push(c);
-    }
 
     // A extensão real da janela — igual ao Postgres (a janela BRT de N
     // dias mede exatamente N dias-calendário).
@@ -137,10 +130,8 @@ export class InMemoryReadRepository implements ReadRepository {
     return {
       days: Math.min(MAX_DAYS, Math.max(MIN_DAYS, windowDays)),
       summary: { total, today: todayCount, preferencial, normal },
-      bySector,
-      byType,
-      recent,
-      recentBySector,
+      calls,
+      pagination: { page, pageSize, total: filteredTotal, totalPages },
     };
   }
 }

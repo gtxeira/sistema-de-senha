@@ -7,6 +7,8 @@ import {
   DEFAULT_GUICHE,
   NEWS_ALLOWED_TYPES,
   NEWS_MAX_FILE_SIZE,
+  PAGE_SIZES,
+  MAX_PAGE_SIZE,
 } from "@/lib/constants";
 import type { CallType, SequenceType } from "@/lib/constants";
 
@@ -35,6 +37,30 @@ export function normalizeCallType(type: string | undefined): {
     sequenceType: isPriority ? CALL_TYPES.PREFERENCIAL : CALL_TYPES.NORMAL,
     callType: isPriority ? CALL_TYPES.PREFERENTIAL : CALL_TYPES.NORMAL,
   };
+}
+
+/**
+ * Normaliza `pageSize` para um inteiro em `1..MAX_PAGE_SIZE`.
+ *
+ * Ausente/inválido vira o default do histórico (`PAGE_SIZES.historico`).
+ * O teto importa: `?pageSize=999999` traria a janela inteira de volta e
+ * anularia a paginação no servidor.
+ */
+export function normalizePageSize(value: number | undefined): number {
+  const size = Math.floor(Number(value));
+  if (!Number.isFinite(size) || size < 1) return PAGE_SIZES.historico;
+  return Math.min(MAX_PAGE_SIZE, size);
+}
+
+/**
+ * Normaliza `page` para um inteiro >= 1.
+ *
+ * O clamp superior (`totalPages`) depende do total e fica com quem
+ * conhece a contagem — `getStats` clampa antes de montar o `skip`.
+ */
+export function normalizePage(value: number | undefined): number {
+  const page = Math.floor(Number(value));
+  return Number.isFinite(page) && page >= 1 ? page : 1;
 }
 
 export function formatNumberString(num: number, type: CallType): string {

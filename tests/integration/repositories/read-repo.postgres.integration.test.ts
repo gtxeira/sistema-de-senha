@@ -94,9 +94,13 @@ describeIfPostgres("ReadRepository — Postgres integration", () => {
     it("retorna estrutura vazia quando não há dados", async () => {
       const stats = await repo.getStats({ days: 7 });
       expect(stats).toHaveProperty("summary");
-      expect(stats).toHaveProperty("bySector");
-      expect(stats).toHaveProperty("byType");
-      expect(stats).toHaveProperty("recent");
+      expect(stats).toHaveProperty("calls");
+      expect(stats.pagination).toEqual({
+        page: 1,
+        pageSize: 20,
+        total: 0,
+        totalPages: 1,
+      });
       expect(stats.summary.total).toBe(0);
     });
 
@@ -112,17 +116,20 @@ describeIfPostgres("ReadRepository — Postgres integration", () => {
       expect(stats.summary.preferencial).toBe(3);
     });
 
-    it("agrupa por setor corretamente", async () => {
+    it("pagina dentro do setor", async () => {
       await seedTestCalls("farmacia", 5);
       await seedTestCalls("recepcao", 3);
 
-      const stats = await repo.getStats({ days: 30 });
+      const stats = await repo.getStats({
+        days: 30,
+        sector: "farmacia",
+        pageSize: 2,
+      });
 
-      expect(stats.bySector).toHaveLength(2);
-      const farmacia = stats.bySector.find((s) => s.sector === "farmacia");
-      const recepcao = stats.bySector.find((s) => s.sector === "recepcao");
-      expect(farmacia?.total).toBe(5);
-      expect(recepcao?.total).toBe(3);
+      // O total é o do setor, não o da tabela inteira.
+      expect(stats.pagination.total).toBe(5);
+      expect(stats.calls).toHaveLength(2);
+      expect(stats.calls.every((c) => c.sector_id === "farmacia")).toBe(true);
     });
 
     it("filtra por setor", async () => {
@@ -134,17 +141,17 @@ describeIfPostgres("ReadRepository — Postgres integration", () => {
       expect(stats.summary.total).toBe(5);
     });
 
-    it("retorna chamadas recentes", async () => {
+    it("retorna a página do histórico", async () => {
       await seedTestCalls("farmacia", 3);
 
       const stats = await repo.getStats({ days: 30 });
 
-      expect(stats.recent.length).toBeGreaterThan(0);
-      expect(stats.recent[0]).toHaveProperty("id");
-      expect(stats.recent[0]).toHaveProperty("number");
-      expect(stats.recent[0]).toHaveProperty("type");
+      expect(stats.calls.length).toBeGreaterThan(0);
+      expect(stats.calls[0]).toHaveProperty("id");
+      expect(stats.calls[0]).toHaveProperty("number");
+      expect(stats.calls[0]).toHaveProperty("type");
       // O INSTANTE (ISO), não "HH:mm".
-      expect(stats.recent[0]).toHaveProperty("createdAt");
+      expect(stats.calls[0]).toHaveProperty("createdAt");
     });
 
     it("conta 'hoje' pela meia-noite BRT, não pela do servidor", async () => {
@@ -178,7 +185,7 @@ describeIfPostgres("ReadRepository — Postgres integration", () => {
       expect(stats.summary.total).toBe(2);
     });
 
-    it("agrega no SQL — não traz a janela inteira para a memória", async () => {
+    it("agrega e pagina no SQL — não traz a janela inteira para a memória", async () => {
       await seedTestCalls("farmacia", 5);
 
       const countSpy = vi.spyOn(prisma.queue_calls, "count");
@@ -186,31 +193,51 @@ describeIfPostgres("ReadRepository — Postgres integration", () => {
       const findManySpy = vi.spyOn(prisma.queue_calls, "findMany");
 
       try {
-        const stats = await repo.getStats({ days: 30, limit: 2 });
+        const stats = await repo.getStats({ days: 30, pageSize: 2, page: 2 });
 
         // total + hoje
         expect(countSpy).toHaveBeenCalledTimes(2);
-        // por setor + por tipo
-        expect(groupBySpy).toHaveBeenCalledTimes(2);
+        // só por tipo (o resumo precisa de normal/preferencial)
+        expect(groupBySpy).toHaveBeenCalledTimes(1);
 
-        // O único `findMany` é o do que a tela EXIBE — limitado e ordenado.
+        // O único `findMany` é o da PÁGINA exibida — `skip`/`take`/ordem.
         // A regressão que este teste barra é o `findMany` sem `take`, que
-        // puxava até 90 dias de chamadas só para contar em JS.
+        // puxava até 90 dias de chamadas para paginar no cliente.
         expect(findManySpy).toHaveBeenCalledTimes(1);
         const args = findManySpy.mock.calls[0]?.[0] as
-          | { take?: number; orderBy?: unknown }
+          | { take?: number; skip?: number; orderBy?: unknown }
           | undefined;
         expect(args?.take).toBe(2);
-        expect(args?.orderBy).toEqual({ created_at: "desc" });
+        expect(args?.skip).toBe(2);
+        expect(args?.orderBy).toEqual([
+          { created_at: "desc" },
+          { id: "desc" },
+        ]);
 
-        // A contagem enxerga as 5; só 2 vieram para a memória.
+        // A contagem enxerga as 5; só a página veio para a memória.
         expect(stats.summary.total).toBe(5);
-        expect(stats.recent).toHaveLength(2);
+        expect(stats.pagination).toEqual({
+          page: 2,
+          pageSize: 2,
+          total: 5,
+          totalPages: 3,
+        });
+        expect(stats.calls).toHaveLength(2);
       } finally {
         countSpy.mockRestore();
         groupBySpy.mockRestore();
         findManySpy.mockRestore();
       }
+    });
+
+    it("tem os índices que sustentam a janela e a paginação", async () => {
+      const indexes = await prisma.$queryRaw<Array<{ indexname: string }>>`
+        SELECT indexname FROM pg_indexes WHERE tablename = 'queue_calls'
+      `;
+      const names = indexes.map((row) => row.indexname);
+
+      expect(names).toContain("queue_calls_created_at_id_idx");
+      expect(names).toContain("queue_calls_sector_id_created_at_idx");
     });
 
     it("lidar com erros graciosamente", async () => {

@@ -116,6 +116,8 @@ export const DEFAULT_DAYS = 30;
 
 // ── Paginação ──
 export const PAGE_SIZES = { historico: 20, painel: 10 };
+/** Teto de `pageSize` aceito pela API — evita pedir a tabela inteira. */
+export const MAX_PAGE_SIZE = 100;
 
 // ── Histórico ──
 export const HISTORY_LIMITS = { painel: 100, monitor: 30 };

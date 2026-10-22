@@ -101,6 +101,14 @@ export interface QueueRepository {
 
 export interface StatsOptions {
   readonly sector?: string | null;
+  /**
+   * Filtra o histórico exibido (`calls` + `pagination.total`).
+   *
+   * Não afeta `summary`: os cards são totais da janela inteira, e um
+   * filtro na tabela ("só preferenciais") não deve mudar "Total no
+   * período" nem "Atendimentos hoje".
+   */
+  readonly type?: SequenceType | null;
   /** Inclusivo — primeira chamada dentro da janela. */
   readonly since?: Date;
   /**
@@ -111,7 +119,15 @@ export interface StatsOptions {
    * menos N×24h".
    */
   readonly until?: Date | null;
-  readonly limit?: number;
+  /**
+   * Página do histórico, 1-based.
+   *
+   * A paginação é feita no servidor: o cliente nunca recebe a janela
+   * inteira. O servidor clampa em `[1, totalPages]`.
+   */
+  readonly page?: number;
+  /** Linhas por página (default 20; máximo `MAX_PAGE_SIZE`). */
+  readonly pageSize?: number;
   readonly days?: number;
   /**
    * O "agora" da consulta (padrão: `new Date()`).
@@ -124,16 +140,29 @@ export interface StatsOptions {
 
 export interface QueueStats {
   readonly days: number;
+  /**
+   * Resumo da janela inteira — ignora `type` e `page`.
+   *
+   * `total` pode ser MAIOR que `pagination.total` quando há filtro de
+   * tipo: os cards resumem o período, a tabela mostra só o filtro.
+   */
   readonly summary: {
     readonly total: number;
     readonly today: number;
     readonly preferencial: number;
     readonly normal: number;
   };
-  readonly bySector: ReadonlyArray<{ readonly sector: string; readonly total: number }>;
-  readonly byType: ReadonlyArray<{ readonly type: string; readonly total: number }>;
-  readonly recent: readonly HistoryCall[];
-  readonly recentBySector: Readonly<Record<string, readonly HistoryCall[]>>;
+  /** Apenas a página pedida — nunca a janela inteira. */
+  readonly calls: readonly HistoryCall[];
+  readonly pagination: {
+    /** Página efetivamente devolvida (o servidor clampa em `totalPages`). */
+    readonly page: number;
+    readonly pageSize: number;
+    /** Linhas que casam janela + sector + type (o filtro da tabela). */
+    readonly total: number;
+    /** `max(1, ceil(total / pageSize))` — nunca zero, para a UI. */
+    readonly totalPages: number;
+  };
   /** Só no fallback: a query falhou e a resposta é a estrutura vazia. */
   readonly noDb?: boolean;
 }

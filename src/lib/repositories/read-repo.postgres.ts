@@ -1,7 +1,14 @@
 import { prisma } from "@/lib/prisma-client";
 import type { Prisma } from "@/generated/prisma/client";
-import { MIN_DAYS, MAX_DAYS, DEFAULT_DAYS, CALL_TYPES } from "@/lib/constants";
+import {
+  MIN_DAYS,
+  MAX_DAYS,
+  DEFAULT_DAYS,
+  CALL_TYPES,
+  PAGE_SIZES,
+} from "@/lib/constants";
 import { dayWindow, startOfDay } from "@/lib/time";
+import { normalizePage, normalizePageSize } from "./utils";
 import type { HistoryCall, QueueStats, ReadRepository, StatsOptions } from "./types";
 
 /** Linha como o `findMany` de `getRecentCalls` devolve. */
@@ -19,14 +26,16 @@ type RecentRow = Prisma.queue_callsGetPayload<{
 /**
  * Build empty response structure
  */
-function emptyResponse(days: number): QueueStats {
+function emptyResponse(
+  days: number,
+  page = 1,
+  pageSize = PAGE_SIZES.historico,
+): QueueStats {
   return {
     days,
     summary: { total: 0, today: 0, preferencial: 0, normal: 0 },
-    bySector: [],
-    byType: [],
-    recent: [],
-    recentBySector: {},
+    calls: [],
+    pagination: { page, pageSize, total: 0, totalPages: 1 },
     noDb: true,
   };
 }
@@ -59,9 +68,13 @@ export class PostgresReadRepository implements ReadRepository {
     try {
       // Parse options
       const sector = options.sector || null;
+      const type = options.type ?? null;
       const now = options.now ?? new Date();
       const days = options.days || DEFAULT_DAYS;
-      const limit = options.limit || 200;
+      const pageSize = normalizePageSize(options.pageSize);
+      // Página pedida; o clamp final depende do total, que só é conhecido
+      // depois das contagens.
+      const requestedPage = normalizePage(options.page);
 
       // Janela em dias-calendário BRT: "Hoje" = da meia-noite BRT de
       // hoje até a de amanhã. A janela antiga ("agora menos N×24h")
@@ -83,17 +96,25 @@ export class PostgresReadRepository implements ReadRepository {
       const createdAt: Prisma.DateTimeFilter = { gte: since.toISOString() };
       if (until) createdAt.lt = until.toISOString();
 
-      const whereClause: Prisma.queue_callsWhereInput = { created_at: createdAt };
+      // Duas `where`: `windowWhere` descreve a janela (usada pelos CARDS) e
+      // `pageWhere` acrescenta o filtro de tipo (usada pela TABELA). O
+      // resumo ignora o filtro de tipo de propósito — "Total no período" e
+      // "Atendimentos hoje" não mudam ao filtrar a tabela por preferencial.
+      const windowWhere: Prisma.queue_callsWhereInput = { created_at: createdAt };
       if (sector) {
-        whereClause.sector_id = sector;
+        windowWhere.sector_id = sector;
       }
+
+      const pageWhere: Prisma.queue_callsWhereInput = type
+        ? { ...windowWhere, type }
+        : windowWhere;
 
       // "Hoje" recortado DENTRO da janela: o piso é o maior dos dois. Se a
       // janela começa depois da meia-noite (um `since` explícito no futuro,
       // por exemplo), `today` não pode contar chamadas fora dela.
       const todayFrom = todayStart.getTime() > since.getTime() ? todayStart : since;
       const todayWhereClause: Prisma.queue_callsWhereInput = {
-        ...whereClause,
+        ...windowWhere,
         created_at: until
           ? { gte: todayFrom.toISOString(), lt: until.toISOString() }
           : { gte: todayFrom.toISOString() },
@@ -105,68 +126,58 @@ export class PostgresReadRepository implements ReadRepository {
       // a memória só para ser contada e agrupada em JS — custo que crescia
       // com o histórico e não com o que a tela mostra. Agora `count` e
       // `groupBy` fazem a mesma conta no servidor e devolvem só números:
-      // as linhas não atravessam a rede. O `findMany` fica restrito ao
-      // que é EXIBIDO (`take`).
+      // as linhas não atravessam a rede.
       //
-      // Nota: `queue_calls` não tem índice em `created_at`, então essas
-      // agregações ainda varrem a tabela. Ver `prisma/schema.prisma` —
-      // um índice em (sector_id, created_at) é o próximo passo natural.
-      const [total, todayCount, sectorGroups, typeGroups, recent] =
-        await Promise.all([
-          prisma.queue_calls.count({ where: whereClause }),
-          prisma.queue_calls.count({ where: todayWhereClause }),
-          prisma.queue_calls.groupBy({
-            by: ["sector_id"],
-            where: whereClause,
-            _count: true,
-          }),
-          prisma.queue_calls.groupBy({
-            by: ["type"],
-            where: whereClause,
-            _count: true,
-          }),
-          prisma.queue_calls.findMany({
-            where: whereClause,
-            orderBy: { created_at: "desc" },
-            take: limit,
-            select: {
-              id: true,
-              sector_id: true,
-              number_str: true,
-              type: true,
-              created_at: true,
-              number_int: true,
-            },
-          }),
-        ]);
-
-      // Desempate pelo nome: o `groupBy` não garante ordem para contagens
-      // iguais, e a saída precisa ser estável entre execuções (é o mesmo
-      // critério da implementação em memória).
-      const bySector = sectorGroups
-        .map((group) => ({ sector: group.sector_id, total: group._count }))
-        .sort((a, b) => b.total - a.total || a.sector.localeCompare(b.sector));
-
-      const byType = typeGroups
-        .map((group) => ({ type: group.type, total: group._count }))
-        .sort((a, b) => b.total - a.total || a.type.localeCompare(b.type));
+      // Os índices de `queue_calls` (ver `prisma/schema.prisma`) cobrem
+      // justamente estas consultas: janela global por `created_at`, janela
+      // por setor e a ordenação da paginação.
+      const [total, todayCount, typeGroups] = await Promise.all([
+        prisma.queue_calls.count({ where: windowWhere }),
+        prisma.queue_calls.count({ where: todayWhereClause }),
+        prisma.queue_calls.groupBy({
+          by: ["type"],
+          where: windowWhere,
+          _count: true,
+        }),
+      ]);
 
       // O enum do banco só admite 'normal'|'preferencial' — então o total
       // de preferenciais vem do próprio agrupamento, sem uma query extra.
       const prefCount =
-        byType.find((entry) => entry.type === CALL_TYPES.PREFERENCIAL)?.total ?? 0;
+        typeGroups.find((entry) => entry.type === CALL_TYPES.PREFERENCIAL)?._count ?? 0;
       const normalCount = total - prefCount;
 
-      // Format recent calls
-      const formattedRecent = recent.map(formatCallRecord);
+      // `pagination.total` é o total FILTRADO (janela + setor + tipo). Com
+      // tipo informado ele sai do agrupamento acima; sem tipo, é o próprio
+      // `total` da janela — nenhuma contagem extra.
+      const filteredTotal = type
+        ? type === CALL_TYPES.PREFERENCIAL
+          ? prefCount
+          : normalCount
+        : total;
 
-      // Group recent by sector (max 50 per sector)
-      const recentBySector: Record<string, HistoryCall[]> = {};
-      for (const item of formattedRecent) {
-        const sid = item.sector_id || "desconhecido";
-        if (!recentBySector[sid]) recentBySector[sid] = [];
-        if (recentBySector[sid].length < 50) recentBySector[sid].push(item);
-      }
+      const totalPages = Math.max(1, Math.ceil(filteredTotal / pageSize));
+      const page = Math.min(requestedPage, totalPages);
+
+      // Só a página vai para a memória — nunca a janela inteira.
+      //
+      // `id` é o desempate: `createMany` compartilha o `now()` da transação,
+      // então várias linhas podem ter o MESMO `created_at`; sem uma chave
+      // única a paginação repetiria ou pularia registros.
+      const calls = await prisma.queue_calls.findMany({
+        where: pageWhere,
+        orderBy: [{ created_at: "desc" }, { id: "desc" }],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        select: {
+          id: true,
+          sector_id: true,
+          number_str: true,
+          type: true,
+          created_at: true,
+          number_int: true,
+        },
+      });
 
       return {
         // A extensão real da janela (e não o `days` pedido): com a
@@ -186,15 +197,19 @@ export class PostgresReadRepository implements ReadRepository {
           preferencial: prefCount,
           normal: normalCount,
         },
-        bySector,
-        byType,
-        recent: formattedRecent,
-        recentBySector,
+        calls: calls.map(formatCallRecord),
+        pagination: {
+          page,
+          pageSize,
+          total: filteredTotal,
+          totalPages,
+        },
       };
     } catch {
       // On error, return empty structure instead of throwing
       const days = Math.min(MAX_DAYS, Math.max(MIN_DAYS, Number(options.days) || DEFAULT_DAYS));
-      return emptyResponse(days);
+      const page = normalizePage(options.page);
+      return emptyResponse(days, page, normalizePageSize(options.pageSize));
     }
   }
 }

@@ -31,8 +31,13 @@ describe("/api/stats — integration", () => {
       expect(res.status).toBe(200);
       expect(body.summary).toBeDefined();
       expect(body.summary.total).toBe(0);
-      expect(body.bySector).toEqual([]);
-      expect(body.recent).toEqual([]);
+      expect(body.calls).toEqual([]);
+      expect(body.pagination).toEqual({
+        page: 1,
+        pageSize: 20,
+        total: 0,
+        totalPages: 1,
+      });
     });
 
     it("retorna estatísticas com chamadas reais", async () => {
@@ -72,43 +77,44 @@ describe("/api/stats — integration", () => {
       expect(body.summary.preferencial).toBe(0);
     });
 
-    it("agrupa por setor corretamente", async () => {
+    it("pagina o histórico no servidor", async () => {
       const repo = await importQueueRepo();
-      await repo.saveCall({
-        sector: "farmacia",
-        number: 1,
-        numberStr: "N001",
-        sequenceType: "normal",
-        callType: "normal",
-        attendantId: null,
-      });
-      await repo.saveCall({
-        sector: "recepcao",
-        number: 1,
-        numberStr: "N001",
-        sequenceType: "normal",
-        callType: "normal",
-        attendantId: null,
-      });
-      await repo.saveCall({
-        sector: "recepcao",
-        number: 2,
-        numberStr: "N002",
-        sequenceType: "normal",
-        callType: "normal",
-        attendantId: null,
-      });
+      for (let number = 1; number <= 3; number++) {
+        await repo.saveCall({
+          sector: "farmacia",
+          number,
+          numberStr: `N00${number}`,
+          sequenceType: "normal",
+          callType: "normal",
+          attendantId: null,
+        });
+      }
 
       const { GET } = await importRoute();
-      const req = new Request("http://localhost/api/stats");
-      const res = await GET(req);
+      const res = await GET(
+        new Request("http://localhost/api/stats?page=2&pageSize=2"),
+      );
       const body = await readJson<StatsBody>(res);
 
-      expect(body.bySector).toHaveLength(2);
-      const find = (sector: string) =>
-        body.bySector.find((s: { sector: string }) => s.sector === sector);
-      expect(find("recepcao")?.total).toBe(2);
-      expect(find("farmacia")?.total).toBe(1);
+      expect(body.pagination).toEqual({
+        page: 2,
+        pageSize: 2,
+        total: 3,
+        totalPages: 2,
+      });
+      // Só a página atravessa a rede — não as 3 linhas.
+      expect(body.calls).toHaveLength(1);
+    });
+
+    it("clampa page e pageSize", async () => {
+      const { GET } = await importRoute();
+      const res = await GET(
+        new Request("http://localhost/api/stats?page=0&pageSize=999"),
+      );
+      const body = await readJson<StatsBody>(res);
+
+      expect(body.pagination.page).toBe(1);
+      expect(body.pagination.pageSize).toBe(100);
     });
 
     it("filtra por setor", async () => {
@@ -136,8 +142,9 @@ describe("/api/stats — integration", () => {
       const body = await readJson<StatsBody>(res);
 
       expect(body.summary.total).toBe(1);
-      expect(body.bySector).toHaveLength(1);
-      expect(body.bySector[0].sector).toBe("farmacia");
+      expect(body.pagination.total).toBe(1);
+      expect(body.calls).toHaveLength(1);
+      expect(body.calls[0].sector_id).toBe("farmacia");
     });
 
     it("limita days entre 1 e 90", async () => {
@@ -176,7 +183,7 @@ describe("/api/stats — integration", () => {
       expect(body.summary.total).toBe(1);
     });
 
-    it("retorna chamadas recentes", async () => {
+    it("retorna a página do histórico", async () => {
       const repo = await importQueueRepo();
       await repo.saveCall({
         sector: "farmacia",
@@ -192,15 +199,15 @@ describe("/api/stats — integration", () => {
       const res = await GET(req);
       const body = await readJson<StatsBody>(res);
 
-      expect(body.recent.length).toBeGreaterThan(0);
-      expect(body.recent[0]).toHaveProperty("id");
-      expect(body.recent[0]).toHaveProperty("number");
-      expect(body.recent[0]).toHaveProperty("type");
+      expect(body.calls.length).toBeGreaterThan(0);
+      expect(body.calls[0]).toHaveProperty("id");
+      expect(body.calls[0]).toHaveProperty("number");
+      expect(body.calls[0]).toHaveProperty("type");
       // O INSTANTE (ISO), não "HH:mm".
-      expect(body.recent[0]).toHaveProperty("createdAt");
+      expect(body.calls[0]).toHaveProperty("createdAt");
     });
 
-    it("agrupa chamadas recentes por setor", async () => {
+    it("filtra por tipo sem alterar o resumo", async () => {
       const repo = await importQueueRepo();
       await repo.saveCall({
         sector: "farmacia",
@@ -211,7 +218,34 @@ describe("/api/stats — integration", () => {
         attendantId: null,
       });
       await repo.saveCall({
-        sector: "recepcao",
+        sector: "farmacia",
+        number: 1,
+        numberStr: "P001",
+        sequenceType: "preferencial",
+        callType: "preferential",
+        attendantId: null,
+      });
+
+      const { GET } = await importRoute();
+      const res = await GET(
+        new Request("http://localhost/api/stats?type=preferencial"),
+      );
+      const body = await readJson<StatsBody>(res);
+
+      // Cards: janela inteira.
+      expect(body.summary.total).toBe(2);
+      expect(body.summary.preferencial).toBe(1);
+
+      // Tabela: só o tipo pedido.
+      expect(body.pagination.total).toBe(1);
+      expect(body.calls).toHaveLength(1);
+      expect(body.calls[0].type).toBe("preferencial");
+    });
+
+    it("ignora type inválido", async () => {
+      const repo = await importQueueRepo();
+      await repo.saveCall({
+        sector: "farmacia",
         number: 1,
         numberStr: "N001",
         sequenceType: "normal",
@@ -220,14 +254,13 @@ describe("/api/stats — integration", () => {
       });
 
       const { GET } = await importRoute();
-      const req = new Request("http://localhost/api/stats");
-      const res = await GET(req);
+      const res = await GET(
+        new Request("http://localhost/api/stats?type=qualquer"),
+      );
       const body = await readJson<StatsBody>(res);
 
-      expect(body.recentBySector.farmacia).toBeDefined();
-      expect(body.recentBySector.recepcao).toBeDefined();
-      expect(body.recentBySector.farmacia).toHaveLength(1);
-      expect(body.recentBySector.recepcao).toHaveLength(1);
+      expect(body.pagination.total).toBe(1);
+      expect(body.calls).toHaveLength(1);
     });
   });
 });

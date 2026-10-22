@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
   Filter,
 } from "lucide-react";
@@ -43,6 +43,33 @@ import { useSetDashboardLayoutInfo } from "@/hooks/use-set-dashboard-layout-info
 
 const ITEMS_PER_PAGE = PAGE_SIZES.historico;
 
+/** Filtros efetivamente aplicados à consulta (o que o "Filtrar" confirmou). */
+interface AppliedFilters {
+  readonly days: string;
+  readonly type: string;
+}
+
+/**
+ * URL do histórico. A paginação é do servidor: `page`/`pageSize` vão na
+ * query e a resposta traz só a página — nunca a janela inteira.
+ */
+function statsUrl(
+  filters: AppliedFilters,
+  scope: SectorScope,
+  page: number,
+): string {
+  const params = new URLSearchParams({
+    days: filters.days,
+    page: String(page),
+    pageSize: String(ITEMS_PER_PAGE),
+  });
+  // "Todos" = visão agregada: a API lê a ausência de `sector` como
+  // "todos os setores" (e exige `setores.todos.ver`).
+  if (scope !== ALL_SECTORS) params.set("sector", scope);
+  if (filters.type) params.set("type", filters.type);
+  return `/api/stats?${params}`;
+}
+
 /* ── Estilos (eram classes do Historico.module.css, migrado na etapa 5
      da Fase 2) ── */
 
@@ -78,40 +105,50 @@ export default function HistoricoPage() {
 
   const [filterDays, setFilterDays] = useState("30");
   const [filterType, setFilterType] = useState("");
+  // Filtros confirmados no "Filtrar". A paginação e a troca de setor usam
+  // ESTES, não os selects pendentes: senão "Próxima" aplicaria um filtro
+  // que o usuário ainda não confirmou. Por isso os selects também não
+  // resetam `page` — só o "Filtrar" (que busca) e a troca de setor.
+  const [applied, setApplied] = useState<AppliedFilters>({ days: "30", type: "" });
   const [stats, setStats]           = useState<QueueStats | null>(null);
   // começa carregando: o effect de montagem busca sem setState síncrono
   const [loading, setLoading]       = useState(true);
   const [page, setPage]             = useState(1);
 
-  const statsUrl = (days: string, scope: SectorScope) => {
-    const params = new URLSearchParams({ days });
-    // "Todos" = visão agregada: a API lê a ausência de `sector` como
-    // "todos os setores" (e exige `setores.todos.ver`).
-    if (scope !== ALL_SECTORS) params.set("sector", scope);
-    return `/api/stats?${params}`;
-  };
+  // Cancela a requisição anterior: cliques rápidos em Anterior/Próxima (ou
+  // troca de setor) não podem deixar uma resposta antiga sobrescrever a nova.
+  const requestRef = useRef<AbortController | null>(null);
 
-  // Uso em handlers de evento (Filtrar): setState síncrono é permitido lá
-  const fetchStats = (overrides: { days?: string; sector?: SectorScope } = {}) => {
-    const days   = overrides.days !== undefined ? overrides.days : filterDays;
-    const sector = overrides.sector !== undefined ? overrides.sector : activeSector;
+  const load = useCallback((filters: AppliedFilters, targetPage: number) => {
+    requestRef.current?.abort();
+    const controller = new AbortController();
+    requestRef.current = controller;
 
-    setLoading(true);
-    fetch(statsUrl(days, sector))
+    fetch(statsUrl(filters, activeSector, targetPage), { signal: controller.signal })
       .then((r) => (r.ok ? readJson<QueueStats>(r) : null))
-      .then((data) => { setStats(data); setLoading(false); })
-      .catch(() => setLoading(false));
-  };
+      .then((data) => {
+        if (controller.signal.aborted) return;
+        setStats(data);
+        // O servidor clampa em [1, totalPages]; refletir o valor efetivo
+        // mantém "Página X de Y" coerente.
+        if (data) setPage(data.pagination.page);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (controller.signal.aborted) return;
+        setLoading(false);
+      });
+  }, [activeSector]);
 
   // Carga inicial e troca de setor: setState só dentro de callbacks
   // assíncronos (regra set-state-in-effect). O "loading" e o reset de página
   // da troca são disparados pelo handler do seletor, antes deste effect.
   useEffect(() => {
-    fetch(statsUrl(filterDays, activeSector))
-      .then((r) => (r.ok ? readJson<QueueStats>(r) : null))
-      .then((data) => { setStats(data); setLoading(false); })
-      .catch(() => setLoading(false));
+    load(applied, 1);
   }, [activeSector]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Aborta o que estiver em voo ao desmontar.
+  useEffect(() => () => requestRef.current?.abort(), []);
 
   // "Todos" resolve para o pseudo-setor — a sidebar mostra "Todos os Setores"
   // em vez de cair num setor qualquer.
@@ -144,21 +181,20 @@ export default function HistoricoPage() {
 
   // O wire traz o INSTANTE (`createdAt`); a exibição é em BRT, no fuso do
   // app. A data só faz sentido quando o período cobre mais de um dia.
-  let allCalls = (stats?.recent || []).map((c) => ({
+  //
+  // `stats.calls` JÁ é a página filtrada e paginada no servidor: não há
+  // mais `filter`/`slice` aqui — era isso que fazia "Histórico completo"
+  // mentir (só as 200 mais recentes) e o filtro de tipo contar errado.
+  const calls = (stats?.calls ?? []).map((c) => ({
     ...c,
     time: formatClock(c.createdAt),
     day: formatDay(c.createdAt),
   }));
 
-  if (filterType) {
-    allCalls = allCalls.filter((c) => c.type === filterType);
-  }
-
-  // "Hoje" já é todo do dia BRT — a coluna de data seria ruído.
-  const showDayColumn = Number(filterDays) > 1;
-
-  const totalPages = Math.max(1, Math.ceil(allCalls.length / ITEMS_PER_PAGE));
-  const pagedCalls = allCalls.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+  // "Hoje" já é todo do dia BRT — a coluna de data seria ruído. `stats.days`
+  // é a janela efetiva que o servidor usou (não o select pendente).
+  const showDayColumn = (stats?.days ?? Number(applied.days)) > 1;
+  const totalPages = stats?.pagination?.totalPages ?? 1;
 
   return (
     <>
@@ -178,7 +214,7 @@ export default function HistoricoPage() {
           <FilterGroup label="Período" className="min-w-[140px] max-w-[280px] flex-1 max-[560px]:max-w-none">
             <Select
               value={filterDays}
-              onValueChange={(v) => { if (v !== null) { setFilterDays(v); setPage(1); } }}
+              onValueChange={(v) => { if (v !== null) setFilterDays(v); }}
               items={{ "1": "Hoje", "7": "Últimos 7 dias", "30": "Últimos 30 dias", "90": "Últimos 90 dias" }}
             >
               <SelectTrigger className="w-full">
@@ -198,7 +234,7 @@ export default function HistoricoPage() {
           <FilterGroup label="Tipo" className="min-w-[140px] max-w-[280px] flex-1 max-[560px]:max-w-none">
             <Select
               value={filterType || "all"}
-              onValueChange={(v) => { if (v !== null) { setFilterType(v === "all" ? "" : v); setPage(1); } }}
+              onValueChange={(v) => { if (v !== null) setFilterType(v === "all" ? "" : v); }}
               items={{ all: "Todos", normal: "Normal", preferencial: "Preferencial" }}
             >
               <SelectTrigger className="w-full">
@@ -216,7 +252,13 @@ export default function HistoricoPage() {
           </FilterGroup>
           <Button
             className="self-end max-[560px]:w-full"
-            onClick={() => fetchStats()}
+            onClick={() => {
+              const next: AppliedFilters = { days: filterDays, type: filterType };
+              setApplied(next);
+              setPage(1);
+              setLoading(true);
+              load(next, 1);
+            }}
           >
             <Filter data-icon="inline-start" /> Filtrar
           </Button>
@@ -243,11 +285,11 @@ export default function HistoricoPage() {
 
           {loading && <p className="p-8 text-center text-[13px] text-[#7a9aad]">Carregando...</p>}
 
-          {!loading && pagedCalls.length === 0 && (
+          {!loading && calls.length === 0 && (
             <p className="p-8 text-center text-[13px] text-[#9ab0bc]">Nenhuma chamada encontrada para os filtros selecionados.</p>
           )}
 
-          {!loading && pagedCalls.length > 0 && (
+          {!loading && calls.length > 0 && (
             <>
               <Table>
                 <TableHeader>
@@ -260,7 +302,7 @@ export default function HistoricoPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pagedCalls.map((item, index) => (
+                  {calls.map((item, index) => (
                     <TableRow key={`${item.id || item.number}-${index}`}>
                       <TableCell>
                         <strong className={rowStrongStyle}>{formatQueueNumber(item.number, item.type)}</strong>
@@ -291,7 +333,11 @@ export default function HistoricoPage() {
                 <Pagination
                   page={page}
                   totalPages={totalPages}
-                  onPageChange={setPage}
+                  onPageChange={(next) => {
+                    setPage(next);
+                    setLoading(true);
+                    load(applied, next);
+                  }}
                 />
               )}
             </>
