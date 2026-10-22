@@ -344,7 +344,7 @@ export default function MonitorPage({ params }: MonitorPageProps) {
               o efeito real nunca foi o de 13px. */}
           <div className="flex items-center justify-self-end gap-2 text-[18px]">
             <Clock3 size={18} />
-            {timeString}
+            {timeString || "--:--:--"}
           </div>
           <div className="mt-1 whitespace-nowrap text-[10px] font-bold tracking-[1px] text-[#c5dce5] max-[420px]:whitespace-normal max-[420px]:text-[9px] max-[420px]:leading-tight">
             {dateString}

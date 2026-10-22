@@ -26,7 +26,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const read = (path: string) => readFileSync(resolve(ROOT, path), "utf-8");
 
 const LAYOUT = "src/app/(authenticated)/(dashboard)/layout.tsx";
-const SIDEBAR_LAYOUT = "src/components/sidebar/sidebar.tsx";
+const SIDEBAR_LAYOUT = "src/components/sidebar/sidebar-layout.tsx";
 const LAYOUT_STORE = "src/stores/use-dashboard-layout-store.ts";
 const LAYOUT_HOOK = "src/hooks/use-set-dashboard-layout-info.ts";
 

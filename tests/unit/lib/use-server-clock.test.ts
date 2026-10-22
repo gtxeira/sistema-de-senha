@@ -192,9 +192,27 @@ describe("useServerClock — leitura do código-fonte", () => {
     );
     const code = readFileSync(hookPath, "utf-8");
 
-    expect(code).toContain("timeString: formatTime(now)");
-    expect(code).toContain("dateString: formatDate(now)");
-    expect(code).toContain("timeShort: formatTimeShort(now)");
+    expect(code).toContain("formatTime(now)");
+    expect(code).toContain("formatDate(now)");
+    expect(code).toContain("formatTimeShort(now)");
+  });
+
+  it("não exibe o horário antes de montar (hydration mismatch)", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { resolve } = await import("node:path");
+    const hookPath = resolve(
+      __dirname,
+      "../../../src/lib/hooks/useServerClock.ts",
+    );
+    const code = readFileSync(hookPath, "utf-8");
+
+    // O HTML do servidor e o primeiro render do client precisam bater.
+    // O relógio do servidor não é determinístico, então as strings só
+    // podem aparecer depois do mount.
+    expect(code).toContain("useSyncExternalStore");
+    expect(code).toMatch(/timeString:\s*mounted\s*\?\s*formatTime\(now\)\s*:\s*""/);
+    expect(code).toMatch(/dateString:\s*mounted\s*\?\s*formatDate\(now\)\s*:\s*""/);
+    expect(code).toMatch(/timeShort:\s*mounted\s*\?\s*formatTimeShort\(now\)\s*:\s*""/);
   });
 });
 
@@ -204,7 +222,7 @@ describe("useServerClock — SidebarLayout usa o hook", () => {
     const { resolve } = await import("node:path");
     const sidebarPath = resolve(
       __dirname,
-      "../../../src/components/sidebar/sidebar.tsx",
+      "../../../src/components/sidebar/sidebar-layout.tsx",
     );
     const code = readFileSync(sidebarPath, "utf-8");
 
@@ -227,7 +245,7 @@ describe("useServerClock — SidebarLayout usa o hook", () => {
     const { resolve } = await import("node:path");
     const sidebarPath = resolve(
       __dirname,
-      "../../../src/components/sidebar/sidebar.tsx",
+      "../../../src/components/sidebar/sidebar-layout.tsx",
     );
     const code = readFileSync(sidebarPath, "utf-8");
 

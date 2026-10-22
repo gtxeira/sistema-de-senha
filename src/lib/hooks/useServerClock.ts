@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useSyncExternalStore } from "react";
 import {
   LOCALE,
   APP_TIMEZONE,
@@ -72,11 +72,40 @@ export interface ServerClock {
   readonly now: Date;
   /** false até a primeira sincronização bem-sucedida. */
   readonly synced: boolean;
+  /**
+   * Horário formatado — **vazio até o componente montar**.
+   *
+   * O relógio do servidor e o do device podem divergir em segundos, e o
+   * HTML do servidor é gerado antes da hidratação: exibir o horário no
+   * primeiro render é um hydration mismatch garantido. Enquanto não
+   * montou, a string fica vazia e a UI mostra o placeholder.
+   */
   readonly timeString: string;
+  /** Mesma regra de `timeString`: vazia até montar. */
   readonly dateString: string;
+  /** Mesma regra de `timeString`: vazia até montar. */
   readonly timeShort: string;
-  /** Mesmo formato de `timeShort`, para quem quer formatar outra data. */
+  /** Mesmo formato de `timeShort`, para quem quiser formatar outra data. */
   readonly formatTime: (date: Date) => string;
+}
+
+/** Assinante vazio: o hook só precisa saber "já montou?". */
+const emptySubscribe = () => () => {};
+
+/**
+ * `false` no servidor **e** na hidratação; `true` depois.
+ *
+ * O `useSyncExternalStore` é o que garante isso: durante a hidratação o
+ * React usa o `getServerSnapshot` (o mesmo valor do servidor), e só
+ * depois de hidratar ele passa a usar o `getSnapshot` — que é diferente,
+ * então o React re-renderiza com o relógio real.
+ */
+function useHasMounted(): boolean {
+  return useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
 }
 
 export function useServerClock(): ServerClock {
@@ -84,6 +113,7 @@ export function useServerClock(): ServerClock {
   const syncedRef = useRef(false);
   const [now, setNow] = useState(() => new Date());
   const [synced, setSynced] = useState(false);
+  const mounted = useHasMounted();
 
   const syncWithServer = useCallback(() => {
     void (async () => {
@@ -119,9 +149,12 @@ export function useServerClock(): ServerClock {
   return {
     now,
     synced,
-    timeString: formatTime(now),
-    dateString: formatDate(now),
-    timeShort: formatTimeShort(now),
+    // Vazio até montar (ver `useHasMounted`): o HTML do servidor e o
+    // primeiro render do client precisam ser idênticos, e o horário do
+    // servidor não é determinístico.
+    timeString: mounted ? formatTime(now) : "",
+    dateString: mounted ? formatDate(now) : "",
+    timeShort: mounted ? formatTimeShort(now) : "",
     formatTime: formatTimeShort,
   };
 }
