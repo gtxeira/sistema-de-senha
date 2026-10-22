@@ -88,20 +88,19 @@ export class InMemoryReadRepository implements ReadRepository {
     for (const c of filtered) {
       sectorMap.set(c.sector_id, (sectorMap.get(c.sector_id) || 0) + 1);
     }
-    const bySector = Array.from(sectorMap.entries()).map(([sector, total]) => ({
-      sector,
-      total,
-    }));
+    // Mesmo critério do Postgres: total decrescente, desempate pelo nome.
+    const bySector = Array.from(sectorMap.entries())
+      .map(([sector, total]) => ({ sector, total }))
+      .sort((a, b) => b.total - a.total || a.sector.localeCompare(b.sector));
 
     // By type
     const typeMap = new Map<string, number>();
     for (const c of filtered) {
       typeMap.set(c.type, (typeMap.get(c.type) || 0) + 1);
     }
-    const byType = Array.from(typeMap.entries()).map(([type, total]) => ({
-      type,
-      total,
-    }));
+    const byType = Array.from(typeMap.entries())
+      .map(([type, total]) => ({ type, total }))
+      .sort((a, b) => b.total - a.total || a.type.localeCompare(b.type));
 
     // Recent (most recent first)
     const recent: HistoryCall[] = [...filtered]

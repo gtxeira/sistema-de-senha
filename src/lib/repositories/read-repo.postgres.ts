@@ -78,7 +78,8 @@ export class PostgresReadRepository implements ReadRepository {
       // contador virava de dia às 21:00 do horário brasileiro.
       const todayStart = startOfDay(now);
 
-      // Build where clause for all calls
+      // O banco guarda INSTANTES (TIMESTAMPTZ): o filtro é comparação de
+      // instantes — `lt` no `until`, que é exclusivo.
       const createdAt: Prisma.DateTimeFilter = { gte: since.toISOString() };
       if (until) createdAt.lt = until.toISOString();
 
@@ -87,64 +88,74 @@ export class PostgresReadRepository implements ReadRepository {
         whereClause.sector_id = sector;
       }
 
-      // Build where clause for recent calls
-      const recentWhereClause = { ...whereClause };
+      // "Hoje" recortado DENTRO da janela: o piso é o maior dos dois. Se a
+      // janela começa depois da meia-noite (um `since` explícito no futuro,
+      // por exemplo), `today` não pode contar chamadas fora dela.
+      const todayFrom = todayStart.getTime() > since.getTime() ? todayStart : since;
+      const todayWhereClause: Prisma.queue_callsWhereInput = {
+        ...whereClause,
+        created_at: until
+          ? { gte: todayFrom.toISOString(), lt: until.toISOString() }
+          : { gte: todayFrom.toISOString() },
+      };
 
-      // Execute both queries in parallel
-      const [calls, recent] = await Promise.all([
-        prisma.queue_calls.findMany({
-          where: whereClause,
-          select: {
-            sector_id: true,
-            type: true,
-            created_at: true,
-            number_int: true,
-          },
-        }),
-        prisma.queue_calls.findMany({
-          where: recentWhereClause,
-          orderBy: { created_at: "desc" },
-          take: limit,
-          select: {
-            id: true,
-            sector_id: true,
-            number_str: true,
-            type: true,
-            created_at: true,
-            number_int: true,
-          },
-        }),
-      ]);
+      // A agregação acontece no BANCO.
+      //
+      // Antes, a janela inteira (até 90 dias de chamadas) era trazida para
+      // a memória só para ser contada e agrupada em JS — custo que crescia
+      // com o histórico e não com o que a tela mostra. Agora `count` e
+      // `groupBy` fazem a mesma conta no servidor e devolvem só números:
+      // as linhas não atravessam a rede. O `findMany` fica restrito ao
+      // que é EXIBIDO (`take`).
+      //
+      // Nota: `queue_calls` não tem índice em `created_at`, então essas
+      // agregações ainda varrem a tabela. Ver `prisma/schema.prisma` —
+      // um índice em (sector_id, created_at) é o próximo passo natural.
+      const [total, todayCount, sectorGroups, typeGroups, recent] =
+        await Promise.all([
+          prisma.queue_calls.count({ where: whereClause }),
+          prisma.queue_calls.count({ where: todayWhereClause }),
+          prisma.queue_calls.groupBy({
+            by: ["sector_id"],
+            where: whereClause,
+            _count: true,
+          }),
+          prisma.queue_calls.groupBy({
+            by: ["type"],
+            where: whereClause,
+            _count: true,
+          }),
+          prisma.queue_calls.findMany({
+            where: whereClause,
+            orderBy: { created_at: "desc" },
+            take: limit,
+            select: {
+              id: true,
+              sector_id: true,
+              number_str: true,
+              type: true,
+              created_at: true,
+              number_int: true,
+            },
+          }),
+        ]);
 
-      // Calculate totals
-      const total = calls.length;
-      // Comparação entre `Date` e a string ISO sempre deu `false` (ToNumber da
-      // string resulta em NaN), então `summary.today` ficava preso em 0. A
-      // implementação em memória já comparava os dois `Date`s — aqui passamos
-      // a fazer o mesmo.
-      const todayCount = calls.filter((c) => c.created_at >= todayStart).length;
-      const prefCount = calls.filter((c) =>
-        ["preferencial", "preferential"].includes(c.type),
-      ).length;
+      // Desempate pelo nome: o `groupBy` não garante ordem para contagens
+      // iguais, e a saída precisa ser estável entre execuções (é o mesmo
+      // critério da implementação em memória).
+      const bySector = sectorGroups
+        .map((group) => ({ sector: group.sector_id, total: group._count }))
+        .sort((a, b) => b.total - a.total || a.sector.localeCompare(b.sector));
+
+      const byType = typeGroups
+        .map((group) => ({ type: group.type, total: group._count }))
+        .sort((a, b) => b.total - a.total || a.type.localeCompare(b.type));
+
+      // O enum do banco só admite 'normal'|'preferencial' — então o total
+      // de preferenciais vem do próprio agrupamento, sem uma query extra.
+      const prefCount =
+        byType.find((entry) => entry.type === CALL_TYPES.PREFERENCIAL)?.total ?? 0;
       const normalCount = total - prefCount;
-
-      // Group by sector
-      const sectorMap: Record<string, number> = {};
-      for (const c of calls) {
-        sectorMap[c.sector_id] = (sectorMap[c.sector_id] || 0) + 1;
-      }
-      const bySector = Object.entries(sectorMap)
-        .map(([sector, count]) => ({ sector, total: count }))
-        .sort((a, b) => b.total - a.total);
-
-      // Group by type
-      const typeMap: Record<string, number> = {};
-      for (const c of calls) {
-        typeMap[c.type] = (typeMap[c.type] || 0) + 1;
-      }
-      const byType = Object.entries(typeMap)
-        .map(([type, count]) => ({ type, total: count }))
-        .sort((a, b) => b.total - a.total);
 
       // Format recent calls
       const formattedRecent = recent.map(formatCallRecord);

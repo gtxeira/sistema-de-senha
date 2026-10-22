@@ -1,7 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { prisma } from "@/lib/prisma-client";
 import type { SequenceType } from "@/lib/constants";
 import type { ReadRepository } from "@/lib/repositories/types";
+import {
+  readRepoContract,
+  type SeedCall,
+} from "../../contracts/read-repo.contract";
 
 // Check if Postgres is available
 const isPostgresReady = Boolean(process.env.DATABASE_URL);
@@ -40,6 +44,18 @@ async function seedTestCalls(
   await prisma.queue_calls.createMany({ data: calls });
 }
 
+/** `SeedCall.type` é `string`; a coluna só aceita o enum `queue_type`. */
+function seedType(type: string): SequenceType {
+  return type === "preferencial" || type === "preferential"
+    ? "preferencial"
+    : "normal";
+}
+
+/** Mesma grafia de `InMemoryReadRepository`: "P001"/"N001". */
+function seedNumberStr(type: string, number: number): string {
+  return `${seedType(type) === "preferencial" ? "P" : "N"}${String(number).padStart(3, "0")}`;
+}
+
 describeIfPostgres("ReadRepository — Postgres integration", () => {
   let repo: ReadRepository;
 
@@ -54,6 +70,25 @@ describeIfPostgres("ReadRepository — Postgres integration", () => {
   afterEach(async () => {
     await cleanupQueueTestData();
   });
+
+  // O MESMO contrato que roda contra a implementação em memória. É o que
+  // garante que trocar a varredura em JS por `count`/`groupBy` no SQL não
+  // mudou semântica nenhuma (filtro de setor, agrupamentos, "hoje" em BRT).
+  readRepoContract(() => ({
+    repo,
+    seedCalls: async (calls: readonly SeedCall[]) => {
+      if (calls.length === 0) return;
+      await prisma.queue_calls.createMany({
+        data: calls.map((call) => ({
+          sector_id: call.sector,
+          type: seedType(call.type),
+          number_int: call.number,
+          number_str: seedNumberStr(call.type, call.number),
+          ...(call.created_at ? { created_at: new Date(call.created_at) } : {}),
+        })),
+      });
+    },
+  }));
 
   describe("getStats()", () => {
     it("retorna estrutura vazia quando não há dados", async () => {
@@ -141,6 +176,41 @@ describeIfPostgres("ReadRepository — Postgres integration", () => {
 
       expect(stats.summary.today).toBe(1);
       expect(stats.summary.total).toBe(2);
+    });
+
+    it("agrega no SQL — não traz a janela inteira para a memória", async () => {
+      await seedTestCalls("farmacia", 5);
+
+      const countSpy = vi.spyOn(prisma.queue_calls, "count");
+      const groupBySpy = vi.spyOn(prisma.queue_calls, "groupBy");
+      const findManySpy = vi.spyOn(prisma.queue_calls, "findMany");
+
+      try {
+        const stats = await repo.getStats({ days: 30, limit: 2 });
+
+        // total + hoje
+        expect(countSpy).toHaveBeenCalledTimes(2);
+        // por setor + por tipo
+        expect(groupBySpy).toHaveBeenCalledTimes(2);
+
+        // O único `findMany` é o do que a tela EXIBE — limitado e ordenado.
+        // A regressão que este teste barra é o `findMany` sem `take`, que
+        // puxava até 90 dias de chamadas só para contar em JS.
+        expect(findManySpy).toHaveBeenCalledTimes(1);
+        const args = findManySpy.mock.calls[0]?.[0] as
+          | { take?: number; orderBy?: unknown }
+          | undefined;
+        expect(args?.take).toBe(2);
+        expect(args?.orderBy).toEqual({ created_at: "desc" });
+
+        // A contagem enxerga as 5; só 2 vieram para a memória.
+        expect(stats.summary.total).toBe(5);
+        expect(stats.recent).toHaveLength(2);
+      } finally {
+        countSpy.mockRestore();
+        groupBySpy.mockRestore();
+        findManySpy.mockRestore();
+      }
     });
 
     it("lidar com erros graciosamente", async () => {

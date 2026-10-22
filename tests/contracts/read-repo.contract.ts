@@ -164,6 +164,46 @@ export function readRepoContract(
         expect(stats.recent).toHaveLength(1);
         expect(stats.recent[0].number).toBe(2);
       });
+
+      it("`since` é inclusivo e `until` é exclusivo", async () => {
+        const t0 = "2026-10-22T13:00:00.000Z";
+        const t1 = "2026-10-22T14:00:00.000Z";
+
+        await seedCalls([
+          { sector: "farmacia", type: "normal", number: 1, created_at: t0 },
+          { sector: "farmacia", type: "normal", number: 2, created_at: t1 },
+        ]);
+
+        const stats = await repo.getStats({
+          since: new Date(t0),
+          // Exclusivo: a chamada DAS 14:00 não entra — é o limite da
+          // meia-noite BRT do dia seguinte, que não pertence ao dia.
+          until: new Date(t1),
+          now: new Date("2026-10-22T16:00:00.000Z"),
+        });
+
+        expect(stats.summary.total).toBe(1);
+        expect(stats.recent).toHaveLength(1);
+        expect(stats.recent[0].number).toBe(1);
+      });
+
+      it("`until: null` significa 'sem limite superior'", async () => {
+        const t0 = "2026-10-22T13:00:00.000Z";
+        const t1 = "2026-10-22T14:00:00.000Z";
+
+        await seedCalls([
+          { sector: "farmacia", type: "normal", number: 1, created_at: t0 },
+          { sector: "farmacia", type: "normal", number: 2, created_at: t1 },
+        ]);
+
+        const stats = await repo.getStats({
+          since: new Date(t0),
+          until: null,
+          now: new Date("2026-10-22T16:00:00.000Z"),
+        });
+
+        expect(stats.summary.total).toBe(2);
+      });
     });
   });
 }
