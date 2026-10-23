@@ -55,12 +55,12 @@ export class PostgresNewsRepository implements NewsRepository {
       });
 
       return {
-        success: true,
         news: {
           id: String(row.id),
           title: row.title,
           image: row.image_url,
         },
+        success: true,
       };
     } catch (error) {
       // Rollback: delete from S3 if DB write fails
@@ -74,10 +74,10 @@ export class PostgresNewsRepository implements NewsRepository {
   async listActive(): Promise<NewsItem[]> {
     try {
       const rows = await prisma.news.findMany({
-        where: { active: true },
-        select: { id: true, title: true, image_url: true },
         orderBy: { created_at: 'desc' },
+        select: { id: true, title: true, image_url: true },
         take: NEWS_MAX_ACTIVE,
+        where: { active: true },
       });
 
       return rows.map((row) => ({
@@ -98,8 +98,8 @@ export class PostgresNewsRepository implements NewsRepository {
 
     try {
       const row = await prisma.news.findUnique({
-        where: { id: BigInt(id) },
         select: { image_url: true },
+        where: { id: BigInt(id) },
       });
 
       if (!row) {
@@ -107,8 +107,8 @@ export class PostgresNewsRepository implements NewsRepository {
       }
 
       await prisma.news.update({
-        where: { id: BigInt(id) },
         data: { active: false },
+        where: { id: BigInt(id) },
       });
 
       // Best effort: remove image from S3

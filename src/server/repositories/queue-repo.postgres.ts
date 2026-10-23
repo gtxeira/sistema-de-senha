@@ -29,17 +29,17 @@ export class PostgresQueueRepository implements QueueRepository {
       if (resetAt) where.created_at = { gte: resetAt };
 
       const calls = await prisma.queue_calls.findMany({
-        where,
         orderBy: {
           created_at: 'desc',
         },
-        take: limit,
         select: {
           id: true,
+          created_at: true,
           number_int: true,
           type: true,
-          created_at: true,
         },
+        take: limit,
+        where,
       });
 
       return calls.map((call) => ({
@@ -65,8 +65,8 @@ export class PostgresQueueRepository implements QueueRepository {
    */
   async getSectorResetAt(sector: string): Promise<Date | null> {
     const row = await prisma.sectors.findUnique({
-      where: { id: sector },
       select: { reset_at: true },
+      where: { id: sector },
     });
     return row?.reset_at ?? null;
   }
@@ -88,35 +88,35 @@ export class PostgresQueueRepository implements QueueRepository {
       // the increment only to existing rows, so a newly created row returns
       // the create value (0) directly.
       const seq = await tx.queue_sequences.upsert({
-        where: {
-          sector_id_call_type: {
-            sector_id: sector,
-            call_type: sequenceType,
-          },
+        create: {
+          call_type: sequenceType,
+          current_number: 0,
+          sector_id: sector,
         },
         update: {
           current_number: { increment: 1 },
           updated_at: new Date(),
         },
-        create: {
-          sector_id: sector,
-          call_type: sequenceType,
-          current_number: 0,
+        where: {
+          sector_id_call_type: {
+            call_type: sequenceType,
+            sector_id: sector,
+          },
         },
       });
 
       // Handle wraparound: if counter exceeded MAX, reset to -1 and return 0
       if (seq.current_number > MAX_QUEUE_NUMBER) {
         await tx.queue_sequences.update({
-          where: {
-            sector_id_call_type: {
-              sector_id: sector,
-              call_type: sequenceType,
-            },
-          },
           data: {
             current_number: MIN_QUEUE_NUMBER - 1,
             updated_at: new Date(),
+          },
+          where: {
+            sector_id_call_type: {
+              call_type: sequenceType,
+              sector_id: sector,
+            },
           },
         });
         return { number: MIN_QUEUE_NUMBER, wraparound: true };
@@ -136,12 +136,12 @@ export class PostgresQueueRepository implements QueueRepository {
     const now = new Date();
 
     await prisma.queue_sequences.updateMany({
-      where: {
-        sector_id: sector,
-      },
       data: {
         current_number: MIN_QUEUE_NUMBER - 1,
         updated_at: now,
+      },
+      where: {
+        sector_id: sector,
       },
     });
 
@@ -149,8 +149,8 @@ export class PostgresQueueRepository implements QueueRepository {
     // updateMany above only touches existing rows — a sector that never had a
     // call would leave no row to stamp, making the reset undetectable.
     await prisma.sectors.updateMany({
-      where: { id: sector },
       data: { reset_at: now },
+      where: { id: sector },
     });
   }
 
@@ -158,7 +158,7 @@ export class PostgresQueueRepository implements QueueRepository {
   async saveCall(
     call: QueueCallInput,
   ): Promise<{ id: string; createdAt: string }> {
-    const { sector, number, numberStr, sequenceType, attendantId } = call;
+    const { attendantId, number, numberStr, sector, sequenceType } = call;
 
     // Validate attendantId format (UUID v1-v8)
     const callerId =
@@ -171,11 +171,11 @@ export class PostgresQueueRepository implements QueueRepository {
 
     const created = await prisma.queue_calls.create({
       data: {
-        sector_id: sector,
-        type: sequenceType,
+        called_by: callerId,
         number_int: number,
         number_str: numberStr,
-        called_by: callerId,
+        sector_id: sector,
+        type: sequenceType,
       },
     });
 
@@ -213,20 +213,20 @@ export class PostgresQueueRepository implements QueueRepository {
     const currentNumber = num - 1;
 
     await prisma.queue_sequences.upsert({
-      where: {
-        sector_id_call_type: {
-          sector_id: sector,
-          call_type: sequenceType,
-        },
+      create: {
+        call_type: sequenceType,
+        current_number: currentNumber,
+        sector_id: sector,
       },
       update: {
         current_number: currentNumber,
         updated_at: new Date(),
       },
-      create: {
-        sector_id: sector,
-        call_type: sequenceType,
-        current_number: currentNumber,
+      where: {
+        sector_id_call_type: {
+          call_type: sequenceType,
+          sector_id: sector,
+        },
       },
     });
   }

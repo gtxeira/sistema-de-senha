@@ -65,26 +65,26 @@ function validateOverrides(
     }
     seen.set(row.permission, !!row.granted);
   }
-  return [...seen].map(([permission, granted]) => ({ permission, granted }));
+  return [...seen].map(([permission, granted]) => ({ granted, permission }));
 }
 
 const USER_SELECT = {
   id: true,
-  username: true,
-  full_name: true,
   active: true,
-  sector_id: true,
+  full_name: true,
   guiche_id: true,
+  permissions: { select: { granted: true, permission: true } },
+  role: { select: { name: true, built_in: true, key: true } },
   role_id: true,
-  role: { select: { key: true, name: true, built_in: true } },
-  permissions: { select: { permission: true, granted: true } },
+  sector_id: true,
+  username: true,
 };
 
 export class PostgresUsersRepository implements UsersRepository {
   async create(
     data: CreateUserInput,
   ): Promise<{ success: true; user: UserRecord }> {
-    const { username: rawUsername, password, full_name, sector_id } = data;
+    const { full_name, password, sector_id, username: rawUsername } = data;
     const username = String(rawUsername || '')
       .trim()
       .toLowerCase();
@@ -104,13 +104,13 @@ export class PostgresUsersRepository implements UsersRepository {
     try {
       const user = await prisma.users.create({
         data: {
-          username,
+          active: data?.active ?? true,
           email,
-          password_hash: passwordHash,
           full_name,
+          password_hash: passwordHash,
           role_id: roleId,
           sector_id: sector_id || null,
-          active: data?.active ?? true,
+          username,
           ...(overrides.length
             ? { permissions: { create: overrides.map((o) => ({ ...o })) } }
             : {}),
@@ -139,11 +139,11 @@ export class PostgresUsersRepository implements UsersRepository {
    */
   async getEffectivePermissions(id: string): Promise<Permission[] | null> {
     const user = await prisma.users.findUnique({
-      where: { id },
       include: {
-        role: { include: { permissions: true } },
         permissions: true,
+        role: { include: { permissions: true } },
       },
+      where: { id },
     });
     if (!user) return null;
     return computeEffectivePermissions(
@@ -155,8 +155,8 @@ export class PostgresUsersRepository implements UsersRepository {
   /** List all users (com cargo e overrides de permissão) */
   async list(): Promise<UserRecord[]> {
     const users = await prisma.users.findMany({
-      select: USER_SELECT,
       orderBy: { created_at: 'desc' },
+      select: USER_SELECT,
     });
 
     const shapedUsers = users.map((user) => shapeUser(user));
@@ -254,9 +254,9 @@ export class PostgresUsersRepository implements UsersRepository {
 
     try {
       const user = await prisma.users.update({
-        where: { id },
         data: values,
         select: USER_SELECT,
+        where: { id },
       });
       return shapeUser(user);
     } catch (error) {
@@ -278,17 +278,17 @@ type SelectedUser = Prisma.usersGetPayload<{ select: typeof USER_SELECT }>;
 function shapeUser(user: SelectedUser): UserRecord {
   return {
     id: user.id,
-    username: user.username,
-    full_name: user.full_name,
     active: user.active,
-    sector_id: user.sector_id,
+    full_name: user.full_name,
     guiche_id: user.guiche_id,
     role_id: user.role_id,
+    sector_id: user.sector_id,
+    username: user.username,
     // `role` continua sendo a chave ("admin"|"attendant"|chave custom) —
     // é o que a UI de listagem e os testes de contrato consomem.
-    role: user.role?.key ?? null,
-    role_name: user.role?.name ?? null,
-    role_built_in: user.role?.built_in ?? false,
     permissions: user.permissions ?? [],
+    role: user.role?.key ?? null,
+    role_built_in: user.role?.built_in ?? false,
+    role_name: user.role?.name ?? null,
   };
 }

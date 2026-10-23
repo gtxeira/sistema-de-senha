@@ -89,12 +89,12 @@ export function clearRefreshCookieOptions(
   secure: boolean,
 ): ClearRefreshCookieOptions {
   return {
+    expires: new Date(0),
     httpOnly: true,
+    maxAge: 0,
+    path: '/',
     sameSite: 'lax',
     secure: !!secure,
-    path: '/',
-    maxAge: 0,
-    expires: new Date(0),
   };
 }
 
@@ -120,13 +120,13 @@ export async function issueRefreshToken(
   const familyId = crypto.randomUUID();
   await prisma.refresh_tokens.create({
     data: {
-      user_id: userId,
-      token_hash: hashRefreshToken(raw),
-      family_id: familyId,
       expires_at: expiresAt,
+      family_id: familyId,
+      token_hash: hashRefreshToken(raw),
+      user_id: userId,
     },
   });
-  return { raw, expiresAt, familyId };
+  return { expiresAt, familyId, raw };
 }
 
 /** Opções do cookie de refresh (httpOnly, SameSite=Lax — já é o padrão do Auth.js). */
@@ -136,10 +136,10 @@ export function refreshCookieOptions(
 ): RefreshCookieOptions {
   return {
     httpOnly: true,
+    maxAge: Math.max(0, Math.floor((expiresAt.getTime() - Date.now()) / 1000)),
+    path: '/',
     sameSite: 'lax',
     secure: !!secure,
-    path: '/',
-    maxAge: Math.max(0, Math.floor((expiresAt.getTime() - Date.now()) / 1000)),
   };
 }
 
@@ -197,14 +197,14 @@ export async function rotateRefreshToken(
   const nextRaw = generateRefreshToken();
   await prisma.$transaction([
     prisma.refresh_tokens.update({
-      where: { id: row.id },
       data: { used_at: new Date() },
+      where: { id: row.id },
     }),
     prisma.refresh_tokens.create({
       data: {
-        user_id: row.user_id,
-        token_hash: hashRefreshToken(nextRaw),
         family_id: row.family_id,
+        token_hash: hashRefreshToken(nextRaw),
+        user_id: row.user_id,
         // Janela absoluta: a rotação NÃO renova o prazo do login.
         expires_at: row.expires_at,
       },
@@ -212,9 +212,9 @@ export async function rotateRefreshToken(
   ]);
 
   return {
+    expiresAt: row.expires_at,
     ok: true,
     raw: nextRaw,
     userId: row.user_id,
-    expiresAt: row.expires_at,
   };
 }

@@ -16,8 +16,8 @@ export class PostgresAuthRepository implements AuthRepository {
   /** Resolve login username to email */
   async resolveLoginEmail(username: string): Promise<string> {
     const user = await prisma.users.findUnique({
-      where: { username: username.toLowerCase() },
       select: { email: true },
+      where: { username: username.toLowerCase() },
     });
 
     if (!user) {

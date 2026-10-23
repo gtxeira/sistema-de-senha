@@ -71,7 +71,7 @@ export function assertSectorAccess(
 export async function requirePermission(
   permission: Permission,
 ): Promise<AuthResult> {
-  const { session, error } = await requireSession();
+  const { error, session } = await requireSession();
   if (error) return { error };
 
   if (!hasPermission(session, permission)) {
@@ -113,5 +113,5 @@ function errorResponse(
   message: string,
   code: string,
 ): NextResponse {
-  return NextResponse.json({ error: message, code }, { status });
+  return NextResponse.json({ code, error: message }, { status });
 }

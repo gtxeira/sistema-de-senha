@@ -57,67 +57,22 @@ function getPrisma(): Promise<PrismaClient> {
   return prismaPromise;
 }
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  pages: {
-    signIn: SIGN_IN_PATH,
-  },
+export const { auth, handlers, signIn, signOut } = NextAuth({
   cookies: {
     sessionToken: { name: SESSION_COOKIE_NAME },
+  },
+  pages: {
+    signIn: SIGN_IN_PATH,
   },
   // Access token de curta duração: o JWT de sessão vale 15min e é
   // re-assinado a cada request de sessão (idle timeout). A permissão é
   // revalidada no máximo a cada PERMISSIONS_MAX_AGE via claim `perms_at`
   // (ver src/shared/permissions.ts) e o teto absoluto da sessão é o claim
   // `auth_at` (12h desde o login).
-  session: {
-    maxAge: ACCESS_TOKEN_MAX_AGE,
-  },
-  providers: [
-    Credentials({
-      credentials: {
-        username: { label: 'Usuário', type: 'text' },
-        password: { label: 'Senha', type: 'password' },
-      },
-      async authorize(credentials) {
-        const username = asCredential(credentials?.username)
-          .trim()
-          .toLowerCase();
-        const password = asCredential(credentials?.password);
-
-        if (!USERNAME_REGEX.test(username) || !password) return null;
-
-        const prisma = await getPrisma();
-        const user = await prisma.users.findUnique({
-          where: { username },
-          include: {
-            role: { include: { permissions: true } },
-            permissions: true,
-          },
-        });
-
-        if (!user || !user.active) return null;
-
-        const valid = await bcrypt.compare(password, user.password_hash);
-        if (!valid) return null;
-
-        const now = Date.now();
-        return {
-          id: user.id,
-          name: user.full_name,
-          email: user.email,
-          sector: user.sector_id,
-          guiche: user.guiche_id || DEFAULT_GUICHE,
-          permissions: computeEffectivePermissions(
-            user.role.permissions.map((p) => p.permission),
-            user.permissions,
-          ),
-          authAt: now,
-          permsAt: now,
-        };
-      },
-    }),
-  ],
   callbacks: {
+    authorized({ auth }) {
+      return !!auth?.user;
+    },
     jwt({ token, user }) {
       if (user) {
         token.sector = user.sector;
@@ -147,8 +102,53 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       user.initials = user.name ? initials(user.name) : '';
       return session;
     },
-    authorized({ auth }) {
-      return !!auth?.user;
-    },
+  },
+  providers: [
+    Credentials({
+      async authorize(credentials) {
+        const username = asCredential(credentials?.username)
+          .trim()
+          .toLowerCase();
+        const password = asCredential(credentials?.password);
+
+        if (!USERNAME_REGEX.test(username) || !password) return null;
+
+        const prisma = await getPrisma();
+        const user = await prisma.users.findUnique({
+          include: {
+            permissions: true,
+            role: { include: { permissions: true } },
+          },
+          where: { username },
+        });
+
+        if (!user || !user.active) return null;
+
+        const valid = await bcrypt.compare(password, user.password_hash);
+        if (!valid) return null;
+
+        const now = Date.now();
+        return {
+          id: user.id,
+          name: user.full_name,
+          authAt: now,
+          email: user.email,
+          guiche: user.guiche_id || DEFAULT_GUICHE,
+          permissions: computeEffectivePermissions(
+            user.role.permissions.map((p) => p.permission),
+            user.permissions,
+          ),
+          permsAt: now,
+          sector: user.sector_id,
+        };
+      },
+      credentials: {
+        password: { label: 'Senha', type: 'password' },
+        username: { label: 'Usuário', type: 'text' },
+      },
+    }),
+  ],
+  session: {
+    maxAge: ACCESS_TOKEN_MAX_AGE,
   },
 });

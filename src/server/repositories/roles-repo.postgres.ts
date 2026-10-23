@@ -43,9 +43,9 @@ export class PostgresRolesRepository implements RolesRepository {
     try {
       const role = await prisma.roles.create({
         data: {
-          key,
           name,
           description: data?.description || null,
+          key,
           permissions: {
             create: permissions.map((permission) => ({ permission })),
           },
@@ -66,8 +66,8 @@ export class PostgresRolesRepository implements RolesRepository {
   /** Busca um cargo pela chave. */
   async getByKey(key: string): Promise<RoleRecord | null> {
     const role = await prisma.roles.findUnique({
-      where: { key },
       include: { permissions: true },
+      where: { key },
     });
     return role ? shapeRole(role) : null;
   }
@@ -132,21 +132,21 @@ export class PostgresRolesRepository implements RolesRepository {
 
     try {
       const role = await prisma.$transaction(async (tx) => {
-        await tx.roles.update({ where: { id }, data: values });
+        await tx.roles.update({ data: values, where: { id } });
         if (permissions) {
           await tx.role_permissions.deleteMany({ where: { role_id: id } });
           if (permissions.length) {
             await tx.role_permissions.createMany({
               data: permissions.map((permission) => ({
-                role_id: id,
                 permission,
+                role_id: id,
               })),
             });
           }
         }
         const fresh = await tx.roles.findUnique({
-          where: { id },
           include: { permissions: true },
+          where: { id },
         });
         // Inalcançável (o acabamos de atualizar), mas deixa o null fora do tipo.
         if (!fresh) throw routeError(404, 'Cargo não encontrado');
@@ -186,10 +186,10 @@ function isStringList(value: unknown): value is readonly string[] {
 function shapeRole(role: RoleRow): RoleRecord {
   return {
     id: role.id,
-    key: role.key,
     name: role.name,
-    description: role.description,
     built_in: role.built_in,
+    description: role.description,
+    key: role.key,
     permissions: (role.permissions ?? []).map((p) => p.permission),
   };
 }

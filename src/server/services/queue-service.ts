@@ -53,11 +53,11 @@ export interface SyncNextResult {
 
 /** Chama a próxima senha de um setor, salva e publica o evento de fila. */
 export async function callNext({
+  attendantId,
   sector,
   type,
-  attendantId,
 }: CallNextInput): Promise<CallNextResult> {
-  const { sequenceType, callType } = normalizeCallType(type);
+  const { callType, sequenceType } = normalizeCallType(type);
 
   const nextResult = await queue.nextNumber(sector, sequenceType);
   const { number } = nextResult;
@@ -65,12 +65,12 @@ export async function callNext({
   const numberStr = formatNumberString(number, sequenceType);
 
   const saved = await queue.saveCall({
-    sector,
+    attendantId,
+    callType,
     number,
     numberStr,
+    sector,
     sequenceType,
-    callType,
-    attendantId,
   });
 
   // Emit realtime event for monitors, stamped with the sector's reset marker
@@ -157,9 +157,9 @@ export async function resetSectors(
 
 /** Fixa o próximo número da fila de um setor. */
 export async function syncNext({
+  nextNumber,
   sector,
   type,
-  nextNumber,
 }: SyncNextInput): Promise<SyncNextResult> {
   const { sequenceType } = normalizeCallType(type);
 
@@ -180,10 +180,10 @@ export async function syncNext({
   const numberStr = formatNumberString(num, sequenceType);
 
   return {
-    sector,
-    type: sequenceType,
+    message: `Próxima senha de ${SECTORS[sector]?.name || sector}: ${numberStr}`,
     nextNumber: num,
     numberStr,
-    message: `Próxima senha de ${SECTORS[sector]?.name || sector}: ${numberStr}`,
+    sector,
+    type: sequenceType,
   };
 }

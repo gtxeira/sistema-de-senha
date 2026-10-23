@@ -94,10 +94,10 @@ export async function uploadToS3(
   const s3 = getS3Client();
   await s3.send(
     new PutObjectCommand({
-      Bucket: getS3Bucket(),
-      Key: key,
       Body: buffer,
+      Bucket: getS3Bucket(),
       ContentType: contentType,
+      Key: key,
     }),
   );
 }
@@ -121,10 +121,10 @@ function getS3Client(): S3Client {
   }
 
   client = new S3Client({
-    endpoint,
-    region: env.S3_REGION || 'us-east-1',
-    forcePathStyle: true,
     credentials: { accessKeyId, secretAccessKey },
+    endpoint,
+    forcePathStyle: true,
+    region: env.S3_REGION || 'us-east-1',
   });
 
   return client;

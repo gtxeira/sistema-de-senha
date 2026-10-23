@@ -36,16 +36,16 @@ export async function getStats(query: StatsQuery): Promise<QueueStats> {
   } catch {
     // On error, return empty structure to avoid breaking admin UI
     return {
-      days: query.days,
-      summary: { total: 0, today: 0, preferencial: 0, normal: 0 },
       calls: [],
+      days: query.days,
+      noDb: true,
       pagination: {
         page: query.page,
         pageSize: query.pageSize,
         total: 0,
         totalPages: 1,
       },
-      noDb: true,
+      summary: { normal: 0, preferencial: 0, today: 0, total: 0 },
     };
   }
 }
@@ -73,5 +73,5 @@ export function parseStatsQuery(searchParams: URLSearchParams): StatsQuery {
   const page = normalizePage(Number(searchParams.get('page')));
   const pageSize = normalizePageSize(Number(searchParams.get('pageSize')));
 
-  return { days, sector, type, page, pageSize };
+  return { days, page, pageSize, sector, type };
 }

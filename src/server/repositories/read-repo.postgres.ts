@@ -98,9 +98,9 @@ export class PostgresReadRepository implements ReadRepository {
         prisma.queue_calls.count({ where: windowWhere }),
         prisma.queue_calls.count({ where: todayWhereClause }),
         prisma.queue_calls.groupBy({
+          _count: true,
           by: ['type'],
           where: windowWhere,
-          _count: true,
         }),
       ]);
 
@@ -129,23 +129,24 @@ export class PostgresReadRepository implements ReadRepository {
       // então várias linhas podem ter o MESMO `created_at`; sem uma chave
       // única a paginação repetiria ou pularia registros.
       const calls = await prisma.queue_calls.findMany({
-        where: pageWhere,
         orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
-        skip: (page - 1) * pageSize,
-        take: pageSize,
         select: {
           id: true,
-          sector_id: true,
-          number_str: true,
-          type: true,
           created_at: true,
           number_int: true,
+          number_str: true,
+          sector_id: true,
+          type: true,
         },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        where: pageWhere,
       });
 
       return {
         // A extensão real da janela (e não o `days` pedido): com a
         // janela BRT ela é exatamente `days` dias-calendário.
+        calls: calls.map((call) => formatCallRecord(call)),
         days: Math.min(
           MAX_DAYS,
           Math.max(
@@ -157,18 +158,17 @@ export class PostgresReadRepository implements ReadRepository {
               : days,
           ),
         ),
-        summary: {
-          total,
-          today: todayCount,
-          preferencial: prefCount,
-          normal: normalCount,
-        },
-        calls: calls.map((call) => formatCallRecord(call)),
         pagination: {
           page,
           pageSize,
           total: filteredTotal,
           totalPages,
+        },
+        summary: {
+          normal: normalCount,
+          preferencial: prefCount,
+          today: todayCount,
+          total,
         },
       };
     } catch {
@@ -204,11 +204,11 @@ function emptyResponse(
   pageSize = PAGE_SIZES.historico,
 ): QueueStats {
   return {
-    days,
-    summary: { total: 0, today: 0, preferencial: 0, normal: 0 },
     calls: [],
-    pagination: { page, pageSize, total: 0, totalPages: 1 },
+    days,
     noDb: true,
+    pagination: { page, pageSize, total: 0, totalPages: 1 },
+    summary: { normal: 0, preferencial: 0, today: 0, total: 0 },
   };
 }
 
@@ -218,8 +218,8 @@ function emptyResponse(
 function formatCallRecord(call: RecentRow): HistoryCall {
   return {
     id: String(call.id),
-    sector_id: call.sector_id,
     number: call.number_int,
+    sector_id: call.sector_id,
     // O enum do banco só admite 'normal'|'preferencial'; a grafia
     // 'preferential' existe só na API e nunca chega a esta coluna.
     type:

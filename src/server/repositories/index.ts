@@ -41,7 +41,7 @@ export const roles: RolesRepository = new PostgresRolesRepository();
 export const news: NewsRepository = new PostgresNewsRepository();
 
 export function getDataLayer(): DataLayer {
-  return { queue, read, auth, users, roles, news };
+  return { auth, news, queue, read, roles, users };
 }
 
 const repositories: DataLayer = getDataLayer();
