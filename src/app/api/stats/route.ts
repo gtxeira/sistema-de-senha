@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
-import { read } from "@/server/repositories";
+import { getStats, parseStatsQuery } from "@/server/services/stats-service";
 import { assertSectorAccess, requireSession } from "@/server/http/api-auth";
 import { hasPermission, SECTORS_VIEW_ALL } from "@/shared/permissions";
-import { MIN_DAYS, MAX_DAYS, DEFAULT_DAYS, CALL_TYPES } from "@/shared/constants";
-import { normalizePage, normalizePageSize } from "@/shared/validation";
-import { sanitizeNull } from "@/shared/sanitization";
 
 /* ─────────────────────────────────────────────────
    GET — retorna estatísticas e histórico paginado
@@ -22,26 +19,10 @@ export async function GET(request: Request) {
   const { session, error } = await requireSession();
   if (error) return error;
 
-  const url = new URL(request.url);
-  const days = Math.min(MAX_DAYS, Math.max(MIN_DAYS, Number(url.searchParams.get("days")) || DEFAULT_DAYS));
-  const sector = sanitizeNull(url.searchParams.get("sector")) || null;
+  const query = parseStatsQuery(new URL(request.url).searchParams);
 
-  // Tipo inválido é IGNORADO (não vira 400): o filtro é opcional e a
-  // tabela simplesmente mostra todos. `preferential` é a grafia antiga
-  // da API e continua aceita.
-  const typeParam = sanitizeNull(url.searchParams.get("type"));
-  const type =
-    typeParam === CALL_TYPES.PREFERENCIAL || typeParam === CALL_TYPES.PREFERENTIAL
-      ? CALL_TYPES.PREFERENCIAL
-      : typeParam === CALL_TYPES.NORMAL
-        ? CALL_TYPES.NORMAL
-        : null;
-
-  const page = normalizePage(Number(url.searchParams.get("page")));
-  const pageSize = normalizePageSize(Number(url.searchParams.get("pageSize")));
-
-  if (sector) {
-    const scope = assertSectorAccess(session, sector, "read");
+  if (query.sector) {
+    const scope = assertSectorAccess(session, query.sector, "read");
     if (scope.error) return scope.error;
   } else if (!hasPermission(session, SECTORS_VIEW_ALL)) {
     return NextResponse.json(
@@ -50,17 +31,6 @@ export async function GET(request: Request) {
     );
   }
 
-  try {
-    const stats = await read.getStats({ days, sector, type, page, pageSize });
-    return NextResponse.json(stats);
-  } catch {
-    // On error, return empty structure to avoid breaking admin UI
-    return NextResponse.json({
-      days,
-      summary: { total: 0, today: 0, preferencial: 0, normal: 0 },
-      calls: [],
-      pagination: { page, pageSize, total: 0, totalPages: 1 },
-      noDb: true,
-    });
-  }
+  const stats = await getStats(query);
+  return NextResponse.json(stats);
 }

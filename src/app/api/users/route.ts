@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { users } from "@/server/repositories";
+import {
+  createUser,
+  deleteUser,
+  listUsers,
+  updateUser,
+} from "@/server/services/users-service";
 import { requirePermission } from "@/server/http/api-auth";
 import { errorMessage, errorStatus } from "@/shared/errors";
 import {
@@ -26,7 +31,7 @@ export async function GET() {
     const { error } = await requirePermission(USERS_VIEW);
     if (error) return error;
 
-    const userList = await users.list();
+    const userList = await listUsers();
     return NextResponse.json({ users: userList });
   } catch (err) {
     return NextResponse.json(
@@ -45,7 +50,7 @@ export async function POST(request: Request) {
     if (error) return error;
 
     const body = await readJson<CreateUserRequest>(request);
-    const result = await users.create(body);
+    const result = await createUser(body);
     return NextResponse.json(result);
   } catch (err) {
     return NextResponse.json(
@@ -74,32 +79,8 @@ export async function PATCH(request: Request) {
       );
     }
 
-    // Proteção contra auto-lockout: ninguém altera a própria situação/cargo.
-    if (id === session.user.id && (body.active !== undefined || body.role_id !== undefined || body.role !== undefined)) {
-      return NextResponse.json(
-        { error: "Você não pode alterar o próprio cargo ou situação." },
-        { status: 400 }
-      );
-    }
-
-    const { permissions, ...data } = body;
-    if (Object.keys(data).length > 1) {
-      await users.update(id, data);
-    }
-    if (permissions !== undefined) {
-      await users.setPermissions(id, permissions);
-    }
-    // Re-busca depois de aplicar os overrides (o update sozinho devolveria
-    // as linhas antigas de permissões).
-    const user = (await users.list()).find((u) => u.id === id);
-    if (!user) {
-      return NextResponse.json(
-        { error: "Usuário não encontrado" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({ success: true, user });
+    const result = await updateUser(id, body, session.user.id);
+    return NextResponse.json(result);
   } catch (err) {
     return NextResponse.json(
       { error: errorMessage(err, "Erro ao atualizar usuário") },
@@ -126,15 +107,8 @@ export async function DELETE(request: Request) {
       );
     }
 
-    if (id === session.user.id) {
-      return NextResponse.json(
-        { error: "Você não pode excluir o próprio usuário." },
-        { status: 400 }
-      );
-    }
-
-    await users.remove(id);
-    return NextResponse.json({ success: true });
+    const result = await deleteUser(id, session.user.id);
+    return NextResponse.json(result);
   } catch (err) {
     return NextResponse.json(
       { error: errorMessage(err, "Erro ao excluir usuário") },

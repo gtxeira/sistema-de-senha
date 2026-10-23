@@ -29,6 +29,7 @@ src/
 │   ├── http/            # Helpers de borda (autorização e erros HTTP)
 │   ├── realtime/        # Event manager do SSE
 │   ├── repositories/    # Contratos e implementações de dados
+│   ├── services/        # Regras de negócio (fila, notícias, usuários, …)
 │   └── storage/         # Integração com S3
 ├── shared/              # Contratos puros (sem I/O e sem runtime de UI)
 │   └── types/           # Tipos de domínio e da API
@@ -37,9 +38,9 @@ src/
 └── proxy.ts             # Middleware do Next (Edge-safe)
 ```
 
-`src/server/queue-server.ts` é um shim temporário mantido só para não quebrar
-imports antigos. Ele deve desaparecer na Fase 2, quando os serviços forem
-extraídos.
+As rotas de `src/app/api` são adaptadores finos: resolvem autenticação,
+permissão e escopo, leem o corpo/query e chamam um serviço. As regras de
+negócio ficam em `src/server/services`.
 
 ## Regras de dependência
 
@@ -77,16 +78,16 @@ Route Handler (app/api)
         ↓
 server/http        autorização, parsing e tradução de erro
         ↓
-server/services    regra de negócio (Fase 2)
+server/services    regra de negócio
         ↓
 server/repositories acesso a dados
         ↓
 Postgres / S3
 ```
 
-Hoje as rotas ainda chamam os repositórios diretamente. A Fase 2 extrai os
-serviços (`queue`, `news`, `users`, `roles`, `stats`) e deixa as rotas finas.
-A separação de pastas e as regras de fronteira já estão prontas para isso.
+Os serviços atuais são `queue-service`, `news-service`, `users-service`,
+`roles-service` e `stats-service`. Eles concentram normalização, emissão de
+SSE, proteção contra auto-lockout e fallbacks — as rotas só traduzem HTTP.
 
 ### Responsabilidades
 
@@ -94,6 +95,7 @@ A separação de pastas e as regras de fronteira já estão prontas para isso.
   checagem de frescor da sessão.
 - `server/http/errors.ts`: `RouteError`/`routeError`, o erro com status HTTP
   que a rota traduz.
+- `server/services/`: use cases. A rota não conhece o singleton de dados.
 - `server/repositories/types.ts`: contratos internos de persistência e inputs
   que não devem vazar para a UI (por exemplo, `CreateNewsInput` com `File`).
 - `server/repositories/*.postgres.ts`: implementações Prisma/S3.
@@ -139,8 +141,8 @@ resposta JSON ou no formulário, fica em `shared/types/domain.ts`.
 - **Fase 1 (concluída):** mover `lib` para `shared`/`client`/`server`, separar
   tipos e helpers, marcar backend com `server-only` e adicionar as regras de
   fronteira.
-- **Fase 2:** extrair os serviços de `queue`, `news`, `users`, `roles` e
-  `stats`, engordar os serviços em vez das rotas e remover o shim
+- **Fase 2 (concluída):** extrair os serviços de `queue`, `news`, `users`,
+  `roles` e `stats`, deixar as rotas finas e remover o shim
   `server/queue-server.ts`.
 - **Fase 3 (opcional):** avaliar a movimentação de `src/generated/prisma` para
   `src/server/generated/prisma`, ajustando schema, Dockerfile e imports.

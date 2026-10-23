@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { roles } from "@/server/repositories";
+import {
+  createRole,
+  listRoles,
+  removeRole,
+  updateRole,
+} from "@/server/services/roles-service";
 import { requirePermission } from "@/server/http/api-auth";
 import { errorMessage, errorStatus } from "@/shared/errors";
 import { ROLES_MANAGE, USERS_VIEW } from "@/shared/permissions";
@@ -20,7 +25,7 @@ export async function GET() {
     const { error } = await requirePermission(USERS_VIEW);
     if (error) return error;
 
-    const roleList = await roles.list();
+    const roleList = await listRoles();
     return NextResponse.json({ roles: roleList });
   } catch (err) {
     return NextResponse.json(
@@ -36,7 +41,7 @@ export async function POST(request: Request) {
     if (error) return error;
 
     const body = await readJson<CreateRoleRequest>(request);
-    const role = await roles.create(body);
+    const role = await createRole(body);
     return NextResponse.json({ success: true, role });
   } catch (err) {
     return NextResponse.json(
@@ -64,7 +69,7 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const role = await roles.update(body.id, body);
+    const role = await updateRole(body.id, body);
     return NextResponse.json({ success: true, role });
   } catch (err) {
     return NextResponse.json(
@@ -88,7 +93,7 @@ export async function DELETE(request: Request) {
       );
     }
 
-    await roles.remove(id);
+    await removeRole(id);
     return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json(

@@ -1,6 +1,6 @@
-import { queue } from "@/server/repositories";
+import { getRecent } from "@/server/services/queue-service";
 import { assertSectorAccess, requireSession } from "@/server/http/api-auth";
-import { SECTORS, DEFAULT_RECENT_LIMIT } from "@/shared/constants";
+import { DEFAULT_RECENT_LIMIT, isSectorId } from "@/shared/constants";
 
 /**
  * GET /api/queue/recent?sector=farmacia&limit=30
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
   const sector = searchParams.get("sector");
   const limit = parseInt(searchParams.get("limit") || String(DEFAULT_RECENT_LIMIT), 10);
 
-  if (!sector || !Object.hasOwn(SECTORS, sector)) {
+  if (!isSectorId(sector)) {
     return Response.json(
       { error: "Invalid sector." },
       { status: 400 },
@@ -32,12 +32,8 @@ export async function GET(request: Request) {
   if (scope.error) return scope.error;
 
   try {
-    const resetAt = await queue.getSectorResetAt(sector);
-    const calls = await queue.getRecentCalls(sector, limit, resetAt);
-    return Response.json({
-      calls,
-      resetAt: resetAt ? resetAt.toISOString() : null,
-    });
+    const result = await getRecent(sector, limit);
+    return Response.json(result);
   } catch {
     return Response.json(
       { calls: [], resetAt: null, error: "Não foi possível carregar a fila." },

@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { news } from "@/server/repositories";
+import {
+  createNews,
+  listNews,
+  removeNews,
+} from "@/server/services/news-service";
 import { requireSession, requirePermission } from "@/server/http/api-auth";
 import { errorMessage, errorStatus } from "@/shared/errors";
 import { NEWS_CREATE, NEWS_DELETE } from "@/shared/permissions";
@@ -13,7 +17,7 @@ export async function GET() {
     const { error } = await requireSession();
     if (error) return error;
 
-    const newsList = await news.listActive();
+    const newsList = await listNews();
     return NextResponse.json({ news: newsList });
   } catch {
     return NextResponse.json(
@@ -47,7 +51,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = await news.create({ title, image });
+    const result = await createNews({ title, image });
     return NextResponse.json(result);
   } catch (err) {
     return NextResponse.json(
@@ -76,7 +80,7 @@ export async function DELETE(request: Request) {
       );
     }
 
-    await news.remove(id);
+    await removeNews(id);
     return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json(
