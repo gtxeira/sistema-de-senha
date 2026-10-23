@@ -24,7 +24,7 @@ export class InMemoryAuthRepository implements AuthRepository {
    * Seed a user into the in-memory store.
    * @returns `{ username, password }` para o teste criar a credencial.
    */
-  seedUser(data: AuthSeedUserInput): { password: string; username: string; } {
+  seedUser(data: AuthSeedUserInput): { password: string; username: string } {
     const id = crypto.randomUUID();
     const username = data.username.toLowerCase();
     const email = `${username}@central-atendimento.local`;

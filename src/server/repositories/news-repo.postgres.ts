@@ -19,7 +19,7 @@ export class PostgresNewsRepository implements NewsRepository {
   async create({
     title,
     image,
-  }: CreateNewsInput): Promise<{ news: NewsItem; success: true; }> {
+  }: CreateNewsInput): Promise<{ news: NewsItem; success: true }> {
     if (!title || typeof title !== 'string' || !(title = title.trim())) {
       throw routeError(400, 'Informe um título.');
     }

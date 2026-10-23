@@ -38,7 +38,7 @@ export {
 
 /** Resultado de `callNextNumber` — união discriminada por `ok`. */
 export type CallNextResult =
-  | { readonly error: string; readonly ok: false; }
+  | { readonly error: string; readonly ok: false }
   | { readonly next: number; readonly ok: true; readonly type: CallType };
 
 /** Senha atual de um tipo: `NO_PASSWORD` (= `null`) quando não há. */

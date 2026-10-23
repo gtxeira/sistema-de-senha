@@ -8,8 +8,8 @@ export interface AuthRepoContext {
   readonly seedUser: (
     data: AuthSeedUserInput,
   ) =>
-    | Promise<{ password: string; username: string; }>
-    | { password: string; username: string; };
+    | Promise<{ password: string; username: string }>
+    | { password: string; username: string };
 }
 
 /** Subconjunto do seed que o contrato usa — o Postgres aceita mais campos. */

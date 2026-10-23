@@ -106,7 +106,7 @@ SSE, proteção contra auto-lockout e fallbacks — as rotas só traduzem HTTP.
 - `server/db/prisma-client.ts` e `server/storage/s3-client.ts`: clients de
   infraestrutura.
 - `server/generated/prisma/`: Prisma Client produzido por `prisma generate`.
-  Não é versionado nem editado à mão; fica fora do ESLint e da cobertura.
+  Não é versionado nem editado à mão; fica fora do Oxlint e da cobertura.
 
 ## O que é compartilhado
 
@@ -125,8 +125,9 @@ resposta JSON ou no formulário, fica em `shared/types/domain.ts`.
 
 ## Como as regras são aplicadas
 
-1. **ESLint** (`eslint.config.base.mjs`): `no-restricted-imports` bloqueia
-   imports entre camadas nos dois lints (rápido e type-aware).
+1. **Oxlint** (`oxlint.config.ts`): `no-restricted-imports` bloqueia
+   imports entre camadas; o mesmo arquivo cobre o lint rápido e o type-aware
+   (`bun run lint` e `bun run lint:type-aware`).
 2. **`server-only`**: os módulos de runtime de `server/` importam
    `server-only`; se um Client Component tentar carregá-los, o build falha.
 3. **Vitest** (`vitest.config.mjs`): alias de `server-only` para

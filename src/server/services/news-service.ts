@@ -16,7 +16,7 @@ import { news } from '@/server/repositories';
 
 export function createNews(
   data: CreateNewsInput,
-): Promise<{ news: NewsItem; success: true; }> {
+): Promise<{ news: NewsItem; success: true }> {
   return news.create(data);
 }
 

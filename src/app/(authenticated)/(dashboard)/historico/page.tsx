@@ -103,11 +103,9 @@ export default function HistoricoPage() {
   const canViewAllSectors = hasPermission(session, SECTORS_VIEW_ALL);
   const sessionSector = session?.sector;
 
-  const initialSector: SectorScope = canViewAllSectors
-    ? ALL_SECTORS
-    : (!canViewAllSectors && isSectorId(sessionSector)
-      ? sessionSector
-      : DEFAULT_SECTOR);
+  let initialSector: SectorScope = DEFAULT_SECTOR;
+  if (canViewAllSectors) initialSector = ALL_SECTORS;
+  else if (isSectorId(sessionSector)) initialSector = sessionSector;
 
   // Escopo ativo: um setor real ou "Todos" (visão agregada).
   const [activeSector, setActiveSector] = useState<SectorScope>(initialSector);
@@ -162,7 +160,7 @@ export default function HistoricoPage() {
   // da troca são disparados pelo handler do seletor, antes deste effect.
   useEffect(() => {
     load(applied, 1);
-  }, [activeSector]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeSector]); // eslint-disable-line react/exhaustive-deps
 
   // Aborta o que estiver em voo ao desmontar.
   useEffect(() => () => requestRef.current?.abort(), []);

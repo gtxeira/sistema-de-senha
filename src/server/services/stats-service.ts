@@ -62,13 +62,15 @@ export function parseStatsQuery(searchParams: URLSearchParams): StatsQuery {
   // tabela simplesmente mostra todos. `preferential` é a grafia antiga
   // da API e continua aceita.
   const typeParam = sanitizeNull(searchParams.get('type'));
-  const type =
+  let type: SequenceType | null = null;
+  if (
     typeParam === CALL_TYPES.PREFERENCIAL ||
     typeParam === CALL_TYPES.PREFERENTIAL
-      ? CALL_TYPES.PREFERENCIAL
-      : (typeParam === CALL_TYPES.NORMAL
-        ? CALL_TYPES.NORMAL
-        : null);
+  ) {
+    type = CALL_TYPES.PREFERENCIAL;
+  } else if (typeParam === CALL_TYPES.NORMAL) {
+    type = CALL_TYPES.NORMAL;
+  }
 
   const page = normalizePage(Number(searchParams.get('page')));
   const pageSize = normalizePageSize(Number(searchParams.get('pageSize')));

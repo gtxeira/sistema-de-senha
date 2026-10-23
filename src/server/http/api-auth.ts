@@ -38,7 +38,7 @@ import {
  */
 
 export type AuthResult =
-  | { readonly error: NextResponse; readonly session?: undefined; }
+  | { readonly error: NextResponse; readonly session?: undefined }
   | { readonly session: Session; readonly error?: undefined };
 
 export interface SectorAccessResult {

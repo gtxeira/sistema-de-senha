@@ -89,7 +89,11 @@ export function NavUser({
 
             <DropdownMenuSeparator />
 
-            <DropdownMenuItem onClick={(e) => { void handleLogout(e); }}>
+            <DropdownMenuItem
+              onClick={(e) => {
+                void handleLogout(e);
+              }}
+            >
               <LogOut className="mr-2 size-4" />
               Sair
             </DropdownMenuItem>

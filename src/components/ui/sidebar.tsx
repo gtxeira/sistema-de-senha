@@ -89,9 +89,11 @@ function SidebarProvider({
   );
 
   // Helper to toggle the sidebar.
-  const toggleSidebar = React.useCallback(() => 
-    isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open)
-  , [isMobile, setOpen, setOpenMobile]);
+  const toggleSidebar = React.useCallback(
+    () =>
+      isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open),
+    [isMobile, setOpen, setOpenMobile],
+  );
 
   // Adds a keyboard shortcut to toggle the sidebar.
   React.useEffect(() => {
@@ -505,7 +507,8 @@ function SidebarMenuButton({
   className,
   ...props
 }: React.ComponentProps<'button'> &
-  useRender.ComponentProps<'button'> & VariantProps<typeof sidebarMenuButtonVariants> & {
+  useRender.ComponentProps<'button'> &
+  VariantProps<typeof sidebarMenuButtonVariants> & {
     isActive?: boolean;
     tooltip?: React.ComponentProps<typeof TooltipContent> | string;
   }) {
@@ -605,8 +608,8 @@ function SidebarMenuSkeleton({
   showIcon?: boolean;
 }) {
   // Random width between 50 to 90%.
-  const [width] = React.useState(() => 
-    `${Math.floor(Math.random() * 40) + 50}%`
+  const [width] = React.useState(
+    () => `${Math.floor(Math.random() * 40) + 50}%`,
   );
 
   return (

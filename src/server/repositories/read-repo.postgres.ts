@@ -114,11 +114,11 @@ export class PostgresReadRepository implements ReadRepository {
       // `pagination.total` é o total FILTRADO (janela + setor + tipo). Com
       // tipo informado ele sai do agrupamento acima; sem tipo, é o próprio
       // `total` da janela — nenhuma contagem extra.
-      const filteredTotal = type
-        ? (type === CALL_TYPES.PREFERENCIAL
-          ? prefCount
-          : normalCount)
-        : total;
+      let filteredTotal = total;
+      if (type) {
+        filteredTotal =
+          type === CALL_TYPES.PREFERENCIAL ? prefCount : normalCount;
+      }
 
       const totalPages = Math.max(1, Math.ceil(filteredTotal / pageSize));
       const page = Math.min(requestedPage, totalPages);

@@ -206,7 +206,7 @@ describeIfPostgres('ReadRepository — Postgres integration', () => {
         // puxava até 90 dias de chamadas para paginar no cliente.
         expect(findManySpy).toHaveBeenCalledTimes(1);
         const args = findManySpy.mock.calls[0]?.[0] as
-          | { orderBy?: unknown; skip?: number; take?: number; }
+          | { orderBy?: unknown; skip?: number; take?: number }
           | undefined;
         expect(args?.take).toBe(2);
         expect(args?.skip).toBe(2);

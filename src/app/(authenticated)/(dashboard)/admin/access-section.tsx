@@ -1,7 +1,6 @@
 'use client';
 
-import type {
-  LucideIcon} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import type {
   RoleSaveBody,
   RolesListBody,
@@ -161,7 +160,7 @@ const cardFieldLabelStyle =
   'block text-[10px] font-extrabold uppercase tracking-[1px] text-[#7895a3]';
 const cardFieldValueStyle = 'mt-0.5 block text-[13px] text-[#23445b]';
 
-const ROLE_CONFIG: Record<string, { className: string; icon: LucideIcon; }> = {
+const ROLE_CONFIG: Record<string, { className: string; icon: LucideIcon }> = {
   admin: {
     className: 'bg-[#fef3e6] text-[#c97a0e]',
     icon: ShieldCheck,
@@ -787,11 +786,11 @@ export function AccessSection() {
 
                 <div className={formActionsStyle}>
                   <Button type="submit" disabled={loading}>
-                    {loading
-                      ? 'Salvando…'
-                      : (editingUserId
-                        ? 'Salvar alterações'
-                        : 'Criar usuário')}
+                    {(() => {
+                      if (loading) return 'Salvando…';
+                      if (editingUserId) return 'Salvar alterações';
+                      return 'Criar usuário';
+                    })()}
                   </Button>
                   <Button
                     type="button"
@@ -1052,11 +1051,11 @@ export function AccessSection() {
                 {canManageRoles && (
                   <div className={formActionsStyle}>
                     <Button type="submit" disabled={loading}>
-                      {loading
-                        ? 'Salvando…'
-                        : (editingRoleId
-                          ? 'Salvar cargo'
-                          : 'Criar cargo')}
+                      {(() => {
+                        if (loading) return 'Salvando…';
+                        if (editingRoleId) return 'Salvar cargo';
+                        return 'Criar cargo';
+                      })()}
                     </Button>
                     <Button
                       type="button"

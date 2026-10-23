@@ -74,7 +74,7 @@ type CookieJar = Awaited<ReturnType<typeof cookies>>;
 /** Resultado de `mintSession` — união discriminada por `error`. */
 type MintOutcome =
   | { readonly error: NextResponse; readonly permissions?: undefined }
-  | { readonly permissions: Permission[]; readonly error?: undefined; };
+  | { readonly permissions: Permission[]; readonly error?: undefined };
 
 /**
  * Rotação da sessão em dois níveis.
@@ -147,7 +147,7 @@ async function mintSession(
   request: Request,
   jar: CookieJar,
   userId: string,
-  { expiresAt, rotatedRaw }: { expiresAt: Date; rotatedRaw: string; },
+  { expiresAt, rotatedRaw }: { expiresAt: Date; rotatedRaw: string },
 ): Promise<MintOutcome> {
   const user = await prisma.users.findUnique({
     include: {

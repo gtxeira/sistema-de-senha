@@ -19,12 +19,14 @@ type RouteEntry = Response | (() => Response);
 function installNet(routes: Record<string, RouteEntry>) {
   const calls: string[] = [];
   const net = vi.fn(async (input: RequestInfo | URL) => {
-    const url =
-      typeof input === 'string'
-        ? input
-        : ('url' in input
-          ? input.url
-          : String(input));
+    let url: string;
+    if (typeof input === 'string') {
+      url = input;
+    } else if ('url' in input) {
+      url = input.url;
+    } else {
+      url = String(input);
+    }
     calls.push(url);
     const handler = routes[url];
     if (!handler) return jsonResponse({ notFound: true }, 404);

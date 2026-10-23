@@ -75,7 +75,15 @@ lint *args:
 
 # Corrige/faz alterações com o linter configurado
 lint-fix *args:
-    just lint {{ args }}
+    {{ _exec_app }} bun run lint:fix {{ args }}
+
+# Formata o código com o oxfmt
+format *args:
+    {{ _exec_app }} bun run format {{ args }}
+
+# Verifica a formatação sem alterar arquivos
+format-check *args:
+    {{ _exec_app }} bun run format:check {{ args }}
 
 # Executa todos os testes da aplicação
 test:

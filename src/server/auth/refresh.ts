@@ -114,7 +114,7 @@ export function hashRefreshToken(raw: string): string {
 export async function issueRefreshToken(
   prisma: RefreshTokenStore,
   userId: string,
-): Promise<{ expiresAt: Date; familyId: string; raw: string; }> {
+): Promise<{ expiresAt: Date; familyId: string; raw: string }> {
   const raw = generateRefreshToken();
   const expiresAt = new Date(Date.now() + REFRESH_TOKEN_MAX_AGE * 1000);
   const familyId = crypto.randomUUID();

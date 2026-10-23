@@ -188,11 +188,12 @@ export default function AdminPage() {
      `resetPending` (abrindo o diálogo) e a ação roda em `confirmReset`,
      quando o usuário confirma. */
   const resetIsAll = resetPending === 'all';
-  const resetLabel = resetPending
-    ? (resetIsAll
+  let resetLabel = '';
+  if (resetPending) {
+    resetLabel = resetIsAll
       ? 'TODOS os setores (Farmácia e Recepção)'
-      : getSector(resetPending)?.name || resetPending)
-    : '';
+      : getSector(resetPending)?.name || resetPending;
+  }
 
   async function confirmReset() {
     const sectorId = resetPending;

@@ -394,29 +394,33 @@ export default function MonitorPage({ params }: MonitorPageProps) {
               SENHA
             </p>
             <strong
-              className={`text-[clamp(110px,12vw,240px)] leading-none tracking-[5px] ${
-                hasNoPassword
-                  ? 'text-[#b0bec5]'
-                  : (isPriority
-                    ? 'text-[#d63838]'
-                    : 'text-[#1972a0]')
-              } max-[500px]:text-[88px]`}
+              className={`text-[clamp(110px,12vw,240px)] leading-none tracking-[5px] ${(() => {
+                if (hasNoPassword) return 'text-[#b0bec5]';
+                if (isPriority) return 'text-[#d63838]';
+                return 'text-[#1972a0]';
+              })()} max-[500px]:text-[88px]`}
             >
               {formatMonitorNumber(latest?.number ?? NO_PASSWORD)}
             </strong>
-            {hasNoPassword ? (
-              <span className="mt-3 text-[14px] font-extrabold tracking-[1.5px] text-[#1972a0]">
-                NENHUMA SENHA CHAMADA
-              </span>
-            ) : (isPriority ? (
-              <span className="mt-2 inline-block rounded-[12px] bg-[#ef4444] px-6 py-[10px] text-[1.2rem] font-extrabold tracking-[1.5px] text-white shadow-[0_4px_10px_rgba(239,68,68,0.3)]">
-                ATENDIMENTO PREFERENCIAL
-              </span>
-            ) : (
-              <span className="mt-3 text-[14px] font-extrabold tracking-[1.5px] text-[#1972a0]">
-                ATENDIMENTO
-              </span>
-            ))}
+            {(() => {
+              if (hasNoPassword)
+                return (
+                  <span className="mt-3 text-[14px] font-extrabold tracking-[1.5px] text-[#1972a0]">
+                    NENHUMA SENHA CHAMADA
+                  </span>
+                );
+              if (isPriority)
+                return (
+                  <span className="mt-2 inline-block rounded-[12px] bg-[#ef4444] px-6 py-[10px] text-[1.2rem] font-extrabold tracking-[1.5px] text-white shadow-[0_4px_10px_rgba(239,68,68,0.3)]">
+                    ATENDIMENTO PREFERENCIAL
+                  </span>
+                );
+              return (
+                <span className="mt-3 text-[14px] font-extrabold tracking-[1.5px] text-[#1972a0]">
+                  ATENDIMENTO
+                </span>
+              );
+            })()}
             <small className="mt-2 text-[11px] text-[#8aa0ab]">
               {hasNoPassword
                 ? 'Aguardando primeiras chamadas'

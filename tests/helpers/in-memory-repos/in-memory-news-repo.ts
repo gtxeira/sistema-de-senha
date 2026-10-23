@@ -33,7 +33,7 @@ export class InMemoryNewsRepository implements NewsRepository {
 
   async create(
     data: CreateNewsInput,
-  ): Promise<{ news: NewsItem; success: true; }> {
+  ): Promise<{ news: NewsItem; success: true }> {
     const { title, image } = data;
 
     if (!title || typeof title !== 'string' || !title.trim()) {

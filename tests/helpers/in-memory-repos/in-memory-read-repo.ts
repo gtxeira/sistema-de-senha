@@ -90,7 +90,9 @@ export class InMemoryReadRepository implements ReadRepository {
         const byTime =
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         if (byTime !== 0) return byTime;
-        return a.id < b.id ? 1 : (a.id > b.id ? -1 : 0);
+        if (a.id < b.id) return 1;
+        if (a.id > b.id) return -1;
+        return 0;
       })
       .slice((page - 1) * pageSize, page * pageSize)
       .map((c) => ({

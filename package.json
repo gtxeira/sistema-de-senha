@@ -10,13 +10,8 @@
     "dev": "bun --inspect=0.0.0.0:9229 --bun ./node_modules/next/dist/bin/next dev",
     "build": "prisma generate && next build",
     "start": "bun .next/standalone/server.js",
-    "lint": "eslint .",
-    "lint:type-aware": "eslint . --config eslint.config.type-aware.mjs",
-    "lint:oxlint": "oxlint",
-    "lint:oxlint:type-aware": "oxlint --type-aware --tsconfig tsconfig.json",
-    "lint:oxlint:fix": "bun scripts/lint-fix.mjs",
-    "format:oxfmt": "oxfmt",
-    "format:oxfmt:check": "oxfmt --check",
+    "lint": "oxlint",
+    "lint:type-aware": "oxlint --type-aware --tsconfig tsconfig.json",
     "build:electron": "bun build main.ts --outdir=dist-electron --format=esm --target=node --external electron",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest",
@@ -37,7 +32,10 @@
     "db:seed:test": "dotenv -e .env.test -o -- prisma db seed",
     "db:reset:test": "dotenv -e .env.test -o -- prisma migrate reset --force && dotenv -e .env.test -o -- prisma db seed",
     "garage:setup": "bun scripts/setup-garage.js",
-    "garage:clear": "bun scripts/clear-garage.js"
+    "garage:clear": "bun scripts/clear-garage.js",
+    "lint:fix": "bun scripts/lint-fix.mjs",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1144.0",
@@ -68,10 +66,7 @@
     "dotenv-cli": "^11",
     "electron": "^44",
     "electron-builder": "26.17.0",
-    "eslint": "^9.39.5",
-    "eslint-config-next": "^16.3.8",
     "eslint-plugin-better-tailwindcss": "4.10.0",
-    "eslint-plugin-no-relative-import-paths": "^1.7.3",
     "eslint-plugin-perfectionist": "5.13.0",
     "happy-dom": "^20.14.5",
     "oxfmt": "0.74.0",
@@ -79,7 +74,6 @@
     "oxlint-tsgolint": "7.0.2005",
     "tailwindcss": "^4.3.3",
     "typescript": "^6",
-    "typescript-eslint": "^8.71.0",
     "vitest": "^5.0.3"
   },
   "build": {

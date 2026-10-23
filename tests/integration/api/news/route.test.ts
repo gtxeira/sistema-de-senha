@@ -52,7 +52,7 @@ function makeImage({
   name = 'test.jpg',
   size = 1024,
   type = 'image/jpeg',
-}: { name?: string; size?: number; type?: string; } = {}) {
+}: { name?: string; size?: number; type?: string } = {}) {
   const data = new Uint8Array(size);
   return new File([data], name, { type });
 }

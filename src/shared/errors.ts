@@ -53,11 +53,11 @@ export function isInvalidApiKeyError(error: unknown): boolean {
       : undefined;
   // Só entra no regex o que é literalmente texto: `String(obj)` viraria
   // "[object Object]" e nunca casaria de qualquer forma.
-  const text =
-    typeof message === 'string' && message !== ''
-      ? message
-      : (typeof error === 'string'
-        ? error
-        : '');
+  let text = '';
+  if (typeof message === 'string' && message !== '') {
+    text = message;
+  } else if (typeof error === 'string') {
+    text = error;
+  }
   return /invalid api key/i.test(text);
 }

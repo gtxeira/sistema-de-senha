@@ -73,7 +73,7 @@ export interface CreateNewsInput {
 
 export interface NewsRepository {
   /** Faz upload da imagem no S3 e grava a notícia (rollback do S3 se o banco falhar). */
-  create(data: CreateNewsInput): Promise<{ news: NewsItem; success: true; }>;
+  create(data: CreateNewsInput): Promise<{ news: NewsItem; success: true }>;
 
   /** Notícias ativas, mais recentes primeiro. Nunca lança. */
   listActive(): Promise<NewsItem[]>;
