@@ -22,6 +22,30 @@ import { ROLES_MANAGE, USERS_VIEW } from '@/shared/permissions';
    rejeita, aqui só traduzimos o erro.
 ───────────────────────────────────────────────── */
 
+export async function DELETE(request: Request) {
+  try {
+    const { error } = await requirePermission(ROLES_MANAGE);
+    if (error) return error;
+
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    if (!id) {
+      return NextResponse.json(
+        { error: 'ID do cargo é obrigatório' },
+        { status: 400 },
+      );
+    }
+
+    await removeRole(id);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json(
+      { error: errorMessage(error, 'Erro ao excluir cargo') },
+      { status: errorStatus(error, 500) },
+    );
+  }
+}
+
 export async function GET() {
   try {
     const { error } = await requirePermission(USERS_VIEW);
@@ -32,22 +56,6 @@ export async function GET() {
   } catch (error) {
     return NextResponse.json(
       { error: errorMessage(error, 'Erro ao listar cargos') },
-      { status: errorStatus(error, 500) },
-    );
-  }
-}
-
-export async function POST(request: Request) {
-  try {
-    const { error } = await requirePermission(ROLES_MANAGE);
-    if (error) return error;
-
-    const body = await readJson<CreateRoleRequest>(request);
-    const role = await createRole(body);
-    return NextResponse.json({ success: true, role });
-  } catch (error) {
-    return NextResponse.json(
-      { error: errorMessage(error, 'Erro ao criar cargo') },
       { status: errorStatus(error, 500) },
     );
   }
@@ -81,25 +89,17 @@ export async function PATCH(request: Request) {
   }
 }
 
-export async function DELETE(request: Request) {
+export async function POST(request: Request) {
   try {
     const { error } = await requirePermission(ROLES_MANAGE);
     if (error) return error;
 
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
-    if (!id) {
-      return NextResponse.json(
-        { error: 'ID do cargo é obrigatório' },
-        { status: 400 },
-      );
-    }
-
-    await removeRole(id);
-    return NextResponse.json({ success: true });
+    const body = await readJson<CreateRoleRequest>(request);
+    const role = await createRole(body);
+    return NextResponse.json({ success: true, role });
   } catch (error) {
     return NextResponse.json(
-      { error: errorMessage(error, 'Erro ao excluir cargo') },
+      { error: errorMessage(error, 'Erro ao criar cargo') },
       { status: errorStatus(error, 500) },
     );
   }

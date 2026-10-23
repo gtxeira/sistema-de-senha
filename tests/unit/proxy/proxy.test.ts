@@ -6,23 +6,23 @@ import { REFRESH_COOKIE_NAME } from '@/shared/constants';
 import { ALL_PERMISSIONS, SECTORS_VIEW_ALL } from '@/shared/permissions';
 
 /**
- * Request falsa que o proxy lê: `nextUrl`, `url`, `cookies` e o `auth` que o
- * mock abaixo injeta.
- */
-interface ProxyRequest {
-  nextUrl: URL;
-  url: string;
-  cookies: { get(name: string): { value: string } | undefined };
-  auth?: { user?: unknown } | null;
-}
-
-/**
  * O `auth()` real do next-auth v5 devolve o handler de **duas** assinaturas
  * (req, ctx) — o mock de `vi.mock` abaixo devolve (req) => Response, que é o
  * que o teste exercita. A conversão mora só no ponto de importação para o
  * resto do arquivo ficar sem casts.
  */
 type ProxyHandler = (req: ProxyRequest) => Response;
+
+/**
+ * Request falsa que o proxy lê: `nextUrl`, `url`, `cookies` e o `auth` que o
+ * mock abaixo injeta.
+ */
+interface ProxyRequest {
+  cookies: { get(name: string): { value: string } | undefined };
+  nextUrl: URL;
+  url: string;
+  auth?: { user?: unknown } | null;
+}
 
 // Mock auth() pass-through: o valor do cookie de sessão É o JSON do usuário,
 // então cada teste monta a sessão que quiser (permissões, setor, frescor).
@@ -46,10 +46,10 @@ const { default: proxy } = (await import('@/proxy')) as unknown as {
 interface FreshUser {
   readonly id: string;
   readonly name: string;
-  readonly sector: string;
-  readonly permissions: Permission[];
   readonly authAt: number;
+  readonly permissions: Permission[];
   readonly permsAt: number;
+  readonly sector: string;
 }
 
 function freshUser(overrides: Partial<FreshUser> = {}): FreshUser {
@@ -65,9 +65,13 @@ function freshUser(overrides: Partial<FreshUser> = {}): FreshUser {
   };
 }
 
+function locationHeader(res: Response): null | string {
+  return res.headers.get('location');
+}
+
 function makeRequest(
   pathname: string,
-  user?: object | null,
+  user?: null | object,
   refreshToken?: string,
 ): ProxyRequest {
   const url = `http://localhost${pathname}`;
@@ -85,10 +89,6 @@ function makeRequest(
       get: (name) => cookies[name],
     },
   };
-}
-
-function locationHeader(res: Response): string | null {
-  return res.headers.get('location');
 }
 
 describe('proxy', () => {

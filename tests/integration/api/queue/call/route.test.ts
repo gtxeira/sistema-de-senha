@@ -15,13 +15,13 @@ import {
 const MOCK_USER_ID = 'c0f4795e-f467-4695-b479-5ef467c695a6';
 const MOCK_USERNAME = 'test.attendant.call';
 
-async function importRoute() {
-  return import('@/app/api/queue/call/route');
-}
-
 async function importQueueRepo() {
   const mod = await import('@/server/repositories');
   return mod.queue;
+}
+
+async function importRoute() {
+  return import('@/app/api/queue/call/route');
 }
 
 describe('/api/queue/call — integration', () => {
@@ -163,7 +163,7 @@ describe('/api/queue/call — integration', () => {
     });
 
     it('o evento carrega o marcador de reset do setor', async () => {
-      let receivedResetAt!: string | null;
+      let receivedResetAt!: null | string;
       const unsubscribe = eventManager.subscribeToQueue(
         'farmacia',
         (_call, resetAt) => {

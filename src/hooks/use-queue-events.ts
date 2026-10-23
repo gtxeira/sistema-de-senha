@@ -12,8 +12,8 @@ import {
 } from '@/client/queue/queue-events';
 
 export interface QueueEventsResult {
-  readonly connected: boolean;
   readonly calls: ClientQueueCall[] | null;
+  readonly connected: boolean;
   readonly lastCall: ClientQueueCall | null;
 }
 

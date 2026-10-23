@@ -9,6 +9,11 @@ import {
 } from '@/client/queue/queue';
 import { readJson } from '@/shared/json';
 
+type FetchLike = (
+  input: RequestInfo | URL,
+  init?: RequestInit,
+) => Promise<FakeResponse>;
+
 /**
  * Cobre a ordem das operações no handler de reset do admin.
  *
@@ -22,11 +27,6 @@ interface FakeResponse {
   readonly status: number;
   json(): Promise<unknown>;
 }
-
-type FetchLike = (
-  input: RequestInfo | URL,
-  init?: RequestInit,
-) => Promise<FakeResponse>;
 
 interface ResetResult {
   readonly ok: boolean;

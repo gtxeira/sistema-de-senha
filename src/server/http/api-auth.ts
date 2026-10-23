@@ -38,19 +38,47 @@ import {
  */
 
 export type AuthResult =
-  | { readonly session: Session; readonly error?: undefined }
-  | { readonly session?: undefined; readonly error: NextResponse };
+  | { readonly error: NextResponse; readonly session?: undefined; }
+  | { readonly session: Session; readonly error?: undefined };
 
 export interface SectorAccessResult {
   readonly error?: NextResponse;
 }
 
-function errorResponse(
-  status: number,
-  message: string,
-  code: string,
-): NextResponse {
-  return NextResponse.json({ error: message, code }, { status });
+/**
+ * Escopo de setor: operação no setor alvo só passa se o usuário tem a
+ * permissão de escopo (setores.todos.*) ou o setor é o seu próprio.
+ *
+ * @param sector setor alvo da operação
+ * @param mode leitura (fila/monitor/stats) ou escrita (chamar/resetar/…)
+ * @returns `{} ` quando permitido
+ */
+export function assertSectorAccess(
+  session: PermissionCarrier | null | undefined,
+  sector: string,
+  mode: 'read' | 'write' = 'read',
+): SectorAccessResult {
+  if (canAccessSector(session, sector, mode)) return {};
+  return {
+    error: errorResponse(403, 'Acesso ao setor negado.', 'sector_forbidden'),
+  };
+}
+
+/**
+ * Require a fresh session with a specific permission
+ * (registro de chaves em `src/shared/permissions.ts`).
+ */
+export async function requirePermission(
+  permission: Permission,
+): Promise<AuthResult> {
+  const { session, error } = await requireSession();
+  if (error) return { error };
+
+  if (!hasPermission(session, permission)) {
+    return { error: errorResponse(403, 'Forbidden.', 'forbidden') };
+  }
+
+  return { session };
 }
 
 /**
@@ -80,38 +108,10 @@ export async function requireSession(): Promise<AuthResult> {
   return { session };
 }
 
-/**
- * Require a fresh session with a specific permission
- * (registro de chaves em `src/shared/permissions.ts`).
- */
-export async function requirePermission(
-  permission: Permission,
-): Promise<AuthResult> {
-  const { session, error } = await requireSession();
-  if (error) return { error };
-
-  if (!hasPermission(session, permission)) {
-    return { error: errorResponse(403, 'Forbidden.', 'forbidden') };
-  }
-
-  return { session };
-}
-
-/**
- * Escopo de setor: operação no setor alvo só passa se o usuário tem a
- * permissão de escopo (setores.todos.*) ou o setor é o seu próprio.
- *
- * @param sector setor alvo da operação
- * @param mode leitura (fila/monitor/stats) ou escrita (chamar/resetar/…)
- * @returns `{} ` quando permitido
- */
-export function assertSectorAccess(
-  session: PermissionCarrier | null | undefined,
-  sector: string,
-  mode: 'read' | 'write' = 'read',
-): SectorAccessResult {
-  if (canAccessSector(session, sector, mode)) return {};
-  return {
-    error: errorResponse(403, 'Acesso ao setor negado.', 'sector_forbidden'),
-  };
+function errorResponse(
+  status: number,
+  message: string,
+  code: string,
+): NextResponse {
+  return NextResponse.json({ error: message, code }, { status });
 }

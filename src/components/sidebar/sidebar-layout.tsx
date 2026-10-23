@@ -34,10 +34,10 @@ import { hasPermission, SCREEN_ADMIN } from '@/shared/permissions';
 import { useDashboardLayoutStore } from '@/stores/use-dashboard-layout-store';
 
 export interface NavItem {
-  readonly route: string;
   readonly href: Route;
-  readonly label: string;
   readonly icon: LucideIcon;
+  readonly label: string;
+  readonly route: string;
 }
 
 export interface RouteGroup {

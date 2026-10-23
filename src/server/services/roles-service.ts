@@ -16,12 +16,16 @@ import { roles } from '@/server/repositories';
  * singleton de dados e para permitir reutilização por outras entradas.
  */
 
+export function createRole(data: CreateRoleInput): Promise<RoleRecord> {
+  return roles.create(data);
+}
+
 export function listRoles(): Promise<RoleRecord[]> {
   return roles.list();
 }
 
-export function createRole(data: CreateRoleInput): Promise<RoleRecord> {
-  return roles.create(data);
+export function removeRole(id: string): Promise<void> {
+  return roles.remove(id);
 }
 
 export function updateRole(
@@ -29,8 +33,4 @@ export function updateRole(
   data: UpdateRoleInput,
 ): Promise<RoleRecord> {
   return roles.update(id, data);
-}
-
-export function removeRole(id: string): Promise<void> {
-  return roles.remove(id);
 }

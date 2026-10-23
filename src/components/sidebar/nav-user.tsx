@@ -104,11 +104,11 @@ function UserAvatar({
   user,
   userInitials,
 }: {
+  userInitials: string;
   user: {
     name: string;
     sector: string;
   };
-  userInitials: string;
 }) {
   return (
     <>

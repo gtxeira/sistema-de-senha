@@ -10,6 +10,35 @@ import { errorMessage, errorStatus } from '@/shared/errors';
 import { NEWS_CREATE, NEWS_DELETE } from '@/shared/permissions';
 
 /* ─────────────────────────────────────────────────
+   DELETE — remove notícia (soft delete + storage)
+   Exige a permissão `noticias.excluir`.
+───────────────────────────────────────────────── */
+export async function DELETE(request: Request) {
+  try {
+    const { error } = await requirePermission(NEWS_DELETE);
+    if (error) return error;
+
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'ID da notícia é obrigatório' },
+        { status: 400 },
+      );
+    }
+
+    await removeNews(id);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json(
+      { error: errorMessage(error, 'Erro ao excluir notícia') },
+      { status: errorStatus(error, 500) },
+    );
+  }
+}
+
+/* ─────────────────────────────────────────────────
    GET — lista notícias ativas
    Usado pelo admin e pelos monitores (ambos autenticados).
 ───────────────────────────────────────────────── */
@@ -57,35 +86,6 @@ export async function POST(request: Request) {
   } catch (error) {
     return NextResponse.json(
       { error: errorMessage(error, 'Erro ao salvar notícia') },
-      { status: errorStatus(error, 500) },
-    );
-  }
-}
-
-/* ─────────────────────────────────────────────────
-   DELETE — remove notícia (soft delete + storage)
-   Exige a permissão `noticias.excluir`.
-───────────────────────────────────────────────── */
-export async function DELETE(request: Request) {
-  try {
-    const { error } = await requirePermission(NEWS_DELETE);
-    if (error) return error;
-
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
-
-    if (!id) {
-      return NextResponse.json(
-        { error: 'ID da notícia é obrigatório' },
-        { status: 400 },
-      );
-    }
-
-    await removeNews(id);
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json(
-      { error: errorMessage(error, 'Erro ao excluir notícia') },
       { status: errorStatus(error, 500) },
     );
   }

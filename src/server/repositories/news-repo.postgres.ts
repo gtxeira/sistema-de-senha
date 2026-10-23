@@ -19,7 +19,7 @@ export class PostgresNewsRepository implements NewsRepository {
   async create({
     title,
     image,
-  }: CreateNewsInput): Promise<{ success: true; news: NewsItem }> {
+  }: CreateNewsInput): Promise<{ news: NewsItem; success: true; }> {
     if (!title || typeof title !== 'string' || !(title = title.trim())) {
       throw routeError(400, 'Informe um título.');
     }
@@ -70,8 +70,28 @@ export class PostgresNewsRepository implements NewsRepository {
     }
   }
 
+  /** List active news (limited to 10, most recent first) */
+  async listActive(): Promise<NewsItem[]> {
+    try {
+      const rows = await prisma.news.findMany({
+        where: { active: true },
+        select: { id: true, title: true, image_url: true },
+        orderBy: { created_at: 'desc' },
+        take: NEWS_MAX_ACTIVE,
+      });
+
+      return rows.map((row) => ({
+        id: String(row.id),
+        title: row.title,
+        image: row.image_url,
+      }));
+    } catch {
+      return [];
+    }
+  }
+
   /** Delete a news item (soft delete + remove image from S3) */
-  async remove(id: string | number): Promise<{ success: true }> {
+  async remove(id: number | string): Promise<{ success: true }> {
     if (!Number.isInteger(Number(id)) || Number(id) < 1) {
       throw routeError(400, 'ID inválido.');
     }
@@ -99,26 +119,6 @@ export class PostgresNewsRepository implements NewsRepository {
     } catch (error) {
       if (error instanceof RouteError) throw error;
       throw routeError(500, errorMessage(error, 'Erro ao excluir.'));
-    }
-  }
-
-  /** List active news (limited to 10, most recent first) */
-  async listActive(): Promise<NewsItem[]> {
-    try {
-      const rows = await prisma.news.findMany({
-        where: { active: true },
-        select: { id: true, title: true, image_url: true },
-        orderBy: { created_at: 'desc' },
-        take: NEWS_MAX_ACTIVE,
-      });
-
-      return rows.map((row) => ({
-        id: String(row.id),
-        title: row.title,
-        image: row.image_url,
-      }));
-    } catch {
-      return [];
     }
   }
 }

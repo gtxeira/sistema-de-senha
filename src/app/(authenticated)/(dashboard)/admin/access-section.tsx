@@ -161,7 +161,7 @@ const cardFieldLabelStyle =
   'block text-[10px] font-extrabold uppercase tracking-[1px] text-[#7895a3]';
 const cardFieldValueStyle = 'mt-0.5 block text-[13px] text-[#23445b]';
 
-const ROLE_CONFIG: Record<string, { icon: LucideIcon; className: string }> = {
+const ROLE_CONFIG: Record<string, { className: string; icon: LucideIcon; }> = {
   admin: {
     icon: ShieldCheck,
     className: 'bg-[#fef3e6] text-[#c97a0e]',
@@ -176,18 +176,6 @@ const DEFAULT_ROLE_CONFIG = {
   icon: UserCheck,
   className: 'bg-gray-100 text-gray-700',
 };
-
-/** Estado de um override por usuário: herdado do cargo, concedido ou negado. */
-type OverrideMode = typeof INHERIT | typeof GRANT | typeof DENY;
-
-/**
- * Guarda o valor do tri-state: o `ToggleGroup` só oferece esses três
- * valores, mas a lib devolve `string` crua — e é o predicado que dá ao
- * `setOverrides` o `OverrideMode` (não um cast).
- */
-function isOverrideMode(value: string): value is OverrideMode {
-  return value === INHERIT || value === GRANT || value === DENY;
-}
 
 /**
  * Seção "Usuários e Permissões" da área de administração.
@@ -213,14 +201,14 @@ export function AccessSection() {
 
   /* ── formulário de usuário ── */
   const [showUserForm, setShowUserForm] = useState(false);
-  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [editingUserId, setEditingUserId] = useState<null | string>(null);
   const [userForm, setUserForm] = useState(EMPTY_USER_FORM);
   // permission → INHERIT | GRANT | DENY
   const [overrides, setOverrides] = useState<Record<string, OverrideMode>>({});
 
   /* ── formulário de cargo ── */
   const [showRoleForm, setShowRoleForm] = useState(false);
-  const [editingRoleId, setEditingRoleId] = useState<string | null>(null);
+  const [editingRoleId, setEditingRoleId] = useState<null | string>(null);
   const [roleForm, setRoleForm] = useState(EMPTY_ROLE_FORM);
   // `Set<string>` de propósito: cargo e usuário trazem strings do banco e
   // precisam ser filtrados sem cast (mesma leitura de permissions.ts).
@@ -1244,7 +1232,64 @@ export function AccessSection() {
   );
 }
 
-function RoleBadge({ role }: { role: Pick<RoleRecord, 'name' | 'key'> }) {
+/** Estado de um override por usuário: herdado do cargo, concedido ou negado. */
+type OverrideMode = typeof DENY | typeof GRANT | typeof INHERIT;
+
+/**
+ * Guarda o valor do tri-state: o `ToggleGroup` só oferece esses três
+ * valores, mas a lib devolve `string` crua — e é o predicado que dá ao
+ * `setOverrides` o `OverrideMode` (não um cast).
+ */
+function isOverrideMode(value: string): value is OverrideMode {
+  return value === INHERIT || value === GRANT || value === DENY;
+}
+
+/**
+ * Botões de ação de um cargo — cargo `built_in` é somente leitura.
+ */
+function RoleActions({
+  role,
+  canManageRoles,
+  loading,
+  onEdit,
+  onDelete,
+  className,
+}: {
+  readonly canManageRoles: boolean;
+  readonly loading: boolean;
+  readonly role: RoleRecord;
+  readonly className?: string;
+  readonly onDelete: () => void;
+  readonly onEdit: () => void;
+}) {
+  return (
+    <div className={cn('flex gap-2', className)}>
+      <Button
+        variant="outline"
+        size="xs"
+        className="flex-1 xl:flex-none"
+        onClick={onEdit}
+        disabled={loading}
+      >
+        {role.built_in ? <Eye /> : <Pencil />}
+        {role.built_in ? 'Visualizar' : 'Editar'}
+      </Button>
+      {canManageRoles && !role.built_in && (
+        <Button
+          variant="destructive"
+          size="xs"
+          className="flex-1 xl:flex-none"
+          onClick={onDelete}
+          disabled={loading}
+        >
+          <Trash2 /> Excluir
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function RoleBadge({ role }: { role: Pick<RoleRecord, 'key' | 'name'> }) {
   const roleInfo = ROLE_CONFIG[role.key] || DEFAULT_ROLE_CONFIG;
   const Icon = roleInfo.icon;
 
@@ -1255,28 +1300,6 @@ function RoleBadge({ role }: { role: Pick<RoleRecord, 'name' | 'key'> }) {
     >
       <Icon /> {role.name}
     </Badge>
-  );
-}
-
-/**
- * Resumo das permissões individuais do usuário (concedidas/negadas).
- * Compartilhado entre a tabela e o cartão do mobile.
- */
-function UserPermissionSummary({ user }: { user: UserRecord }) {
-  const grants = (user.permissions || []).filter((p) => p.granted).length;
-  const denies = (user.permissions || []).filter((p) => !p.granted).length;
-
-  if (grants + denies === 0) return <>—</>;
-
-  return (
-    <>
-      {[
-        grants ? `${grants} concedida(s)` : null,
-        denies ? `${denies} negada(s)` : null,
-      ]
-        .filter(Boolean)
-        .join(' · ')}
-    </>
   );
 }
 
@@ -1293,13 +1316,13 @@ function UserActions({
   onDelete,
   className,
 }: {
-  readonly user: UserRecord;
-  readonly canEdit: boolean;
   readonly canDelete: boolean;
+  readonly canEdit: boolean;
   readonly loading: boolean;
-  readonly onEdit: () => void;
-  readonly onDelete: () => void;
+  readonly user: UserRecord;
   readonly className?: string;
+  readonly onDelete: () => void;
+  readonly onEdit: () => void;
 }) {
   const canDeleteUser = canDelete && user.role !== 'admin';
   if (!canEdit && !canDeleteUser) return null;
@@ -1333,46 +1356,23 @@ function UserActions({
 }
 
 /**
- * Botões de ação de um cargo — cargo `built_in` é somente leitura.
+ * Resumo das permissões individuais do usuário (concedidas/negadas).
+ * Compartilhado entre a tabela e o cartão do mobile.
  */
-function RoleActions({
-  role,
-  canManageRoles,
-  loading,
-  onEdit,
-  onDelete,
-  className,
-}: {
-  readonly role: RoleRecord;
-  readonly canManageRoles: boolean;
-  readonly loading: boolean;
-  readonly onEdit: () => void;
-  readonly onDelete: () => void;
-  readonly className?: string;
-}) {
+function UserPermissionSummary({ user }: { user: UserRecord }) {
+  const grants = (user.permissions || []).filter((p) => p.granted).length;
+  const denies = (user.permissions || []).filter((p) => !p.granted).length;
+
+  if (grants + denies === 0) return <>—</>;
+
   return (
-    <div className={cn('flex gap-2', className)}>
-      <Button
-        variant="outline"
-        size="xs"
-        className="flex-1 xl:flex-none"
-        onClick={onEdit}
-        disabled={loading}
-      >
-        {role.built_in ? <Eye /> : <Pencil />}
-        {role.built_in ? 'Visualizar' : 'Editar'}
-      </Button>
-      {canManageRoles && !role.built_in && (
-        <Button
-          variant="destructive"
-          size="xs"
-          className="flex-1 xl:flex-none"
-          onClick={onDelete}
-          disabled={loading}
-        >
-          <Trash2 /> Excluir
-        </Button>
-      )}
-    </div>
+    <>
+      {[
+        grants ? `${grants} concedida(s)` : null,
+        denies ? `${denies} negada(s)` : null,
+      ]
+        .filter(Boolean)
+        .join(' · ')}
+    </>
   );
 }

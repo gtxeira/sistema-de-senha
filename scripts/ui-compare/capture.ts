@@ -141,7 +141,7 @@ const metricas = await pagina.evaluate(() => {
     return partes.join(' > ');
   };
 
-  const itens: Array<Record<string, string | number>> = [];
+  const itens: Array<Record<string, number | string>> = [];
   let i = 0;
   for (const el of document.body.querySelectorAll('*')) {
     if (ignorar.has(el.tagName)) continue;

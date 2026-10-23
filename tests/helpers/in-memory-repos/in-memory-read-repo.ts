@@ -11,16 +11,6 @@ import { normalizeCallType } from '@/shared/queue-format';
 import { dayWindow, startOfDay } from '@/shared/time';
 import { normalizePage, normalizePageSize } from '@/shared/validation';
 
-/** Linha interna: o seed de contrato com o timestamp já preenchido. */
-interface StoredCall {
-  readonly id: string;
-  readonly sector_id: string;
-  readonly type: string;
-  readonly number_int: number;
-  readonly number_str: string;
-  readonly created_at: Date | string;
-}
-
 /**
  * In-memory implementation of ReadRepository for fast contract testing.
  * Receives an array of call records to simulate existing data.
@@ -129,4 +119,14 @@ export class InMemoryReadRepository implements ReadRepository {
       pagination: { page, pageSize, total: filteredTotal, totalPages },
     };
   }
+}
+
+/** Linha interna: o seed de contrato com o timestamp já preenchido. */
+interface StoredCall {
+  readonly id: string;
+  readonly created_at: Date | string;
+  readonly number_int: number;
+  readonly number_str: string;
+  readonly sector_id: string;
+  readonly type: string;
 }

@@ -119,10 +119,43 @@ export const PERMISSION_LABELS: Record<Permission, string> = Object.fromEntries(
   ),
 ) as Record<Permission, string>;
 
+/**
+ * Qualquer shape que carrega permissões: sessão do servidor
+ * (`session.user.permissions`), snapshot do localStorage (`{ permissions }`)
+ * ou o próprio `session.user`.
+ */
+export interface PermissionCarrier {
+  permissions?: readonly string[] | null;
+  sector?: null | string;
+  user?: PermissionCarrier | null;
+}
+
 /** Override linha-a-linha de um usuário sobre as permissões do cargo. */
 export interface PermissionOverride {
-  readonly permission: string;
   readonly granted: boolean;
+  readonly permission: string;
+}
+
+/**
+ * Regra única de escopo de setor.
+ *
+ * 1. quem tem a permissão de escopo acessa qualquer setor;
+ * 2. quem tem setor asignado acessa o próprio setor;
+ * 3. sem setor e sem permissão → negado.
+ *
+ * @param sector setor alvo (`null`/ausente = sem destino resolvido → negado)
+ * @param mode leitura (filas/monitores/estatísticas) ou escrita (operações)
+ */
+export function canAccessSector(
+  sessionOrUser: PermissionCarrier | null | undefined,
+  sector: null | string,
+  mode: 'read' | 'write' = 'read',
+): boolean {
+  const scopePermission =
+    mode === 'write' ? SECTORS_MANAGE_ALL : SECTORS_VIEW_ALL;
+  if (hasPermission(sessionOrUser, scopePermission)) return true;
+  const ownSector = sessionOrUser?.sector ?? sessionOrUser?.user?.sector;
+  return !!sector && ownSector === sector;
 }
 
 /**
@@ -146,15 +179,19 @@ export function computeEffectivePermissions(
   return ALL_PERMISSIONS.filter((p) => set.has(p));
 }
 
-/**
- * Qualquer shape que carrega permissões: sessão do servidor
- * (`session.user.permissions`), snapshot do localStorage (`{ permissions }`)
- * ou o próprio `session.user`.
- */
-export interface PermissionCarrier {
-  permissions?: readonly string[] | null;
-  sector?: string | null;
-  user?: PermissionCarrier | null;
+export function hasAnyPermission(
+  sessionOrUser: PermissionCarrier | null | undefined,
+  ...permissions: Permission[]
+): boolean {
+  const perms = permissionsOf(sessionOrUser);
+  return permissions.some((p) => perms.includes(p));
+}
+
+export function hasPermission(
+  sessionOrUser: PermissionCarrier | null | undefined,
+  permission: Permission,
+): boolean {
+  return permissionsOf(sessionOrUser).includes(permission);
 }
 
 /**
@@ -166,43 +203,6 @@ export function permissionsOf(
   sessionOrUser: PermissionCarrier | null | undefined,
 ): readonly string[] {
   return sessionOrUser?.permissions ?? sessionOrUser?.user?.permissions ?? [];
-}
-
-export function hasPermission(
-  sessionOrUser: PermissionCarrier | null | undefined,
-  permission: Permission,
-): boolean {
-  return permissionsOf(sessionOrUser).includes(permission);
-}
-
-export function hasAnyPermission(
-  sessionOrUser: PermissionCarrier | null | undefined,
-  ...permissions: Permission[]
-): boolean {
-  const perms = permissionsOf(sessionOrUser);
-  return permissions.some((p) => perms.includes(p));
-}
-
-/**
- * Regra única de escopo de setor.
- *
- * 1. quem tem a permissão de escopo acessa qualquer setor;
- * 2. quem tem setor asignado acessa o próprio setor;
- * 3. sem setor e sem permissão → negado.
- *
- * @param sector setor alvo (`null`/ausente = sem destino resolvido → negado)
- * @param mode leitura (filas/monitores/estatísticas) ou escrita (operações)
- */
-export function canAccessSector(
-  sessionOrUser: PermissionCarrier | null | undefined,
-  sector: string | null,
-  mode: 'read' | 'write' = 'read',
-): boolean {
-  const scopePermission =
-    mode === 'write' ? SECTORS_MANAGE_ALL : SECTORS_VIEW_ALL;
-  if (hasPermission(sessionOrUser, scopePermission)) return true;
-  const ownSector = sessionOrUser?.sector ?? sessionOrUser?.user?.sector;
-  return !!sector && ownSector === sector;
 }
 
 /* ── Rotas ── */
@@ -237,17 +237,7 @@ export interface RouteRequirement {
    * Setor alvo da rota, quando ela é escopada (`/monitor/<setor>`).
    * `null` = rota sem escopo de setor.
    */
-  readonly sector: string | null;
-}
-
-/**
- * Primeiro segmento depois do prefixo da rota (`/monitor/farmacia` →
- * `farmacia`). `null` quando a URL não tem o segmento.
- */
-function segmentAfter(pathname: string, prefix: string): string | null {
-  if (!pathname.startsWith(prefix + '/')) return null;
-  const segment = pathname.slice(prefix.length + 1).split('/')[0];
-  return segment || null;
+  readonly sector: null | string;
 }
 
 /**
@@ -271,22 +261,6 @@ export function matchRoute(pathname: string): RouteRequirement | null {
   };
 }
 
-/** Claims de frescor lidos de `session.user` (vêm do JWT). */
-interface SessionClaims {
-  readonly authAt?: unknown;
-  readonly permsAt?: unknown;
-}
-
-/**
- * Aceita qualquer shape de sessão (NextAuth, snapshot do cliente, claims
- * decodificados) — por isso o parâmetro é `object` e não uma forma fixa: o
- * único contrato aqui é "tem `authAt`/`permsAt` se tiver".
- */
-function asClaims(user: object | null | undefined): SessionClaims {
-  if (user === null || user === undefined) return {};
-  return user;
-}
-
 /**
  * Problema de frescor de um token de sessão.
  *
@@ -297,7 +271,7 @@ function asClaims(user: object | null | undefined): SessionClaims {
  * @param user `session.user` (claims authAt/permsAt em ms)
  */
 export function sessionFreshnessProblem(
-  user: object | null | undefined,
+  user: null | undefined | object,
   now: number = Date.now(),
 ): 'expired' | 'stale' | null {
   const { authAt, permsAt } = asClaims(user);
@@ -314,4 +288,30 @@ export function sessionFreshnessProblem(
     return 'stale';
   }
   return null;
+}
+
+/** Claims de frescor lidos de `session.user` (vêm do JWT). */
+interface SessionClaims {
+  readonly authAt?: unknown;
+  readonly permsAt?: unknown;
+}
+
+/**
+ * Aceita qualquer shape de sessão (NextAuth, snapshot do cliente, claims
+ * decodificados) — por isso o parâmetro é `object` e não uma forma fixa: o
+ * único contrato aqui é "tem `authAt`/`permsAt` se tiver".
+ */
+function asClaims(user: null | undefined | object): SessionClaims {
+  if (user === null || user === undefined) return {};
+  return user;
+}
+
+/**
+ * Primeiro segmento depois do prefixo da rota (`/monitor/farmacia` →
+ * `farmacia`). `null` quando a URL não tem o segmento.
+ */
+function segmentAfter(pathname: string, prefix: string): null | string {
+  if (!pathname.startsWith(prefix + '/')) return null;
+  const segment = pathname.slice(prefix.length + 1).split('/')[0];
+  return segment || null;
 }

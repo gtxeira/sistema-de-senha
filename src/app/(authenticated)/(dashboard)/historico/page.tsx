@@ -94,14 +94,6 @@ const rowStrongStyle =
   'text-[17px] font-extrabold tracking-[1px] text-[#163b52]';
 
 const emptySubscribe = () => () => {};
-function useIsClient() {
-  return useSyncExternalStore(
-    emptySubscribe,
-    () => true,
-    () => false,
-  );
-}
-
 export default function HistoricoPage() {
   const isClient = useIsClient();
 
@@ -425,5 +417,13 @@ export default function HistoricoPage() {
         </section>
       </div>
     </>
+  );
+}
+
+function useIsClient() {
+  return useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
   );
 }

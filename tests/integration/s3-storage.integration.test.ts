@@ -12,10 +12,6 @@ import { checkIsRunningInDocker } from '../../scripts/check-is-running-in-docker
 const TEST_PREFIX = 'integration-test/';
 let createdKeys: string[] = [];
 
-function makeBuffer(content = 'test-binary-data', size = 256) {
-  return Buffer.alloc(size, content);
-}
-
 /**
  Helper para realizar fetch nas URLs públicas do Garage dentro da rede Docker,
  redirecionando a chamada para o container 'garage' e mantendo o VHost no header Host.
@@ -36,6 +32,10 @@ async function fetchPublicUrl(url: string, init: RequestInit = {}) {
     ...init,
     headers,
   });
+}
+
+function makeBuffer(content = 'test-binary-data', size = 256) {
+  return Buffer.alloc(size, content);
 }
 
 afterAll(async () => {

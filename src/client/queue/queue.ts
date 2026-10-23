@@ -36,6 +36,35 @@ export {
 
 /* ─── Tipos ─────────────────────────────────────────────────────── */
 
+/** Resultado de `callNextNumber` — união discriminada por `ok`. */
+export type CallNextResult =
+  | { readonly error: string; readonly ok: false; }
+  | { readonly next: number; readonly ok: true; readonly type: CallType };
+
+/** Senha atual de um tipo: `NO_PASSWORD` (= `null`) quando não há. */
+export type CurrentPassword = null | number;
+
+/**
+ * Estado da fila persistido em `localStorage`.
+ *
+ * `Record<string, …>` e não `Record<SectorId, …>`: o valor vem de
+ * `JSON.parse` e os chamadores (painel, monitor, admin) recebem `sector` como
+ * `string`. O guard de setor é `Object.hasOwn(SECTORS, sector)` em cada
+ * entrada — e o TS não estreita com `hasOwn`, como já valeu nos
+ * repositórios.
+ */
+export type QueueState = Record<string, QueueEntry>;
+
+export interface QueueEntry {
+  readonly history: QueueHistoryEntry[];
+  /** Dia local (`YYYY-MM-DD`) a que o histórico pertence. */
+  readonly historyDate: string;
+  readonly normalCurrent: CurrentPassword;
+  readonly priorityCurrent: CurrentPassword;
+  /** Campo anterior à separação por tipo — só aparece em payloads antigos. */
+  readonly current?: CurrentPassword;
+}
+
 /**
  * Item do histórico visual de uma fila.
  *
@@ -58,37 +87,8 @@ export interface QueueHistoryEntry {
    */
   readonly time?: string;
   /** Instante ISO UTC da chamada — ausente quando desconhecido. */
-  readonly createdAt?: string | null;
+  readonly createdAt?: null | string;
 }
-
-/** Senha atual de um tipo: `NO_PASSWORD` (= `null`) quando não há. */
-export type CurrentPassword = number | null;
-
-export interface QueueEntry {
-  readonly normalCurrent: CurrentPassword;
-  readonly priorityCurrent: CurrentPassword;
-  readonly history: QueueHistoryEntry[];
-  /** Dia local (`YYYY-MM-DD`) a que o histórico pertence. */
-  readonly historyDate: string;
-  /** Campo anterior à separação por tipo — só aparece em payloads antigos. */
-  readonly current?: CurrentPassword;
-}
-
-/**
- * Estado da fila persistido em `localStorage`.
- *
- * `Record<string, …>` e não `Record<SectorId, …>`: o valor vem de
- * `JSON.parse` e os chamadores (painel, monitor, admin) recebem `sector` como
- * `string`. O guard de setor é `Object.hasOwn(SECTORS, sector)` em cada
- * entrada — e o TS não estreita com `hasOwn`, como já valeu nos
- * repositórios.
- */
-export type QueueState = Record<string, QueueEntry>;
-
-/** Resultado de `callNextNumber` — união discriminada por `ok`. */
-export type CallNextResult =
-  | { readonly ok: true; readonly next: number; readonly type: CallType }
-  | { readonly ok: false; readonly error: string };
 
 export interface ReconcileOptions {
   readonly historyLimit?: number;
@@ -112,58 +112,91 @@ const serverQueueSnapshot: QueueState = {
 };
 
 let clientQueueSnapshot: QueueState | null = null;
-let clientQueueRaw: string | null = null;
+let clientQueueRaw: null | string = null;
 let hasClientQueueSnapshot = false;
 
 // Usuários movidos para o banco de dados (tabela profiles + auth.users)
 
+export async function callNextNumber({
+  sector,
+  type,
+}: {
+  sector: string;
+  type: CallType;
+}): Promise<CallNextResult> {
+  return withQueueLock(async () => {
+    let next: null | number = null;
+    try {
+      const res = await fetch('/api/queue/call', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sector, type }),
+      });
+      const data = await readJson<QueueCallBody>(res);
+      if (!res.ok) {
+        if (data.useLocal) {
+          const ls = normalizeQueue(readQueueState()[sector]);
+          next =
+            type === 'preferencial'
+              ? nextQueueNumber(ls.priorityCurrent)
+              : nextQueueNumber(ls.normalCurrent);
+        } else {
+          return {
+            ok: false,
+            error: data.error || 'Erro ao conectar à sequência central.',
+          };
+        }
+      } else {
+        next = Number(data.number);
+      }
+    } catch {
+      const ls = normalizeQueue(readQueueState()[sector]);
+      next =
+        type === 'preferencial'
+          ? nextQueueNumber(ls.priorityCurrent)
+          : nextQueueNumber(ls.normalCurrent);
+    }
+
+    next = Number(next);
+    if (
+      !Number.isInteger(next) ||
+      next < MIN_QUEUE_NUMBER ||
+      next > MAX_QUEUE_NUMBER
+    ) {
+      return { ok: false, error: 'Número de senha inválido.' };
+    }
+
+    const latest = readQueueState();
+    const q = normalizeQueue(latest[sector]);
+    const field = type === 'preferencial' ? 'priorityCurrent' : 'normalCurrent';
+
+    saveQueueState({
+      ...latest,
+      [sector]: { ...q, [field]: next },
+    });
+
+    return { ok: true, next, type };
+  });
+}
+
 /**
- * Dia-calendário de "agora" no fuso do APP.
+ * Drop malformed entries and deduplicate by number+type.
  *
- * Não é o dia do DEVICE: um tablet em UTC (ou em qualquer outro fuso)
- * viraria o histórico às 21:00 do horário brasileiro. A virada do dia é
- * do sistema, e ela acontece à meia-noite BRT.
+ * Locally created items have no `id`, so the id cannot take part in the key.
+ * Keeps the *first* occurrence — passing newest-first keeps newest-first.
  */
-function appDateKey(): string {
-  return dayKey(new Date());
-}
-
-export function nextQueueNumber(current?: CurrentPassword): number {
-  if (current === undefined || current === null) {
-    return MIN_QUEUE_NUMBER;
-  }
-
-  const next = Number(current) + 1;
-  return next > MAX_QUEUE_NUMBER ? MIN_QUEUE_NUMBER : next;
-}
-
-export function formatQueueNumber(
-  number: number | string | null | undefined,
-  type: CallType = 'normal',
-): string {
-  const prefix =
-    type === 'preferencial' || type === 'preferential'
-      ? TYPE_PREFIXES.preferencial
-      : TYPE_PREFIXES.normal;
-  if (number === null || number === undefined) return `${prefix}---`;
-  return `${prefix}${String(Number(number)).padStart(3, '0')}`;
-}
-
-export function getInitialState(): QueueState {
-  return {
-    farmacia: {
-      normalCurrent: NO_PASSWORD,
-      priorityCurrent: NO_PASSWORD,
-      history: [],
-      historyDate: appDateKey(),
-    },
-    recepcao: {
-      normalCurrent: NO_PASSWORD,
-      priorityCurrent: NO_PASSWORD,
-      history: [],
-      historyDate: appDateKey(),
-    },
-  };
+export function cleanHistory(
+  history: readonly QueueHistoryEntry[] = [],
+): QueueHistoryEntry[] {
+  if (!isQueueHistory(history)) return [];
+  const seen = new Set<string>();
+  return history.filter((item) => {
+    if (item?.number == null) return false;
+    const key = `${item.number}-${item.type}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 export function clearHistoryFromNewDay(state: QueueState): QueueState {
@@ -192,21 +225,50 @@ export function clearHistoryFromNewDay(state: QueueState): QueueState {
   return nextState;
 }
 
-export function readQueueState(): QueueState {
-  if (typeof window === 'undefined') return getInitialState();
-  try {
-    const saved = window.localStorage.getItem(QUEUE_KEY);
-    if (!saved) return getInitialState();
-    const parsed = parseJson<QueueState>(saved);
-    return clearHistoryFromNewDay(parsed);
-  } catch {
-    return getInitialState();
-  }
+export function formatQueueNumber(
+  number: null | undefined | number | string,
+  type: CallType = 'normal',
+): string {
+  const prefix =
+    type === 'preferencial' || type === 'preferential'
+      ? TYPE_PREFIXES.preferencial
+      : TYPE_PREFIXES.normal;
+  if (number === null || number === undefined) return `${prefix}---`;
+  return `${prefix}${String(Number(number)).padStart(3, '0')}`;
 }
 
-export function saveQueueState(state: QueueState): void {
-  window.localStorage.setItem(QUEUE_KEY, JSON.stringify(state));
-  window.dispatchEvent(new CustomEvent('queue-updated', { detail: state }));
+export function getInitialState(): QueueState {
+  return {
+    farmacia: {
+      normalCurrent: NO_PASSWORD,
+      priorityCurrent: NO_PASSWORD,
+      history: [],
+      historyDate: appDateKey(),
+    },
+    recepcao: {
+      normalCurrent: NO_PASSWORD,
+      priorityCurrent: NO_PASSWORD,
+      history: [],
+      historyDate: appDateKey(),
+    },
+  };
+}
+
+export function getQueueSnapshot(): QueueState {
+  const raw = window.localStorage.getItem(QUEUE_KEY);
+  // `clientQueueSnapshot` é non-null sempre que `hasClientQueueSnapshot` está
+  // true; a checagem extra existe só para o TS enxergar o invariante.
+  if (raw === clientQueueRaw && hasClientQueueSnapshot && clientQueueSnapshot)
+    return clientQueueSnapshot;
+  clientQueueSnapshot = readQueueState();
+  // readQueueState pode normalizar o estado do dia e atualizar o localStorage.
+  clientQueueRaw = window.localStorage.getItem(QUEUE_KEY);
+  hasClientQueueSnapshot = true;
+  return clientQueueSnapshot;
+}
+
+export function getServerQueueSnapshot(): QueueState {
+  return serverQueueSnapshot;
 }
 
 /**
@@ -223,7 +285,7 @@ export function saveQueueState(state: QueueState): void {
  *
  * @param sector single sector, or null for every sector
  */
-export function invalidateQueueState(sector: string | null = null): void {
+export function invalidateQueueState(sector: null | string = null): void {
   clientQueueRaw = null;
   clientQueueSnapshot = null;
   hasClientQueueSnapshot = false;
@@ -246,68 +308,39 @@ export function invalidateQueueState(sector: string | null = null): void {
   saveQueueState(next);
 }
 
-/**
- * Guarda defensiva contra o que veio do `JSON.parse` do storage, sem deixar o
- * valor virar `any`.
- *
- * `Array.isArray` tem assinatura `arg is any[]`: ele estreita qualquer coisa
- * para `any[]` e derruba o tipo de toda a função seguinte. Com o elemento
- * declarado, o `if` continua cobrindo o caso não-array e o resto segue tipado.
- */
-function isQueueHistory(value: unknown): value is readonly QueueHistoryEntry[] {
-  return Array.isArray(value);
+export function nextQueueNumber(current?: CurrentPassword): number {
+  if (current === undefined || current === null) {
+    return MIN_QUEUE_NUMBER;
+  }
+
+  const next = Number(current) + 1;
+  return next > MAX_QUEUE_NUMBER ? MIN_QUEUE_NUMBER : next;
 }
 
-/**
- * Drop malformed entries and deduplicate by number+type.
- *
- * Locally created items have no `id`, so the id cannot take part in the key.
- * Keeps the *first* occurrence — passing newest-first keeps newest-first.
- */
-export function cleanHistory(
-  history: readonly QueueHistoryEntry[] = [],
-): QueueHistoryEntry[] {
-  if (!isQueueHistory(history)) return [];
-  const seen = new Set<string>();
-  return history.filter((item) => {
-    if (item?.number == null) return false;
-    const key = `${item.number}-${item.type}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+export function normalizeQueue(queue?: Partial<QueueEntry> | null): QueueEntry {
+  return {
+    normalCurrent: queue?.normalCurrent ?? queue?.current ?? NO_PASSWORD,
+    priorityCurrent: queue?.priorityCurrent ?? NO_PASSWORD,
+    history: queue?.history ?? [],
+    historyDate: queue?.historyDate ?? appDateKey(),
+  };
 }
 
-function historyKey(call?: QueueHistoryEntry | null): string {
-  return `${call?.number}-${call?.type}`;
+// Bip desativado permanentemente
+export function playCallAlert(): void {
+  return;
 }
 
-/**
- * Dia-calendário de um instante ISO, no fuso do APP.
- *
- * Comparar `createdAt.slice(0, 10)` usaria o dia UTC: uma chamada feita
- * às 22:00 BRT pertence ao dia seguinte no fio e seria descartada como
- * "amanhã".
- */
-function localDayKey(iso: string): string | null {
-  return dayKeyOrNull(iso);
-}
-
-/** Canonical call shape — the API has emitted both spellings of "preferential". */
-function normalizeCalls(
-  calls?: readonly QueueHistoryEntry[],
-): QueueHistoryEntry[] {
-  if (!isQueueHistory(calls)) return [];
-  return calls
-    .filter((call) => call?.number != null)
-    .map((call) => ({
-      ...call,
-      type:
-        call.type === CALL_TYPES.PREFERENCIAL ||
-        call.type === CALL_TYPES.PREFERENTIAL
-          ? CALL_TYPES.PREFERENCIAL
-          : CALL_TYPES.NORMAL,
-    }));
+export function readQueueState(): QueueState {
+  if (typeof window === 'undefined') return getInitialState();
+  try {
+    const saved = window.localStorage.getItem(QUEUE_KEY);
+    if (!saved) return getInitialState();
+    const parsed = parseJson<QueueState>(saved);
+    return clearHistoryFromNewDay(parsed);
+  } catch {
+    return getInitialState();
+  }
 }
 
 /**
@@ -395,12 +428,17 @@ export function reconcileQueueFromCalls(
   });
 }
 
-export function normalizeQueue(queue?: Partial<QueueEntry> | null): QueueEntry {
-  return {
-    normalCurrent: queue?.normalCurrent ?? queue?.current ?? NO_PASSWORD,
-    priorityCurrent: queue?.priorityCurrent ?? NO_PASSWORD,
-    history: queue?.history ?? [],
-    historyDate: queue?.historyDate ?? appDateKey(),
+export function saveQueueState(state: QueueState): void {
+  window.localStorage.setItem(QUEUE_KEY, JSON.stringify(state));
+  window.dispatchEvent(new CustomEvent('queue-updated', { detail: state }));
+}
+
+export function subscribeQueue(callback: () => void): () => void {
+  window.addEventListener('queue-updated', callback);
+  window.addEventListener('storage', callback);
+  return () => {
+    window.removeEventListener('queue-updated', callback);
+    window.removeEventListener('storage', callback);
   };
 }
 
@@ -430,95 +468,57 @@ export async function withQueueLock<T>(callback: () => Promise<T>): Promise<T> {
   }
 }
 
-// Bip desativado permanentemente
-export function playCallAlert(): void {
-  return;
+/**
+ * Dia-calendário de "agora" no fuso do APP.
+ *
+ * Não é o dia do DEVICE: um tablet em UTC (ou em qualquer outro fuso)
+ * viraria o histórico às 21:00 do horário brasileiro. A virada do dia é
+ * do sistema, e ela acontece à meia-noite BRT.
+ */
+function appDateKey(): string {
+  return dayKey(new Date());
 }
 
-export function subscribeQueue(callback: () => void): () => void {
-  window.addEventListener('queue-updated', callback);
-  window.addEventListener('storage', callback);
-  return () => {
-    window.removeEventListener('queue-updated', callback);
-    window.removeEventListener('storage', callback);
-  };
+function historyKey(call?: QueueHistoryEntry | null): string {
+  return `${call?.number}-${call?.type}`;
 }
 
-export function getQueueSnapshot(): QueueState {
-  const raw = window.localStorage.getItem(QUEUE_KEY);
-  // `clientQueueSnapshot` é non-null sempre que `hasClientQueueSnapshot` está
-  // true; a checagem extra existe só para o TS enxergar o invariante.
-  if (raw === clientQueueRaw && hasClientQueueSnapshot && clientQueueSnapshot)
-    return clientQueueSnapshot;
-  clientQueueSnapshot = readQueueState();
-  // readQueueState pode normalizar o estado do dia e atualizar o localStorage.
-  clientQueueRaw = window.localStorage.getItem(QUEUE_KEY);
-  hasClientQueueSnapshot = true;
-  return clientQueueSnapshot;
+/**
+ * Guarda defensiva contra o que veio do `JSON.parse` do storage, sem deixar o
+ * valor virar `any`.
+ *
+ * `Array.isArray` tem assinatura `arg is any[]`: ele estreita qualquer coisa
+ * para `any[]` e derruba o tipo de toda a função seguinte. Com o elemento
+ * declarado, o `if` continua cobrindo o caso não-array e o resto segue tipado.
+ */
+function isQueueHistory(value: unknown): value is readonly QueueHistoryEntry[] {
+  return Array.isArray(value);
 }
 
-export function getServerQueueSnapshot(): QueueState {
-  return serverQueueSnapshot;
+/**
+ * Dia-calendário de um instante ISO, no fuso do APP.
+ *
+ * Comparar `createdAt.slice(0, 10)` usaria o dia UTC: uma chamada feita
+ * às 22:00 BRT pertence ao dia seguinte no fio e seria descartada como
+ * "amanhã".
+ */
+function localDayKey(iso: string): null | string {
+  return dayKeyOrNull(iso);
 }
 
-export async function callNextNumber({
-  sector,
-  type,
-}: {
-  sector: string;
-  type: CallType;
-}): Promise<CallNextResult> {
-  return withQueueLock(async () => {
-    let next: number | null = null;
-    try {
-      const res = await fetch('/api/queue/call', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sector, type }),
-      });
-      const data = await readJson<QueueCallBody>(res);
-      if (!res.ok) {
-        if (data.useLocal) {
-          const ls = normalizeQueue(readQueueState()[sector]);
-          next =
-            type === 'preferencial'
-              ? nextQueueNumber(ls.priorityCurrent)
-              : nextQueueNumber(ls.normalCurrent);
-        } else {
-          return {
-            ok: false,
-            error: data.error || 'Erro ao conectar à sequência central.',
-          };
-        }
-      } else {
-        next = Number(data.number);
-      }
-    } catch {
-      const ls = normalizeQueue(readQueueState()[sector]);
-      next =
-        type === 'preferencial'
-          ? nextQueueNumber(ls.priorityCurrent)
-          : nextQueueNumber(ls.normalCurrent);
-    }
-
-    next = Number(next);
-    if (
-      !Number.isInteger(next) ||
-      next < MIN_QUEUE_NUMBER ||
-      next > MAX_QUEUE_NUMBER
-    ) {
-      return { ok: false, error: 'Número de senha inválido.' };
-    }
-
-    const latest = readQueueState();
-    const q = normalizeQueue(latest[sector]);
-    const field = type === 'preferencial' ? 'priorityCurrent' : 'normalCurrent';
-
-    saveQueueState({
-      ...latest,
-      [sector]: { ...q, [field]: next },
-    });
-
-    return { ok: true, next, type };
-  });
+/** Canonical call shape — the API has emitted both spellings of "preferential". */
+function normalizeCalls(
+  calls?: readonly QueueHistoryEntry[],
+): QueueHistoryEntry[] {
+  if (!isQueueHistory(calls)) return [];
+  return calls
+    .filter((call) => call?.number != null)
+    .map((call) => ({
+      ...call,
+      type:
+        call.type === CALL_TYPES.PREFERENCIAL ||
+        call.type === CALL_TYPES.PREFERENTIAL
+          ? CALL_TYPES.PREFERENCIAL
+          : CALL_TYPES.NORMAL,
+    }));
 }

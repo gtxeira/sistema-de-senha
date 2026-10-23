@@ -89,14 +89,6 @@ const callButtonStyle =
 const callButtonSmallStyle = 'text-[12px] font-semibold opacity-80';
 
 const emptySubscribe = () => () => {};
-function useIsClient() {
-  return useSyncExternalStore(
-    emptySubscribe,
-    () => true,
-    () => false,
-  );
-}
-
 export default function PainelPage() {
   const isClient = useIsClient();
 
@@ -145,7 +137,7 @@ export default function PainelPage() {
   const sectorInfo = getSector(activeSector) ?? SECTORS.farmacia;
 
   const { calls, lastCall } = useQueueEvents(activeSector);
-  const lastCallIdRef = useRef<string | null>(null);
+  const lastCallIdRef = useRef<null | string>(null);
 
   useEffect(() => {
     if (!activeSector || calls == null) return;
@@ -255,7 +247,7 @@ export default function PainelPage() {
       const priorityCall = KEYBOARD_SHORTCUTS.PRIORITY_CALL.map((k) =>
         k.toLowerCase(),
       ).includes(key);
-      const recallCall = ['b', '.', 'f5', 'escape'].includes(key);
+      const recallCall = ['.', 'b', 'escape', 'f5'].includes(key);
       if (recallCall) {
         event.preventDefault();
         void reCall();
@@ -491,5 +483,13 @@ export default function PainelPage() {
         </section>
       </div>
     </>
+  );
+}
+
+function useIsClient() {
+  return useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
   );
 }

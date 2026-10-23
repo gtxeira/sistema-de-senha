@@ -16,12 +16,12 @@ import { ALL_SECTORS, ALL_SECTORS_INFO, SECTORS } from '@/shared/constants';
 export interface SectorSelectProps {
   /** Escopo selecionado: um setor real ou "Todos". */
   readonly value: SectorScope;
-  readonly onValueChange: (value: SectorScope) => void;
   /**
    * Exibe a opção "Todos" (visão agregada de todos os setores).
    * Só faz sentido em telas que agregam setores — o histórico.
    */
   readonly allowAll?: boolean;
+  readonly onValueChange: (value: SectorScope) => void;
 }
 
 /**

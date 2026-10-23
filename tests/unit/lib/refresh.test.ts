@@ -15,6 +15,18 @@ import { REFRESH_REUSE_GRACE, REFRESH_TOKEN_MAX_AGE } from '@/shared/constants';
 type FakeRow = { -readonly [K in keyof RefreshTokenRow]: RefreshTokenRow[K] };
 
 /**
+ * `RotateResult` é uma união discriminada por `ok`: `raw`/`userId`/`expiresAt`
+ * só existem no ramo de sucesso. Confirma a rotação e estreita o tipo.
+ */
+function expectRotated(
+  result: RotateResult,
+): Extract<RotateResult, { readonly ok: true }> {
+  expect(result.ok).toBe(true);
+  if (!result.ok) throw new Error(`rotação falhou: ${result.reason}`);
+  return result;
+}
+
+/**
  * Fake mínimo de `prisma.refresh_tokens` — cobre findUnique/create/update/
  * deleteMany + $transaction, que é tudo o que o módulo usa. Assim os casos
  * de rotação/reuso/expiração rodam sem banco.
@@ -59,8 +71,8 @@ function makeFakePrisma() {
         where,
         data,
       }: {
-        readonly where: { readonly id: string };
         readonly data: Record<string, unknown>;
+        readonly where: { readonly id: string };
       }) => {
         const row = rows.find((r) => match(r, where));
         if (!row) throw new Error('not found');
@@ -84,18 +96,6 @@ function makeFakePrisma() {
     $transaction: async <T>(ops: ReadonlyArray<PromiseLike<T>>): Promise<T[]> =>
       Promise.all(ops),
   };
-}
-
-/**
- * `RotateResult` é uma união discriminada por `ok`: `raw`/`userId`/`expiresAt`
- * só existem no ramo de sucesso. Confirma a rotação e estreita o tipo.
- */
-function expectRotated(
-  result: RotateResult,
-): Extract<RotateResult, { readonly ok: true }> {
-  expect(result.ok).toBe(true);
-  if (!result.ok) throw new Error(`rotação falhou: ${result.reason}`);
-  return result;
 }
 
 const USER = 'user-1';

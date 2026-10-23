@@ -5,13 +5,13 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { readJson } from '@/shared/json';
 import { cleanupQueueTestData } from '../../postgres-setup';
 
-async function importRoute() {
-  return import('@/app/api/stats/route');
-}
-
 async function importQueueRepo() {
   const mod = await import('@/server/repositories');
   return mod.queue;
+}
+
+async function importRoute() {
+  return import('@/app/api/stats/route');
 }
 
 describe('/api/stats — integration', () => {

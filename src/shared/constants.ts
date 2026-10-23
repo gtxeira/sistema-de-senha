@@ -1,3 +1,5 @@
+export type CallType = 'normal' | 'preferencial' | 'preferential';
+export type RoleKey = 'admin' | 'attendant';
 // ── Tipos de domínio ──────────────────────────────────────────
 // Chaves válidas das entidades do sistema. Servem de fonte única para os
 // unions usados por repositórios, rotas e componentes.
@@ -8,8 +10,6 @@ export type SectorId = 'farmacia' | 'recepcao';
  * faz sentido para quem tem `setores.todos.ver`.
  */
 export type SectorScope = SectorId | typeof ALL_SECTORS;
-export type RoleKey = 'admin' | 'attendant';
-export type CallType = 'normal' | 'preferencial' | 'preferential';
 // Tipo da sequência (banco) — diferente de `callType`: o banco guarda a
 // grafia "preferencial" enquanto o cliente envia "preferential".
 export type SequenceType = 'normal' | 'preferencial';
@@ -40,19 +40,6 @@ export const ALL_SECTORS_INFO: SectorInfo = {
   shortName: 'TODOS',
 };
 
-/**
- * Checagem de setor que o TS enxerga.
- *
- * `Object.hasOwn(SECTORS, x)` valida em runtime mas **não** estreita o tipo
- * (`x` segue `string`), e `SECTORS[x]` exige `SectorId` — o predicado resolve
- * os dois lados numa chamada só. Comportamento idêntico ao guard manual
- * (`!x || !Object.hasOwn(...)`), com um `typeof` explícito porque o valor
- * costuma vir de `request.json()`.
- */
-export function isSectorId(value: unknown): value is SectorId {
-  return typeof value === 'string' && Object.hasOwn(SECTORS, value);
-}
-
 /** Lookup tolerante: `undefined` para setor inválido, em vez de estourar. */
 export function getSector(id: string): SectorInfo | undefined {
   return isSectorId(id) ? SECTORS[id] : undefined;
@@ -68,6 +55,19 @@ export function getSectorScope(id?: string): SectorInfo | undefined {
   if (id === undefined) return undefined;
   if (id === ALL_SECTORS) return ALL_SECTORS_INFO;
   return getSector(id);
+}
+
+/**
+ * Checagem de setor que o TS enxerga.
+ *
+ * `Object.hasOwn(SECTORS, x)` valida em runtime mas **não** estreita o tipo
+ * (`x` segue `string`), e `SECTORS[x]` exige `SectorId` — o predicado resolve
+ * os dois lados numa chamada só. Comportamento idêntico ao guard manual
+ * (`!x || !Object.hasOwn(...)`), com um `typeof` explícito porque o valor
+ * costuma vir de `request.json()`.
+ */
+export function isSectorId(value: unknown): value is SectorId {
+  return typeof value === 'string' && Object.hasOwn(SECTORS, value);
 }
 
 /** Predicado de escopo: setor real ou "Todos". */

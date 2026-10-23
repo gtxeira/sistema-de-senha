@@ -7,11 +7,6 @@ import { useEffect } from 'react';
 
 import { useDashboardLayoutStore } from '@/stores/use-dashboard-layout-store';
 
-interface SetDashboardLayoutOptions {
-  sectorInfo?: SectorInfo;
-  headerActions?: ReactNode;
-}
-
 /**
  * Publica na store de layout o que a página quer no "casco" do dashboard.
  *
@@ -36,4 +31,9 @@ export function useSetDashboardLayoutInfo({
   // `headerActions` é um JSX novo toda vez) e a store zeraria e republicaria
   // os próprios valores a cada render.
   useEffect(() => () => resetLayout(), [resetLayout]);
+}
+
+interface SetDashboardLayoutOptions {
+  headerActions?: ReactNode;
+  sectorInfo?: SectorInfo;
 }

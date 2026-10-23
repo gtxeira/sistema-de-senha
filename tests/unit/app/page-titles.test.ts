@@ -45,6 +45,15 @@ function findPageFiles(dir: string): string[] {
   return found;
 }
 
+/** Layout do mesmo diretório da página (o que carrega o metadata). */
+function layoutOf(pageFile: string): undefined | string {
+  const dir = dirname(pageFile);
+  for (const entry of readdirSync(dir)) {
+    if (LAYOUT_FILES.includes(entry)) return join(dir, entry);
+  }
+  return undefined;
+}
+
 /**
  * Padrão de rota da página — como no registro de permissões
  * (`ROUTE_RULES`), o segmento dinâmico continua escrito (`[sector]`), e
@@ -56,15 +65,6 @@ function routePattern(file: string): string {
     .filter((segment) => !PAGE_FILES.includes(segment))
     .filter((segment) => !segment.startsWith('(') && !segment.startsWith('@'));
   return `/${segments.join('/')}`;
-}
-
-/** Layout do mesmo diretório da página (o que carrega o metadata). */
-function layoutOf(pageFile: string): string | undefined {
-  const dir = dirname(pageFile);
-  for (const entry of readdirSync(dir)) {
-    if (LAYOUT_FILES.includes(entry)) return join(dir, entry);
-  }
-  return undefined;
 }
 
 const pageFiles = findPageFiles(APP_DIR);

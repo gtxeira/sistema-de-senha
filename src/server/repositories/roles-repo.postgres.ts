@@ -16,58 +16,6 @@ import { ALL_PERMISSIONS } from '@/shared/permissions';
 const PERMISSION_SET = new Set<string>(ALL_PERMISSIONS);
 const KEY_REGEX = /^[a-z][a-z0-9-]*$/;
 
-/** Linha de cargo como o Prisma devolve — com ou sem `permissions` junto. */
-interface RoleRow {
-  readonly id: string;
-  readonly key: string;
-  readonly name: string;
-  readonly description: string | null;
-  readonly built_in: boolean;
-  readonly permissions?: ReadonlyArray<{ readonly permission: string }> | null;
-}
-
-/**
- * `Array.isArray` tem assinatura `arg is any[]` e estreita o parâmetro para
- * `any[]`, jogando a validação seguinte no `any`. Com o elemento declarado a
- * guarda continua cobrindo o caso não-array e o resto permanece tipado.
- */
-function isStringList(value: unknown): value is readonly string[] {
-  return Array.isArray(value);
-}
-
-/**
- * Valida e normaliza uma lista de chaves de permissão contra o registro
- * fixo em `src/shared/permissions.ts`.
- * @returns `null` quando `permissions` não foi informado
- * @throws 400 para chave desconhecida
- */
-function validatePermissions(
-  permissions: readonly string[] | undefined,
-): string[] | null {
-  if (permissions === undefined) return null;
-  if (!isStringList(permissions)) {
-    throw routeError(400, 'Permissões devem ser uma lista de chaves');
-  }
-  const unique = [...new Set(permissions)];
-  for (const permission of unique) {
-    if (!PERMISSION_SET.has(permission)) {
-      throw routeError(400, `Permissão desconhecida: ${permission}`);
-    }
-  }
-  return unique;
-}
-
-function shapeRole(role: RoleRow): RoleRecord {
-  return {
-    id: role.id,
-    key: role.key,
-    name: role.name,
-    description: role.description,
-    built_in: role.built_in,
-    permissions: (role.permissions ?? []).map((p) => p.permission),
-  };
-}
-
 /**
  * Repositório de cargos e das permissões efetivas de usuários.
  *
@@ -75,24 +23,6 @@ function shapeRole(role: RoleRow): RoleRecord {
  * `src/shared/permissions.ts`. Aqui só gravamos as atribuições.
  */
 export class PostgresRolesRepository implements RolesRepository {
-  /** Lista todos os cargos com suas permissões. */
-  async list(): Promise<RoleRecord[]> {
-    const roles = await prisma.roles.findMany({
-      include: { permissions: true },
-      orderBy: [{ built_in: 'desc' }, { created_at: 'asc' }],
-    });
-    return roles.map((role) => shapeRole(role));
-  }
-
-  /** Busca um cargo pela chave. */
-  async getByKey(key: string): Promise<RoleRecord | null> {
-    const role = await prisma.roles.findUnique({
-      where: { key },
-      include: { permissions: true },
-    });
-    return role ? shapeRole(role) : null;
-  }
-
   async create(data: CreateRoleInput): Promise<RoleRecord> {
     const key = String(data?.key || '')
       .trim()
@@ -129,6 +59,51 @@ export class PostgresRolesRepository implements RolesRepository {
       throw routeError(
         errorStatus(error),
         errorMessage(error, 'Erro ao criar cargo'),
+      );
+    }
+  }
+
+  /** Busca um cargo pela chave. */
+  async getByKey(key: string): Promise<RoleRecord | null> {
+    const role = await prisma.roles.findUnique({
+      where: { key },
+      include: { permissions: true },
+    });
+    return role ? shapeRole(role) : null;
+  }
+
+  /** Lista todos os cargos com suas permissões. */
+  async list(): Promise<RoleRecord[]> {
+    const roles = await prisma.roles.findMany({
+      include: { permissions: true },
+      orderBy: [{ built_in: 'desc' }, { created_at: 'asc' }],
+    });
+    return roles.map((role) => shapeRole(role));
+  }
+
+  /** Remove um cargo (apaga em cascata suas permissões). */
+  async remove(id: string): Promise<void> {
+    const current = await prisma.roles.findUnique({ where: { id } });
+    if (!current) throw routeError(404, 'Cargo não encontrado');
+    if (current.built_in) {
+      throw routeError(403, 'Cargos do sistema não podem ser excluídos');
+    }
+
+    try {
+      await prisma.roles.delete({ where: { id } });
+    } catch (error) {
+      // FK users_role_id_fkey (ON DELETE RESTRICT)
+      if (errorCode(error) === 'P2003') {
+        throw routeError(
+          409,
+          'Cargo em uso por usuários — troque o cargo deles antes de excluir',
+        );
+      }
+      if (errorCode(error) === 'P2025')
+        throw routeError(404, 'Cargo não encontrado');
+      throw routeError(
+        errorStatus(error),
+        errorMessage(error, 'Erro ao excluir cargo'),
       );
     }
   }
@@ -187,31 +162,56 @@ export class PostgresRolesRepository implements RolesRepository {
       );
     }
   }
+}
 
-  /** Remove um cargo (apaga em cascata suas permissões). */
-  async remove(id: string): Promise<void> {
-    const current = await prisma.roles.findUnique({ where: { id } });
-    if (!current) throw routeError(404, 'Cargo não encontrado');
-    if (current.built_in) {
-      throw routeError(403, 'Cargos do sistema não podem ser excluídos');
-    }
+/** Linha de cargo como o Prisma devolve — com ou sem `permissions` junto. */
+interface RoleRow {
+  readonly id: string;
+  readonly name: string;
+  readonly built_in: boolean;
+  readonly description: null | string;
+  readonly key: string;
+  readonly permissions?: ReadonlyArray<{ readonly permission: string }> | null;
+}
 
-    try {
-      await prisma.roles.delete({ where: { id } });
-    } catch (error) {
-      // FK users_role_id_fkey (ON DELETE RESTRICT)
-      if (errorCode(error) === 'P2003') {
-        throw routeError(
-          409,
-          'Cargo em uso por usuários — troque o cargo deles antes de excluir',
-        );
-      }
-      if (errorCode(error) === 'P2025')
-        throw routeError(404, 'Cargo não encontrado');
-      throw routeError(
-        errorStatus(error),
-        errorMessage(error, 'Erro ao excluir cargo'),
-      );
+/**
+ * `Array.isArray` tem assinatura `arg is any[]` e estreita o parâmetro para
+ * `any[]`, jogando a validação seguinte no `any`. Com o elemento declarado a
+ * guarda continua cobrindo o caso não-array e o resto permanece tipado.
+ */
+function isStringList(value: unknown): value is readonly string[] {
+  return Array.isArray(value);
+}
+
+function shapeRole(role: RoleRow): RoleRecord {
+  return {
+    id: role.id,
+    key: role.key,
+    name: role.name,
+    description: role.description,
+    built_in: role.built_in,
+    permissions: (role.permissions ?? []).map((p) => p.permission),
+  };
+}
+
+/**
+ * Valida e normaliza uma lista de chaves de permissão contra o registro
+ * fixo em `src/shared/permissions.ts`.
+ * @returns `null` quando `permissions` não foi informado
+ * @throws 400 para chave desconhecida
+ */
+function validatePermissions(
+  permissions: readonly string[] | undefined,
+): string[] | null {
+  if (permissions === undefined) return null;
+  if (!isStringList(permissions)) {
+    throw routeError(400, 'Permissões devem ser uma lista de chaves');
+  }
+  const unique = [...new Set(permissions)];
+  for (const permission of unique) {
+    if (!PERMISSION_SET.has(permission)) {
+      throw routeError(400, `Permissão desconhecida: ${permission}`);
     }
   }
+  return unique;
 }

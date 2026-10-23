@@ -5,21 +5,15 @@ import type {
 } from '@/server/repositories/types';
 import type { SequenceType } from '@/shared/constants';
 
-/** Linha persistida: o input da chamada + id gerado e timestamp monotônico. */
-interface StoredCall extends QueueCallInput {
-  readonly id: string;
-  readonly created_at: Date;
-}
-
 /**
  * In-memory implementation of QueueRepository for fast contract testing.
  * No external dependencies — uses Map and Array.
  */
 export class InMemoryQueueRepository implements QueueRepository {
-  #sequences = new Map<string, number>(); // "sector:type" → current_number
   #calls: StoredCall[] = [];
-  #resetAt = new Map<string, Date>(); // sector → Date
   #clock = 0;
+  #resetAt = new Map<string, Date>(); // sector → Date
+  #sequences = new Map<string, number>(); // "sector:type" → current_number
 
   /**
    * Monotonic timestamp source. Guarantees strict ordering between calls and
@@ -29,6 +23,40 @@ export class InMemoryQueueRepository implements QueueRepository {
   #now(): Date {
     this.#clock = Math.max(Date.now(), this.#clock + 1);
     return new Date(this.#clock);
+  }
+
+  /** Get all saved calls. */
+  getCalls(): StoredCall[] {
+    return [...this.#calls];
+  }
+
+  async getRecentCalls(
+    sector: string,
+    limit = 30,
+    resetAt: Date | null = null,
+  ): Promise<RecentCall[]> {
+    return this.#calls
+      .filter((c) => c.sector === sector)
+      .filter((c) => !resetAt || c.created_at >= resetAt)
+      .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
+      .slice(0, limit)
+      .map((c) => ({
+        id: c.id,
+        number: c.number,
+        type: c.sequenceType === 'preferencial' ? 'preferencial' : 'normal',
+        // O INSTANTE, não "HH:mm": quem exibe formata em BRT, e o
+        // cliente precisa do dia para fazer a virada do histórico.
+        createdAt: c.created_at.toISOString(),
+      }));
+  }
+
+  async getSectorResetAt(sector: string): Promise<Date | null> {
+    return this.#resetAt.get(sector) ?? null;
+  }
+
+  /** Get current sequence value for a sector+type. */
+  getSequence(sector: string, type: SequenceType): number {
+    return this.#sequences.get(`${sector}:${type}`) ?? -1;
   }
 
   async nextNumber(
@@ -52,6 +80,17 @@ export class InMemoryQueueRepository implements QueueRepository {
     return { number: next, wraparound: false };
   }
 
+  async resetSector(sector: string): Promise<void> {
+    for (const key of this.#sequences.keys()) {
+      if (key.startsWith(`${sector}:`)) {
+        this.#sequences.set(key, -1);
+      }
+    }
+    this.#resetAt.set(sector, this.#now());
+  }
+
+  // --- Test helpers (not part of the interface) ---
+
   async saveCall(
     call: QueueCallInput,
   ): Promise<{ id: string; createdAt: string }> {
@@ -64,39 +103,6 @@ export class InMemoryQueueRepository implements QueueRepository {
     });
     // O instante gravado, não "agora" — é o valor que virou registro.
     return { id, createdAt: createdAt.toISOString() };
-  }
-
-  async resetSector(sector: string): Promise<void> {
-    for (const key of this.#sequences.keys()) {
-      if (key.startsWith(`${sector}:`)) {
-        this.#sequences.set(key, -1);
-      }
-    }
-    this.#resetAt.set(sector, this.#now());
-  }
-
-  async getSectorResetAt(sector: string): Promise<Date | null> {
-    return this.#resetAt.get(sector) ?? null;
-  }
-
-  async getRecentCalls(
-    sector: string,
-    limit = 30,
-    resetAt: Date | null = null,
-  ): Promise<RecentCall[]> {
-    return this.#calls
-      .filter((c) => c.sector === sector)
-      .filter((c) => !resetAt || c.created_at >= resetAt)
-      .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
-      .slice(0, limit)
-      .map((c) => ({
-        id: c.id,
-        number: c.number,
-        type: c.sequenceType === 'preferencial' ? 'preferencial' : 'normal',
-        // O INSTANTE, não "HH:mm": quem exibe formata em BRT, e o
-        // cliente precisa do dia para fazer a virada do histórico.
-        createdAt: c.created_at.toISOString(),
-      }));
   }
 
   async setNextNumber(
@@ -112,16 +118,10 @@ export class InMemoryQueueRepository implements QueueRepository {
     const key = `${sector}:${type}`;
     this.#sequences.set(key, num - 1);
   }
+}
 
-  // --- Test helpers (not part of the interface) ---
-
-  /** Get all saved calls. */
-  getCalls(): StoredCall[] {
-    return [...this.#calls];
-  }
-
-  /** Get current sequence value for a sector+type. */
-  getSequence(sector: string, type: SequenceType): number {
-    return this.#sequences.get(`${sector}:${type}`) ?? -1;
-  }
+/** Linha persistida: o input da chamada + id gerado e timestamp monotônico. */
+interface StoredCall extends QueueCallInput {
+  readonly id: string;
+  readonly created_at: Date;
 }

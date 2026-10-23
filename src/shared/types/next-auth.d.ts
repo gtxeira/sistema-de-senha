@@ -13,23 +13,6 @@ import type { Permission } from '@/shared/permissions';
  * e augmentar um re-export não altera a interface original.
  */
 declare module '@auth/core/types' {
-  interface User {
-    /** Id do usuário — espelha o claim `sub` do JWT. */
-    id: string;
-    /** Permissões efetivas (cargo ∪ grants − denials) no momento da emissão. */
-    permissions: Permission[];
-    /** Setor asignado (`null` = nenhum) — é o que `canAccessSector` compara. */
-    sector: string | null;
-    /** Guichê; coluna string no banco, `"none"` quando ausente. */
-    guiche: string;
-    /** Epoch ms do login — teto absoluto da sessão (SESSION_ABSOLUTE_MAX_AGE). */
-    authAt: number;
-    /** Epoch ms da última carga de permissões — janela de revogação (≤15min). */
-    permsAt: number;
-    /** Iniciais do nome, para o avatar. Só o callback `session` preenche. */
-    initials?: string;
-  }
-
   interface Session {
     /**
      * Torna `user` obrigatório.
@@ -42,6 +25,23 @@ declare module '@auth/core/types' {
      */
     user: User;
   }
+
+  interface User {
+    /** Id do usuário — espelha o claim `sub` do JWT. */
+    id: string;
+    /** Epoch ms do login — teto absoluto da sessão (SESSION_ABSOLUTE_MAX_AGE). */
+    authAt: number;
+    /** Guichê; coluna string no banco, `"none"` quando ausente. */
+    guiche: string;
+    /** Permissões efetivas (cargo ∪ grants − denials) no momento da emissão. */
+    permissions: Permission[];
+    /** Epoch ms da última carga de permissões — janela de revogação (≤15min). */
+    permsAt: number;
+    /** Setor asignado (`null` = nenhum) — é o que `canAccessSector` compara. */
+    sector: null | string;
+    /** Iniciais do nome, para o avatar. Só o callback `session` preenche. */
+    initials?: string;
+  }
 }
 
 /**
@@ -53,15 +53,15 @@ declare module '@auth/core/types' {
  */
 declare module '@auth/core/jwt' {
   interface JWT {
-    /** Setor asignado (`null` = nenhum). */
-    sector: string | null;
+    /** Epoch ms do login — teto absoluto da sessão. */
+    authAt: number;
     /** Guichê; coluna string no banco, `"none"` quando ausente. */
     guiche: string;
     /** Permissões efetivas no momento da emissão. */
     permissions: Permission[];
-    /** Epoch ms do login — teto absoluto da sessão. */
-    authAt: number;
     /** Epoch ms da última carga de permissões — janela de revogação. */
     permsAt: number;
+    /** Setor asignado (`null` = nenhum). */
+    sector: null | string;
   }
 }

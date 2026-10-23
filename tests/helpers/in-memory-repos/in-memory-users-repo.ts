@@ -23,81 +23,11 @@ import {
 const KNOWN_PERMISSIONS = new Set<string>(ALL_PERMISSIONS);
 
 /**
- * `Array.isArray` tem assinatura `arg is any[]`; declarar o elemento evita
- * que a validação de cada override caia no `any` — mesmo truque do
- * `users-repo.postgres.ts`.
- */
-function isOverrideList(
-  value: unknown,
-): value is readonly PermissionOverride[] {
-  return Array.isArray(value);
-}
-
-/**
- * Usuário gravado no Map. Espelha `UserRecord` (é o que `list()`/`create()`
- * devolvem) mais o campo opcional que `update()` escreve.
- *
- * Sem tabela `roles` em memória: `role_id` recebe a própria chave do cargo e
- * `role_name` fica `null` — `toUserRecord()` mantém o shape exato do contrato.
- */
-interface StoredUser {
-  id: string;
-  username: string;
-  full_name: string;
-  active: boolean;
-  sector_id: string | null;
-  guiche_id: string;
-  role_id: string;
-  role: string | null;
-  role_name: string | null;
-  role_built_in: boolean;
-  permissions: PermissionOverride[];
-  password_hash?: string;
-}
-
-function toUserRecord(user: StoredUser): UserRecord {
-  return {
-    id: user.id,
-    username: user.username,
-    full_name: user.full_name,
-    active: user.active,
-    sector_id: user.sector_id,
-    guiche_id: user.guiche_id,
-    role_id: user.role_id,
-    role: user.role,
-    role_name: user.role_name,
-    role_built_in: user.role_built_in,
-    permissions: user.permissions,
-  };
-}
-
-/** Valida username (nome.sobrenome). */
-function isValidUsername(username: string): boolean {
-  return /^[a-z0-9]+(?:[._][a-z0-9]+)*$/.test(username);
-}
-
-/**
  * In-memory implementation of UsersRepository for fast contract testing.
  */
 export class InMemoryUsersRepository implements UsersRepository {
-  #users = new Map<string, StoredUser>();
   #usernameIndex = new Map<string, string>(); // username → id
-
-  /**
-   * Seed a user into the in-memory store.
-   * @returns `{ id, username }` para o teste reutilizar a linha criada.
-   */
-  seedUser(data: UsersSeedUserInput): { id: string; username: string } {
-    const id = crypto.randomUUID();
-    const username = (data.username || `user.${Date.now()}`).toLowerCase();
-    this.#usernameIndex.set(username, id);
-    this.#users.set(id, buildUser(id, username, data));
-    return { id, username };
-  }
-
-  async list(): Promise<UserRecord[]> {
-    return [...this.#users.values()].map((user) => toUserRecord(user));
-  }
+  #users = new Map<string, StoredUser>();
 
   async create(
     data: CreateUserInput,
@@ -127,28 +57,42 @@ export class InMemoryUsersRepository implements UsersRepository {
     };
   }
 
-  async update(id: string, data: UpdateUserInput): Promise<UserRecord> {
+  /**
+   * Permissões efetivas (cargo ∪ grants − denials).
+   *
+   * O double não tem a tabela `roles`, então só os overrides do usuário entram
+   * no cálculo; `computeEffectivePermissions` aplica o mesmo filtro de chaves
+   * inválidas da implementação em Postgres.
+   */
+  async getEffectivePermissions(id: string): Promise<Permission[] | null> {
+    const user = this.#users.get(id);
+    if (!user) return null;
+    return computeEffectivePermissions([], user.permissions);
+  }
+
+  async list(): Promise<UserRecord[]> {
+    return [...this.#users.values()].map((user) => toUserRecord(user));
+  }
+
+  async remove(id: string): Promise<void> {
     const user = this.#users.get(id);
     if (!user) throw new RouteError(404, 'Usuário não encontrado');
-
-    if (data?.full_name !== undefined) {
-      const fullName = String(data.full_name).trim();
-      if (!fullName) throw new RouteError(400, 'Nome completo é obrigatório');
-      user.full_name = fullName;
+    this.#users.delete(id);
+    if (user.username) {
+      this.#usernameIndex.delete(user.username);
     }
-    // senha vazia/ausente mantém a atual (mesma regra do repositório real)
-    if (data?.password) {
-      if (String(data.password).length < 6) {
-        throw new RouteError(400, 'Senha deve ter pelo menos 6 caracteres');
-      }
-      user.password_hash = `hashed:${data.password}`;
-    }
-    if (data?.role !== undefined) user.role = data.role;
-    if (data?.role_id !== undefined) user.role_id = data.role_id;
-    if (data?.sector_id !== undefined) user.sector_id = data.sector_id || null;
-    if (data?.active !== undefined) user.active = !!data.active;
+  }
 
-    return toUserRecord(user);
+  /**
+   * Seed a user into the in-memory store.
+   * @returns `{ id, username }` para o teste reutilizar a linha criada.
+   */
+  seedUser(data: UsersSeedUserInput): { id: string; username: string } {
+    const id = crypto.randomUUID();
+    const username = (data.username || `user.${Date.now()}`).toLowerCase();
+    this.#usernameIndex.set(username, id);
+    this.#users.set(id, buildUser(id, username, data));
+    return { id, username };
   }
 
   async setPermissions(
@@ -173,34 +117,58 @@ export class InMemoryUsersRepository implements UsersRepository {
     return rows;
   }
 
-  /**
-   * Permissões efetivas (cargo ∪ grants − denials).
-   *
-   * O double não tem a tabela `roles`, então só os overrides do usuário entram
-   * no cálculo; `computeEffectivePermissions` aplica o mesmo filtro de chaves
-   * inválidas da implementação em Postgres.
-   */
-  async getEffectivePermissions(id: string): Promise<Permission[] | null> {
-    const user = this.#users.get(id);
-    if (!user) return null;
-    return computeEffectivePermissions([], user.permissions);
-  }
-
-  async remove(id: string): Promise<void> {
+  async update(id: string, data: UpdateUserInput): Promise<UserRecord> {
     const user = this.#users.get(id);
     if (!user) throw new RouteError(404, 'Usuário não encontrado');
-    this.#users.delete(id);
-    if (user.username) {
-      this.#usernameIndex.delete(user.username);
+
+    if (data?.full_name !== undefined) {
+      const fullName = String(data.full_name).trim();
+      if (!fullName) throw new RouteError(400, 'Nome completo é obrigatório');
+      user.full_name = fullName;
     }
+    // senha vazia/ausente mantém a atual (mesma regra do repositório real)
+    if (data?.password) {
+      if (String(data.password).length < 6) {
+        throw new RouteError(400, 'Senha deve ter pelo menos 6 caracteres');
+      }
+      user.password_hash = `hashed:${data.password}`;
+    }
+    if (data?.role !== undefined) user.role = data.role;
+    if (data?.role_id !== undefined) user.role_id = data.role_id;
+    if (data?.sector_id !== undefined) user.sector_id = data.sector_id || null;
+    if (data?.active !== undefined) user.active = !!data.active;
+
+    return toUserRecord(user);
   }
+}
+
+/**
+ * Usuário gravado no Map. Espelha `UserRecord` (é o que `list()`/`create()`
+ * devolvem) mais o campo opcional que `update()` escreve.
+ *
+ * Sem tabela `roles` em memória: `role_id` recebe a própria chave do cargo e
+ * `role_name` fica `null` — `toUserRecord()` mantém o shape exato do contrato.
+ */
+interface StoredUser {
+  id: string;
+  active: boolean;
+  full_name: string;
+  guiche_id: string;
+  permissions: PermissionOverride[];
+  role: null | string;
+  role_built_in: boolean;
+  role_id: string;
+  role_name: null | string;
+  sector_id: null | string;
+  username: string;
+  password_hash?: string;
 }
 
 /** Monta o registro com os defaults que o Postgres derivaria do cargo/banco. */
 function buildUser(
   id: string,
   username: string,
-  data: UsersSeedUserInput | CreateUserInput,
+  data: CreateUserInput | UsersSeedUserInput,
 ): StoredUser {
   const role = data.role || 'attendant';
   return {
@@ -216,5 +184,37 @@ function buildUser(
     sector_id: data.sector_id || null,
     active: data.active ?? true,
     permissions: [],
+  };
+}
+
+/**
+ * `Array.isArray` tem assinatura `arg is any[]`; declarar o elemento evita
+ * que a validação de cada override caia no `any` — mesmo truque do
+ * `users-repo.postgres.ts`.
+ */
+function isOverrideList(
+  value: unknown,
+): value is readonly PermissionOverride[] {
+  return Array.isArray(value);
+}
+
+/** Valida username (nome.sobrenome). */
+function isValidUsername(username: string): boolean {
+  return /^[a-z0-9]+(?:[._][a-z0-9]+)*$/.test(username);
+}
+
+function toUserRecord(user: StoredUser): UserRecord {
+  return {
+    id: user.id,
+    username: user.username,
+    full_name: user.full_name,
+    active: user.active,
+    sector_id: user.sector_id,
+    guiche_id: user.guiche_id,
+    role_id: user.role_id,
+    role: user.role,
+    role_name: user.role_name,
+    role_built_in: user.role_built_in,
+    permissions: user.permissions,
   };
 }

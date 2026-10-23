@@ -36,34 +36,15 @@ import { formatClock, formatClockSeconds, formatLongDate } from '@/shared/time';
    - O relógio continua fluido entre sincronizações (interpolação local)
 ───────────────────────────────────────────────── */
 
-/**
- * A formatação vive em `@/shared/time` — é lá que o fuso do app está
- * fixado. Este hook só cuida do OFFSET entre servidor e device.
- */
-function formatTime(date: Date): string {
-  return formatClockSeconds(date);
-}
-
-function formatDate(date: Date): string {
-  return formatLongDate(date);
-}
-
-function formatTimeShort(date: Date): string {
-  return formatClock(date);
-}
-
-async function fetchServerTime(): Promise<number> {
-  const res = await fetch(API_ROUTES.TIME, { cache: 'no-store' });
-  if (!res.ok) throw new Error('Failed to fetch server time');
-  const data = await readJson<TimeBody>(res);
-  return new Date(data.serverTime).getTime();
-}
-
 export interface ServerClock {
+  /** Mesma regra de `timeString`: vazia até montar. */
+  readonly dateString: string;
   /** Hora interpolada (offset do servidor já aplicado). */
   readonly now: Date;
   /** false até a primeira sincronização bem-sucedida. */
   readonly synced: boolean;
+  /** Mesma regra de `timeString`: vazia até montar. */
+  readonly timeShort: string;
   /**
    * Horário formatado — **vazio até o componente montar**.
    *
@@ -73,32 +54,35 @@ export interface ServerClock {
    * montou, a string fica vazia e a UI mostra o placeholder.
    */
   readonly timeString: string;
-  /** Mesma regra de `timeString`: vazia até montar. */
-  readonly dateString: string;
-  /** Mesma regra de `timeString`: vazia até montar. */
-  readonly timeShort: string;
   /** Mesmo formato de `timeShort`, para quem quiser formatar outra data. */
   readonly formatTime: (date: Date) => string;
 }
 
-/** Assinante vazio: o hook só precisa saber "já montou?". */
-const emptySubscribe = () => () => {};
+async function fetchServerTime(): Promise<number> {
+  const res = await fetch(API_ROUTES.TIME, { cache: 'no-store' });
+  if (!res.ok) throw new Error('Failed to fetch server time');
+  const data = await readJson<TimeBody>(res);
+  return new Date(data.serverTime).getTime();
+}
+
+function formatDate(date: Date): string {
+  return formatLongDate(date);
+}
 
 /**
- * `false` no servidor **e** na hidratação; `true` depois.
- *
- * O `useSyncExternalStore` é o que garante isso: durante a hidratação o
- * React usa o `getServerSnapshot` (o mesmo valor do servidor), e só
- * depois de hidratar ele passa a usar o `getSnapshot` — que é diferente,
- * então o React re-renderiza com o relógio real.
+ * A formatação vive em `@/shared/time` — é lá que o fuso do app está
+ * fixado. Este hook só cuida do OFFSET entre servidor e device.
  */
-function useHasMounted(): boolean {
-  return useSyncExternalStore(
-    emptySubscribe,
-    () => true,
-    () => false,
-  );
+function formatTime(date: Date): string {
+  return formatClockSeconds(date);
 }
+
+function formatTimeShort(date: Date): string {
+  return formatClock(date);
+}
+
+/** Assinante vazio: o hook só precisa saber "já montou?". */
+const emptySubscribe = () => () => {};
 
 export function useServerClock(): ServerClock {
   const offsetRef = useRef(0);
@@ -149,4 +133,20 @@ export function useServerClock(): ServerClock {
     timeShort: mounted ? formatTimeShort(now) : '',
     formatTime: formatTimeShort,
   };
+}
+
+/**
+ * `false` no servidor **e** na hidratação; `true` depois.
+ *
+ * O `useSyncExternalStore` é o que garante isso: durante a hidratação o
+ * React usa o `getServerSnapshot` (o mesmo valor do servidor), e só
+ * depois de hidratar ele passa a usar o `getSnapshot` — que é diferente,
+ * então o React re-renderiza com o relógio real.
+ */
+function useHasMounted(): boolean {
+  return useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
 }

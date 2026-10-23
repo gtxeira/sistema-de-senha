@@ -25,22 +25,6 @@ import { isValidUsername } from '@/shared/validation';
 const PERMISSION_SET = new Set<string>(ALL_PERMISSIONS);
 
 /**
- * Resolve o cargo de um usuário a partir dos formatos aceitos na API:
- * `role_id` (preferido) ou `role` (chave legada, ex.: "attendant").
- * @returns id do cargo ou null quando não informado
- */
-async function resolveRoleId(data: {
-  readonly role_id?: string;
-  readonly role?: string;
-}): Promise<string> {
-  if (data.role_id) return String(data.role_id);
-  const key = data.role ? String(data.role) : DEFAULT_ROLE;
-  const found = await prisma.roles.findUnique({ where: { key } });
-  if (!found) throw routeError(400, `Cargo inválido: ${key}`);
-  return found.id;
-}
-
-/**
  * `Array.isArray` tem assinatura `arg is any[]`; declarar o elemento evita que
  * a validação de cada override caia no `any`.
  */
@@ -48,6 +32,22 @@ function isOverrideList(
   value: unknown,
 ): value is readonly PermissionOverride[] {
   return Array.isArray(value);
+}
+
+/**
+ * Resolve o cargo de um usuário a partir dos formatos aceitos na API:
+ * `role_id` (preferido) ou `role` (chave legada, ex.: "attendant").
+ * @returns id do cargo ou null quando não informado
+ */
+async function resolveRoleId(data: {
+  readonly role?: string;
+  readonly role_id?: string;
+}): Promise<string> {
+  if (data.role_id) return String(data.role_id);
+  const key = data.role ? String(data.role) : DEFAULT_ROLE;
+  const found = await prisma.roles.findUnique({ where: { key } });
+  if (!found) throw routeError(400, `Cargo inválido: ${key}`);
+  return found.id;
 }
 
 /** Valida e normaliza overrides de permissão de um usuário. */
@@ -80,48 +80,7 @@ const USER_SELECT = {
   permissions: { select: { permission: true, granted: true } },
 };
 
-/** O que o Prisma devolve para `USER_SELECT` — fonte única do shape achatado. */
-type SelectedUser = Prisma.usersGetPayload<{ select: typeof USER_SELECT }>;
-
-/** Achata o include de cargo/overrides no formato consumido pela UI. */
-function shapeUser(user: SelectedUser): UserRecord {
-  return {
-    id: user.id,
-    username: user.username,
-    full_name: user.full_name,
-    active: user.active,
-    sector_id: user.sector_id,
-    guiche_id: user.guiche_id,
-    role_id: user.role_id,
-    // `role` continua sendo a chave ("admin"|"attendant"|chave custom) —
-    // é o que a UI de listagem e os testes de contrato consomem.
-    role: user.role?.key ?? null,
-    role_name: user.role?.name ?? null,
-    role_built_in: user.role?.built_in ?? false,
-    permissions: user.permissions ?? [],
-  };
-}
-
 export class PostgresUsersRepository implements UsersRepository {
-  /** List all users (com cargo e overrides de permissão) */
-  async list(): Promise<UserRecord[]> {
-    const users = await prisma.users.findMany({
-      select: USER_SELECT,
-      orderBy: { created_at: 'desc' },
-    });
-
-    const shapedUsers = users.map((user) => shapeUser(user));
-
-    return shapedUsers.sort((a, b) => {
-      const aIsAdmin = a.role === 'admin';
-      const bIsAdmin = b.role === 'admin';
-
-      if (aIsAdmin && !bIsAdmin) return -1;
-      if (!aIsAdmin && bIsAdmin) return 1;
-      return 0;
-    });
-  }
-
   async create(
     data: CreateUserInput,
   ): Promise<{ success: true; user: UserRecord }> {
@@ -170,6 +129,91 @@ export class PostgresUsersRepository implements UsersRepository {
       throw routeError(
         errorStatus(error),
         errorMessage(error, 'Erro ao criar usuário'),
+      );
+    }
+  }
+
+  /**
+   * Permissões efetivas (cargo ∪ grants − denials) para o login/refresh.
+   * @returns `null` se o usuário não existir
+   */
+  async getEffectivePermissions(id: string): Promise<Permission[] | null> {
+    const user = await prisma.users.findUnique({
+      where: { id },
+      include: {
+        role: { include: { permissions: true } },
+        permissions: true,
+      },
+    });
+    if (!user) return null;
+    return computeEffectivePermissions(
+      user.role.permissions.map((p) => p.permission),
+      user.permissions,
+    );
+  }
+
+  /** List all users (com cargo e overrides de permissão) */
+  async list(): Promise<UserRecord[]> {
+    const users = await prisma.users.findMany({
+      select: USER_SELECT,
+      orderBy: { created_at: 'desc' },
+    });
+
+    const shapedUsers = users.map((user) => shapeUser(user));
+
+    return shapedUsers.sort((a, b) => {
+      const aIsAdmin = a.role === 'admin';
+      const bIsAdmin = b.role === 'admin';
+
+      if (aIsAdmin && !bIsAdmin) return -1;
+      if (!aIsAdmin && bIsAdmin) return 1;
+      return 0;
+    });
+  }
+
+  /** Delete a user by id (overrides e refresh tokens caem em cascata) */
+  async remove(id: string): Promise<void> {
+    try {
+      await prisma.users.delete({ where: { id } });
+    } catch (error) {
+      if (errorCode(error) === 'P2025') {
+        throw routeError(404, 'Usuário não encontrado');
+      }
+      throw routeError(
+        errorStatus(error),
+        errorMessage(error, 'Erro ao excluir usuário'),
+      );
+    }
+  }
+
+  /**
+   * Substitui os overrides de permissão do usuário (grants/denials).
+   * @returns as overrides salvas
+   */
+  async setPermissions(
+    id: string,
+    permissions: readonly PermissionOverride[],
+  ): Promise<PermissionOverride[]> {
+    const overrides = validateOverrides(permissions) ?? [];
+
+    try {
+      await prisma.$transaction([
+        prisma.user_permissions.deleteMany({ where: { user_id: id } }),
+        ...(overrides.length
+          ? [
+              prisma.user_permissions.createMany({
+                data: overrides.map((o) => ({ user_id: id, ...o })),
+              }),
+            ]
+          : []),
+      ]);
+      return overrides;
+    } catch (error) {
+      if (errorCode(error) === 'P2025')
+        throw routeError(404, 'Usuário não encontrado');
+      throw routeError(
+        errorStatus(error),
+        errorMessage(error, 'Erro ao salvar permissões'),
       );
     }
   }
@@ -225,70 +269,26 @@ export class PostgresUsersRepository implements UsersRepository {
       );
     }
   }
+}
 
-  /**
-   * Substitui os overrides de permissão do usuário (grants/denials).
-   * @returns as overrides salvas
-   */
-  async setPermissions(
-    id: string,
-    permissions: readonly PermissionOverride[],
-  ): Promise<PermissionOverride[]> {
-    const overrides = validateOverrides(permissions) ?? [];
+/** O que o Prisma devolve para `USER_SELECT` — fonte única do shape achatado. */
+type SelectedUser = Prisma.usersGetPayload<{ select: typeof USER_SELECT }>;
 
-    try {
-      await prisma.$transaction([
-        prisma.user_permissions.deleteMany({ where: { user_id: id } }),
-        ...(overrides.length
-          ? [
-              prisma.user_permissions.createMany({
-                data: overrides.map((o) => ({ user_id: id, ...o })),
-              }),
-            ]
-          : []),
-      ]);
-      return overrides;
-    } catch (error) {
-      if (errorCode(error) === 'P2025')
-        throw routeError(404, 'Usuário não encontrado');
-      throw routeError(
-        errorStatus(error),
-        errorMessage(error, 'Erro ao salvar permissões'),
-      );
-    }
-  }
-
-  /**
-   * Permissões efetivas (cargo ∪ grants − denials) para o login/refresh.
-   * @returns `null` se o usuário não existir
-   */
-  async getEffectivePermissions(id: string): Promise<Permission[] | null> {
-    const user = await prisma.users.findUnique({
-      where: { id },
-      include: {
-        role: { include: { permissions: true } },
-        permissions: true,
-      },
-    });
-    if (!user) return null;
-    return computeEffectivePermissions(
-      user.role.permissions.map((p) => p.permission),
-      user.permissions,
-    );
-  }
-
-  /** Delete a user by id (overrides e refresh tokens caem em cascata) */
-  async remove(id: string): Promise<void> {
-    try {
-      await prisma.users.delete({ where: { id } });
-    } catch (error) {
-      if (errorCode(error) === 'P2025') {
-        throw routeError(404, 'Usuário não encontrado');
-      }
-      throw routeError(
-        errorStatus(error),
-        errorMessage(error, 'Erro ao excluir usuário'),
-      );
-    }
-  }
+/** Achata o include de cargo/overrides no formato consumido pela UI. */
+function shapeUser(user: SelectedUser): UserRecord {
+  return {
+    id: user.id,
+    username: user.username,
+    full_name: user.full_name,
+    active: user.active,
+    sector_id: user.sector_id,
+    guiche_id: user.guiche_id,
+    role_id: user.role_id,
+    // `role` continua sendo a chave ("admin"|"attendant"|chave custom) —
+    // é o que a UI de listagem e os testes de contrato consomem.
+    role: user.role?.key ?? null,
+    role_name: user.role?.name ?? null,
+    role_built_in: user.role?.built_in ?? false,
+    permissions: user.permissions ?? [],
+  };
 }

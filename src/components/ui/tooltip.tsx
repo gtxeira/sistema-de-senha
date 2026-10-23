@@ -32,11 +32,11 @@ function TooltipContent({
   alignOffset = 0,
   children,
   ...props
-}: TooltipPrimitive.Popup.Props &
-  Pick<
+}: Pick<
     TooltipPrimitive.Positioner.Props,
     'align' | 'alignOffset' | 'side' | 'sideOffset'
-  >) {
+  > &
+  TooltipPrimitive.Popup.Props) {
   return (
     <TooltipPrimitive.Portal>
       <TooltipPrimitive.Positioner

@@ -32,6 +32,24 @@ import { authMock } from '../../helpers/auth-mock';
 import { cleanupAllTestUsers, seedTestUser } from '../postgres-setup';
 
 /**
+ * Handler de rota. `request` é opcional na assinatura porque há `GET` sem
+ * parâmetro (ex.: `GET /api/roles`) convivendo com os que leem a request.
+ */
+type RouteHandler = (request?: RouteRequest) => Promise<Response>;
+
+/** Métodos que um `route.ts` pode exportar. */
+type RouteMethod = 'DELETE' | 'GET' | 'PATCH' | 'POST';
+
+/** Módulo de rota: só os métodos que ele de fato exporta. */
+type RouteModule = Partial<Record<RouteMethod, RouteHandler>>;
+
+/**
+ * Monta uma sessão com claims frescos. `permissions` default: vazio
+ * (autenticado sem nenhuma permissão) — cada teste concede o que precisa.
+ */
+type SessionOverrides = Partial<Session['user']>;
+
+/**
  * Superfície de `Request` que os handlers de rota leem.
  *
  * `req()` monta este objeto — e não um `Request` real — porque a matriz chama
@@ -40,24 +58,32 @@ import { cleanupAllTestUsers, seedTestUser } from '../postgres-setup';
  */
 interface RouteRequest {
   readonly url: string;
-  json(): Promise<unknown>;
   formData(): Promise<FormData>;
+  json(): Promise<unknown>;
   readonly signal: {
     addEventListener(type: string, listener: (event: unknown) => void): void;
   };
 }
 
-/** Métodos que um `route.ts` pode exportar. */
-type RouteMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE';
+function asAnonymous() {
+  authMock.mockResolvedValue(null);
+}
 
-/**
- * Handler de rota. `request` é opcional na assinatura porque há `GET` sem
- * parâmetro (ex.: `GET /api/roles`) convivendo com os que leem a request.
- */
-type RouteHandler = (request?: RouteRequest) => Promise<Response>;
+function asSession(overrides: SessionOverrides = {}) {
+  authMock.mockResolvedValue(session(overrides));
+}
 
-/** Módulo de rota: só os métodos que ele de fato exporta. */
-type RouteModule = Partial<Record<RouteMethod, RouteHandler>>;
+function req(
+  url: string,
+  extra: { readonly body?: unknown; readonly formData?: FormData } = {},
+) {
+  return {
+    url,
+    json: () => Promise.resolve(extra.body ?? {}),
+    formData: () => Promise.resolve(extra.formData ?? new FormData()),
+    signal: { addEventListener: vi.fn() },
+  };
+}
 
 /**
  * Importa a rota (specifier dinâmico na `MATRIX`, literal nos demais casos) e
@@ -77,12 +103,6 @@ async function routeHandler(
   return handler;
 }
 
-/**
- * Monta uma sessão com claims frescos. `permissions` default: vazio
- * (autenticado sem nenhuma permissão) — cada teste concede o que precisa.
- */
-type SessionOverrides = Partial<Session['user']>;
-
 function session(overrides: SessionOverrides = {}): Session {
   const now = Date.now();
   return {
@@ -98,26 +118,6 @@ function session(overrides: SessionOverrides = {}): Session {
       ...overrides,
     },
     expires: new Date(now + 600000).toISOString(),
-  };
-}
-
-function asSession(overrides: SessionOverrides = {}) {
-  authMock.mockResolvedValue(session(overrides));
-}
-
-function asAnonymous() {
-  authMock.mockResolvedValue(null);
-}
-
-function req(
-  url: string,
-  extra: { readonly body?: unknown; readonly formData?: FormData } = {},
-) {
-  return {
-    url,
-    json: () => Promise.resolve(extra.body ?? {}),
-    formData: () => Promise.resolve(extra.formData ?? new FormData()),
-    signal: { addEventListener: vi.fn() },
   };
 }
 
@@ -142,8 +142,8 @@ describe('Autorização das rotas de API', () => {
 
   // Rota, método e permissão exigida (null = qualquer sessão fresca basta)
   const MATRIX: ReadonlyArray<{
-    readonly path: string;
     readonly method: RouteMethod;
+    readonly path: string;
     readonly permission: Permission | null;
   }> = [
     {
@@ -456,7 +456,7 @@ describe('Escopo de setor', () => {
 
 describe('Gestão de cargos e permissões (RBAC)', () => {
   let createdRoleIds: string[] = [];
-  let targetUserId: string | null = null;
+  let targetUserId: null | string = null;
 
   beforeEach(() => {
     eventManager.removeAllListeners();

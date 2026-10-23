@@ -2,36 +2,20 @@ import type { NewsRepository } from '@/server/repositories/types';
 
 import { beforeEach, describe, expect, it } from 'vitest';
 
-/** Subconjunto do seed de notícia que os testes de contrato usam. */
-export interface NewsSeedInput {
-  readonly title?: string;
-  readonly image?: string;
-  readonly active?: boolean;
-  readonly created_at?: Date;
-}
-
 /** Fábrica devolvida por quem invoca o contrato (in-memory ou Postgres). */
 export interface NewsRepoContext {
   readonly repo: NewsRepository;
   readonly seedNews: (
     data: NewsSeedInput,
-  ) => { id: number; title: string } | Promise<{ id: number; title: string }>;
+  ) => Promise<{ id: number; title: string }> | { id: number; title: string };
 }
 
-/**
- * `CreateNewsInput.image` é `File | string | null` — o seed devolve um `File`
- * de verdade para o caminho de upload (leitura de bytes/`type`) ser exercitado.
- */
-function makeImage({
-  name = 'test.jpg',
-  type = 'image/jpeg',
-  size = 1024,
-}: {
-  readonly name?: string;
-  readonly type?: string;
-  readonly size?: number;
-} = {}): File {
-  return new File([new Uint8Array(size)], name, { type });
+/** Subconjunto do seed de notícia que os testes de contrato usam. */
+export interface NewsSeedInput {
+  readonly title?: string;
+  readonly active?: boolean;
+  readonly created_at?: Date;
+  readonly image?: string;
 }
 
 /**
@@ -138,4 +122,20 @@ export function newsRepoContract(
       });
     });
   });
+}
+
+/**
+ * `CreateNewsInput.image` é `File | string | null` — o seed devolve um `File`
+ * de verdade para o caminho de upload (leitura de bytes/`type`) ser exercitado.
+ */
+function makeImage({
+  name = 'test.jpg',
+  type = 'image/jpeg',
+  size = 1024,
+}: {
+  readonly name?: string;
+  readonly size?: number;
+  readonly type?: string;
+} = {}): File {
+  return new File([new Uint8Array(size)], name, { type });
 }

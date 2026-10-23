@@ -13,9 +13,13 @@
  * `@/shared/types/api`.
  */
 
-/** Corpo que o Fetch API sabe ler: `Request` ou `Response`. */
-interface JsonSource {
-  json(): Promise<unknown>;
+/**
+ * Assume o formato de um valor já serializado (`localStorage`, payload SSE).
+ *
+ * Lança o mesmo `SyntaxError` do `JSON.parse` para quem chama tratar.
+ */
+export function parseJson<T>(raw: string): T {
+  return JSON.parse(raw) as T;
 }
 
 /**
@@ -29,11 +33,7 @@ export async function readJson<T>(source: JsonSource): Promise<T> {
   return (await source.json()) as T;
 }
 
-/**
- * Assume o formato de um valor já serializado (`localStorage`, payload SSE).
- *
- * Lança o mesmo `SyntaxError` do `JSON.parse` para quem chama tratar.
- */
-export function parseJson<T>(raw: string): T {
-  return JSON.parse(raw) as T;
+/** Corpo que o Fetch API sabe ler: `Request` ou `Response`. */
+interface JsonSource {
+  json(): Promise<unknown>;
 }

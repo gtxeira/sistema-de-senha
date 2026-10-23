@@ -16,12 +16,12 @@ import { create } from 'zustand';
  * component.
  */
 interface LayoutState {
-  sectorInfo?: SectorInfo;
   headerActions: ReactNode;
+  sectorInfo?: SectorInfo;
 
-  setSectorInfo: (info?: SectorInfo) => void;
-  setHeaderActions: (actions?: ReactNode) => void;
   resetLayout: () => void;
+  setHeaderActions: (actions?: ReactNode) => void;
+  setSectorInfo: (info?: SectorInfo) => void;
 }
 
 export const useDashboardLayoutStore = create<LayoutState>()((set) => ({

@@ -6,13 +6,13 @@ import { readJson } from '@/shared/json';
 import { authMock } from '../../../../helpers/auth-mock';
 import { cleanupQueueTestData } from '../../../postgres-setup';
 
-async function importRoute() {
-  return import('@/app/api/queue/recent/route');
-}
-
 async function importQueueRepo() {
   const mod = await import('@/server/repositories');
   return mod.queue;
+}
+
+async function importRoute() {
+  return import('@/app/api/queue/recent/route');
 }
 
 describe('/api/queue/recent — integration', () => {

@@ -63,12 +63,17 @@ const monitorServerSnapshot: QueueState = Object.fromEntries(
     },
   ]),
 );
-let lastSpokenCallId: string | null = null;
+let lastSpokenCallId: null | string = null;
 
+function formatMonitorNumber(number: null | undefined | number | string) {
+  if (number === null || number === undefined) return '---';
+  return String(Number(number)).padStart(3, '0');
+}
 function getNewsSnapshot() {
   if (typeof window === 'undefined') return serverNewsSnapshot;
   return newsSnapshot;
 }
+
 function subscribeNews(cb: () => void) {
   window.addEventListener('storage', cb);
   window.addEventListener('news-updated', cb);
@@ -76,11 +81,6 @@ function subscribeNews(cb: () => void) {
     window.removeEventListener('storage', cb);
     window.removeEventListener('news-updated', cb);
   };
-}
-
-function formatMonitorNumber(number: number | string | null | undefined) {
-  if (number === null || number === undefined) return '---';
-  return String(Number(number)).padStart(3, '0');
 }
 
 /* ─── carrossel de notícias isolado (evita re-render da voz) ─── */
@@ -152,15 +152,6 @@ const NewsCarousel = memo(() => {
 });
 
 NewsCarousel.displayName = 'NewsCarousel';
-
-/* ══════════════════════════════════════════════
-   MONITOR — tela pública de senhas
-   Controle via atalhos de teclado / passador
-══════════════════════════════════════════════ */
-interface MonitorPageProps {
-  /** App Router entrega `params` como `Promise` (Next 15+). */
-  readonly params: Promise<{ readonly sector: string }>;
-}
 
 export default function MonitorPage({ params }: MonitorPageProps) {
   // `[sector]` é segmento não validado da URL: um valor fora de SECTORS cai no
@@ -300,12 +291,12 @@ export default function MonitorPage({ params }: MonitorPageProps) {
       // `e.target` é `EventTarget | null` — sem o `instanceof` não há `tagName`.
       if (
         e.target instanceof HTMLElement &&
-        ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(e.target.tagName)
+        ['BUTTON', 'INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)
       )
         return;
 
       const k = e.key;
-      if (['ArrowRight', 'PageDown', 'Enter', ' '].includes(k)) {
+      if ([' ', 'ArrowRight', 'Enter', 'PageDown'].includes(k)) {
         e.preventDefault();
         void callNext(CALL_TYPES.NORMAL);
       } else if (['ArrowLeft', 'PageUp'].includes(k)) {
@@ -479,4 +470,13 @@ export default function MonitorPage({ params }: MonitorPageProps) {
       </div>
     </main>
   );
+}
+
+/* ══════════════════════════════════════════════
+   MONITOR — tela pública de senhas
+   Controle via atalhos de teclado / passador
+══════════════════════════════════════════════ */
+interface MonitorPageProps {
+  /** App Router entrega `params` como `Promise` (Next 15+). */
+  readonly params: Promise<{ readonly sector: string }>;
 }

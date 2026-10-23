@@ -4,24 +4,24 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { errorStatus } from '@/shared/errors';
 
-/** Subconjunto do seed que os testes de contrato usam. */
-export interface UsersSeedUserInput {
-  readonly username: string;
-  readonly full_name?: string;
-  readonly role?: string;
-  readonly sector_id?: string | null;
-  readonly active?: boolean;
-  readonly password?: string;
-}
-
 /** Fábrica devolvida por quem invoca o contrato (in-memory ou Postgres). */
 export interface UsersRepoContext {
   readonly repo: UsersRepository;
   readonly seedUser: (
     data: UsersSeedUserInput,
   ) =>
-    | { id: string; username: string }
-    | Promise<{ id: string; username: string }>;
+    | Promise<{ id: string; username: string }>
+    | { id: string; username: string };
+}
+
+/** Subconjunto do seed que os testes de contrato usam. */
+export interface UsersSeedUserInput {
+  readonly username: string;
+  readonly active?: boolean;
+  readonly full_name?: string;
+  readonly password?: string;
+  readonly role?: string;
+  readonly sector_id?: null | string;
 }
 
 /**
@@ -30,7 +30,7 @@ export interface UsersRepoContext {
  * seedUser inserts a test user and returns { id, username }.
  */
 export function usersRepoContract(
-  createRepo: () => UsersRepoContext | Promise<UsersRepoContext>,
+  createRepo: () => Promise<UsersRepoContext> | UsersRepoContext,
 ): void {
   describe('UsersRepository contract', () => {
     let repo: UsersRepository;

@@ -26,6 +26,34 @@ import {
 ───────────────────────────────────────────────── */
 
 /* ─────────────────────────────────────────────────
+   DELETE — remove usuário do banco
+───────────────────────────────────────────────── */
+export async function DELETE(request: Request) {
+  try {
+    const { session, error } = await requirePermission(USERS_DELETE);
+    if (error) return error;
+
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'ID do usuário é obrigatório' },
+        { status: 400 },
+      );
+    }
+
+    const result = await deleteUser(id, session.user.id);
+    return NextResponse.json(result);
+  } catch (error) {
+    return NextResponse.json(
+      { error: errorMessage(error, 'Erro ao excluir usuário') },
+      { status: errorStatus(error, 500) },
+    );
+  }
+}
+
+/* ─────────────────────────────────────────────────
    GET — lista todos os usuários (com cargo e overrides)
 ───────────────────────────────────────────────── */
 export async function GET() {
@@ -38,25 +66,6 @@ export async function GET() {
   } catch (error) {
     return NextResponse.json(
       { error: errorMessage(error, 'Erro ao listar usuários') },
-      { status: errorStatus(error, 500) },
-    );
-  }
-}
-
-/* ─────────────────────────────────────────────────
-   POST — cria novo usuário
-───────────────────────────────────────────────── */
-export async function POST(request: Request) {
-  try {
-    const { error } = await requirePermission(USERS_CREATE);
-    if (error) return error;
-
-    const body = await readJson<CreateUserRequest>(request);
-    const result = await createUser(body);
-    return NextResponse.json(result);
-  } catch (error) {
-    return NextResponse.json(
-      { error: errorMessage(error, 'Erro ao criar usuário') },
       { status: errorStatus(error, 500) },
     );
   }
@@ -92,28 +101,19 @@ export async function PATCH(request: Request) {
 }
 
 /* ─────────────────────────────────────────────────
-   DELETE — remove usuário do banco
+   POST — cria novo usuário
 ───────────────────────────────────────────────── */
-export async function DELETE(request: Request) {
+export async function POST(request: Request) {
   try {
-    const { session, error } = await requirePermission(USERS_DELETE);
+    const { error } = await requirePermission(USERS_CREATE);
     if (error) return error;
 
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
-
-    if (!id) {
-      return NextResponse.json(
-        { error: 'ID do usuário é obrigatório' },
-        { status: 400 },
-      );
-    }
-
-    const result = await deleteUser(id, session.user.id);
+    const body = await readJson<CreateUserRequest>(request);
+    const result = await createUser(body);
     return NextResponse.json(result);
   } catch (error) {
     return NextResponse.json(
-      { error: errorMessage(error, 'Erro ao excluir usuário') },
+      { error: errorMessage(error, 'Erro ao criar usuário') },
       { status: errorStatus(error, 500) },
     );
   }

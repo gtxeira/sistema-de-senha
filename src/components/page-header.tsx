@@ -1,10 +1,10 @@
 import { cn } from '@/client/utils';
 
 export interface PageHeaderProps {
-  /** Linha fina acima do título (ex.: "BEM-VINDO"). */
-  readonly eyebrow?: string;
   /** Título da tela. */
   readonly title?: string;
+  /** Linha fina acima do título (ex.: "BEM-VINDO"). */
+  readonly eyebrow?: string;
   /** Complemento abaixo do título. */
   readonly subtitle?: string;
 }

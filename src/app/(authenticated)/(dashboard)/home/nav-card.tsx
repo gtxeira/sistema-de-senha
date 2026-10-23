@@ -12,9 +12,9 @@ import {
 } from '@/components/ui/card';
 
 export interface NavCardProps {
-  readonly href: Route;
   readonly title: string;
   readonly description: string;
+  readonly href: Route;
   readonly icon: React.ReactNode;
   readonly iconBgClass: string;
   readonly iconColorClass: string;

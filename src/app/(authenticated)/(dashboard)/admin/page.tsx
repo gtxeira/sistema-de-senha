@@ -127,24 +127,6 @@ type AdminNews = NewsItem & { readonly _file?: File };
 const newsCache: NewsItem[] = [];
 const serverNewsSnapshot: NewsItem[] = [];
 
-function getNewsSnapshot(): readonly NewsItem[] {
-  if (typeof window === 'undefined') return serverNewsSnapshot;
-  return newsCache;
-}
-
-function getServerNewsSnapshot(): readonly NewsItem[] {
-  return serverNewsSnapshot;
-}
-
-function subscribeNews(callback: () => void) {
-  window.addEventListener('storage', callback);
-  window.addEventListener('news-updated', callback);
-  return () => {
-    window.removeEventListener('storage', callback);
-    window.removeEventListener('news-updated', callback);
-  };
-}
-
 export default function AdminPage() {
   const session = useEffectiveSession();
   const state = useSyncExternalStore(
@@ -167,7 +149,7 @@ export default function AdminPage() {
   >({});
   // alvo do reset pendente de confirmação (`"all"` ou o id do setor);
   // null = diálogo fechado
-  const [resetPending, setResetPending] = useState<string | null>(null);
+  const [resetPending, setResetPending] = useState<null | string>(null);
   // alvo da exclusão de notícia pendente de confirmação; null = diálogo fechado
   const [deleteNewsTarget, setDeleteNewsTarget] = useState<AdminNews | null>(
     null,
@@ -614,8 +596,26 @@ export default function AdminPage() {
    SEÇÃO DE SINCRONIZAÇÃO DE SENHAS
 ═══════════════════════════════════════════════════════════ */
 interface SyncSectionProps {
-  readonly session: User;
   readonly canSync: boolean;
+  readonly session: User;
+}
+
+function getNewsSnapshot(): readonly NewsItem[] {
+  if (typeof window === 'undefined') return serverNewsSnapshot;
+  return newsCache;
+}
+
+function getServerNewsSnapshot(): readonly NewsItem[] {
+  return serverNewsSnapshot;
+}
+
+function subscribeNews(callback: () => void) {
+  window.addEventListener('storage', callback);
+  window.addEventListener('news-updated', callback);
+  return () => {
+    window.removeEventListener('storage', callback);
+    window.removeEventListener('news-updated', callback);
+  };
 }
 
 function SyncSection({ session, canSync }: SyncSectionProps) {

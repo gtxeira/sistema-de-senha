@@ -25,12 +25,12 @@ import { PostgresRolesRepository } from './roles-repo.postgres';
 import { PostgresUsersRepository } from './users-repo.postgres';
 
 export interface DataLayer {
+  readonly auth: AuthRepository;
+  readonly news: NewsRepository;
   readonly queue: QueueRepository;
   readonly read: ReadRepository;
-  readonly auth: AuthRepository;
-  readonly users: UsersRepository;
   readonly roles: RolesRepository;
-  readonly news: NewsRepository;
+  readonly users: UsersRepository;
 }
 
 export const queue: QueueRepository = new PostgresQueueRepository();

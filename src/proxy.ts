@@ -13,6 +13,19 @@ import {
   sessionFreshnessProblem,
 } from '@/shared/permissions';
 
+/** Redireciona para a home (se a permissão de tela existir) ou /login. */
+function homeOrLogin(user: PermissionCarrier, baseUrl: string): URL {
+  return new URL(
+    hasPermission(user, SCREEN_HOME) ? '/home' : SIGN_IN_PATH,
+    baseUrl,
+  );
+}
+
+/** A URL é a página de login (ou uma subrota dela)? */
+function isSignInPath(pathname: string): boolean {
+  return pathname === SIGN_IN_PATH || pathname.startsWith(SIGN_IN_PATH + '/');
+}
+
 /**
  * Sem sessão válida (ou stale/expirada): se existe um refresh cookie,
  * manda o browser pela rota de refresh (Node, com banco) — que rotaciona
@@ -35,19 +48,6 @@ function resumeSessionOrLogin(
   // /login → /login com cookie de sessão inválido).
   if (req.nextUrl.pathname === SIGN_IN_PATH) return NextResponse.next();
   return NextResponse.redirect(new URL(SIGN_IN_PATH, req.url));
-}
-
-/** Redireciona para a home (se a permissão de tela existir) ou /login. */
-function homeOrLogin(user: PermissionCarrier, baseUrl: string): URL {
-  return new URL(
-    hasPermission(user, SCREEN_HOME) ? '/home' : SIGN_IN_PATH,
-    baseUrl,
-  );
-}
-
-/** A URL é a página de login (ou uma subrota dela)? */
-function isSignInPath(pathname: string): boolean {
-  return pathname === SIGN_IN_PATH || pathname.startsWith(SIGN_IN_PATH + '/');
 }
 
 export default auth((req) => {

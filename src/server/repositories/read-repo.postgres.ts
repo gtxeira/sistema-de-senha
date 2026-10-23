@@ -19,55 +19,6 @@ import {
 import { dayWindow, startOfDay } from '@/shared/time';
 import { normalizePage, normalizePageSize } from '@/shared/validation';
 
-/** Linha como o `findMany` de `getRecentCalls` devolve. */
-type RecentRow = Prisma.queue_callsGetPayload<{
-  select: {
-    id: true;
-    sector_id: true;
-    number_str: true;
-    type: true;
-    created_at: true;
-    number_int: true;
-  };
-}>;
-
-/**
- * Build empty response structure
- */
-function emptyResponse(
-  days: number,
-  page = 1,
-  pageSize = PAGE_SIZES.historico,
-): QueueStats {
-  return {
-    days,
-    summary: { total: 0, today: 0, preferencial: 0, normal: 0 },
-    calls: [],
-    pagination: { page, pageSize, total: 0, totalPages: 1 },
-    noDb: true,
-  };
-}
-
-/**
- * Normalize a queue call record for frontend consumption
- */
-function formatCallRecord(call: RecentRow): HistoryCall {
-  return {
-    id: String(call.id),
-    sector_id: call.sector_id,
-    number: call.number_int,
-    // O enum do banco só admite 'normal'|'preferencial'; a grafia
-    // 'preferential' existe só na API e nunca chega a esta coluna.
-    type:
-      call.type === CALL_TYPES.PREFERENCIAL
-        ? CALL_TYPES.PREFERENCIAL
-        : CALL_TYPES.NORMAL,
-    // O INSTANTE, não "HH:mm": um horário sem data não diz de que dia
-    // a chamada foi — e é o dia que decide se ela entra em "Hoje".
-    createdAt: new Date(call.created_at || Date.now()).toISOString(),
-  };
-}
-
 export class PostgresReadRepository implements ReadRepository {
   /**
    * Get stats for a time window with filters.
@@ -230,4 +181,53 @@ export class PostgresReadRepository implements ReadRepository {
       return emptyResponse(days, page, normalizePageSize(options.pageSize));
     }
   }
+}
+
+/** Linha como o `findMany` de `getRecentCalls` devolve. */
+type RecentRow = Prisma.queue_callsGetPayload<{
+  select: {
+    id: true;
+    created_at: true;
+    number_int: true;
+    number_str: true;
+    sector_id: true;
+    type: true;
+  };
+}>;
+
+/**
+ * Build empty response structure
+ */
+function emptyResponse(
+  days: number,
+  page = 1,
+  pageSize = PAGE_SIZES.historico,
+): QueueStats {
+  return {
+    days,
+    summary: { total: 0, today: 0, preferencial: 0, normal: 0 },
+    calls: [],
+    pagination: { page, pageSize, total: 0, totalPages: 1 },
+    noDb: true,
+  };
+}
+
+/**
+ * Normalize a queue call record for frontend consumption
+ */
+function formatCallRecord(call: RecentRow): HistoryCall {
+  return {
+    id: String(call.id),
+    sector_id: call.sector_id,
+    number: call.number_int,
+    // O enum do banco só admite 'normal'|'preferencial'; a grafia
+    // 'preferential' existe só na API e nunca chega a esta coluna.
+    type:
+      call.type === CALL_TYPES.PREFERENCIAL
+        ? CALL_TYPES.PREFERENCIAL
+        : CALL_TYPES.NORMAL,
+    // O INSTANTE, não "HH:mm": um horário sem data não diz de que dia
+    // a chamada foi — e é o dia que decide se ela entra em "Hoje".
+    createdAt: new Date(call.created_at || Date.now()).toISOString(),
+  };
 }

@@ -27,6 +27,28 @@ import { formatClock } from '@/shared/time';
  */
 const globalScope: { fetch?: unknown } = globalThis;
 
+interface StubOptions {
+  readonly calls?: readonly ClientQueueCall[];
+  readonly fail?: boolean;
+  readonly resetAt?: null | string;
+}
+
+/** Resposta falsa de `fetch`: o código lê `ok`, `status` e `json()`. */
+interface StubResponse {
+  readonly ok: boolean;
+  readonly status?: number;
+  readonly json?: () => Promise<unknown>;
+}
+
+function queueCalls(_sector = 'farmacia', count = 1): ClientQueueCall[] {
+  return Array.from({ length: count }, (_, i) => ({
+    id: `call-${i + 1}`,
+    number: 40 + i,
+    type: 'normal',
+    createdAt: '2026-10-22T17:30:00.000Z',
+  }));
+}
+
 /**
  * Doubles de EventSource. Cada instância é registrada em `instances` para que
  * o teste possa disparar onopen/onmessage/onerror manualmente.
@@ -34,12 +56,12 @@ const globalScope: { fetch?: unknown } = globalThis;
 class FakeEventSource {
   static instances: FakeEventSource[] = [];
 
-  readonly url: string;
-  readyState = 0;
   closed = false;
-  onopen: (() => void) | null = null;
-  onmessage: ((event: { data: string }) => void) | null = null;
   onerror: (() => void) | null = null;
+  onmessage: ((event: { data: string }) => void) | null = null;
+  onopen: (() => void) | null = null;
+  readyState = 0;
+  readonly url: string;
 
   constructor(url: string) {
     this.url = url;
@@ -55,36 +77,14 @@ class FakeEventSource {
     this.readyState = 2;
   }
 
+  emit(payload: unknown): void {
+    this.onmessage?.({ data: JSON.stringify(payload) });
+  }
+
   open(): void {
     this.readyState = 1;
     this.onopen?.();
   }
-
-  emit(payload: unknown): void {
-    this.onmessage?.({ data: JSON.stringify(payload) });
-  }
-}
-
-function queueCalls(_sector = 'farmacia', count = 1): ClientQueueCall[] {
-  return Array.from({ length: count }, (_, i) => ({
-    id: `call-${i + 1}`,
-    number: 40 + i,
-    type: 'normal',
-    createdAt: '2026-10-22T17:30:00.000Z',
-  }));
-}
-
-/** Resposta falsa de `fetch`: o código lê `ok`, `status` e `json()`. */
-interface StubResponse {
-  readonly ok: boolean;
-  readonly status?: number;
-  readonly json?: () => Promise<unknown>;
-}
-
-interface StubOptions {
-  readonly calls?: readonly ClientQueueCall[];
-  readonly resetAt?: string | null;
-  readonly fail?: boolean;
 }
 
 /**

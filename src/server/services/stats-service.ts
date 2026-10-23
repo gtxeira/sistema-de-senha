@@ -23,10 +23,31 @@ import { normalizePage, normalizePageSize } from '@/shared/validation';
 
 export interface StatsQuery {
   readonly days: number;
-  readonly sector: string | null;
-  readonly type: SequenceType | null;
   readonly page: number;
   readonly pageSize: number;
+  readonly sector: null | string;
+  readonly type: SequenceType | null;
+}
+
+/** Busca as estatísticas; nunca lança — em erro devolve a estrutura vazia. */
+export async function getStats(query: StatsQuery): Promise<QueueStats> {
+  try {
+    return await read.getStats(query);
+  } catch {
+    // On error, return empty structure to avoid breaking admin UI
+    return {
+      days: query.days,
+      summary: { total: 0, today: 0, preferencial: 0, normal: 0 },
+      calls: [],
+      pagination: {
+        page: query.page,
+        pageSize: query.pageSize,
+        total: 0,
+        totalPages: 1,
+      },
+      noDb: true,
+    };
+  }
 }
 
 /** Lê e normaliza os parâmetros de `/api/stats`. */
@@ -53,25 +74,4 @@ export function parseStatsQuery(searchParams: URLSearchParams): StatsQuery {
   const pageSize = normalizePageSize(Number(searchParams.get('pageSize')));
 
   return { days, sector, type, page, pageSize };
-}
-
-/** Busca as estatísticas; nunca lança — em erro devolve a estrutura vazia. */
-export async function getStats(query: StatsQuery): Promise<QueueStats> {
-  try {
-    return await read.getStats(query);
-  } catch {
-    // On error, return empty structure to avoid breaking admin UI
-    return {
-      days: query.days,
-      summary: { total: 0, today: 0, preferencial: 0, normal: 0 },
-      calls: [],
-      pagination: {
-        page: query.page,
-        pageSize: query.pageSize,
-        total: 0,
-        totalPages: 1,
-      },
-      noDb: true,
-    };
-  }
 }

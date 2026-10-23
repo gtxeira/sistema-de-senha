@@ -2,18 +2,6 @@ import type { ReadRepository } from '@/server/repositories/types';
 
 import { beforeEach, describe, expect, it } from 'vitest';
 
-/**
- * Linha de entrada para o seed de chamadas — mais solta que o registro gravado:
- * `created_at` é opcional (o seed preenche com "agora") e `type` é `string`
- * porque o contrato valida agregação por valor, não por tipo literal.
- */
-export interface SeedCall {
-  readonly sector: string;
-  readonly type: string;
-  readonly number: number;
-  readonly created_at?: Date | string;
-}
-
 /** Fábrica devolvida por quem invoca o contrato. */
 export interface ReadRepoContext {
   readonly repo: ReadRepository;
@@ -22,12 +10,24 @@ export interface ReadRepoContext {
 }
 
 /**
+ * Linha de entrada para o seed de chamadas — mais solta que o registro gravado:
+ * `created_at` é opcional (o seed preenche com "agora") e `type` é `string`
+ * porque o contrato valida agregação por valor, não por tipo literal.
+ */
+export interface SeedCall {
+  readonly number: number;
+  readonly sector: string;
+  readonly type: string;
+  readonly created_at?: Date | string;
+}
+
+/**
  * ReadRepository contract — shared test suite.
  * Pass a factory that returns { repo, seedCalls }.
  * seedCalls is an async function that inserts test data and returns the inserted records.
  */
 export function readRepoContract(
-  createRepo: () => ReadRepoContext | Promise<ReadRepoContext>,
+  createRepo: () => Promise<ReadRepoContext> | ReadRepoContext,
 ): void {
   describe('ReadRepository contract', () => {
     let repo: ReadRepository;

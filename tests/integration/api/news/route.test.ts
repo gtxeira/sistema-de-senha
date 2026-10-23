@@ -21,25 +21,7 @@ import {
 const S3_PUBLIC_URL = process.env.S3_PUBLIC_URL;
 
 let createdIds: number[] = [];
-let createdKeys: Array<string | null> = [];
-
-async function importRoute() {
-  return import('@/app/api/news/route');
-}
-
-async function importNewsRepo() {
-  const mod = await import('@/server/repositories');
-  return mod.news;
-}
-
-function makeImage({
-  name = 'test.jpg',
-  type = 'image/jpeg',
-  size = 1024,
-}: { name?: string; type?: string; size?: number } = {}) {
-  const data = new Uint8Array(size);
-  return new File([data], name, { type });
-}
+let createdKeys: Array<null | string> = [];
 
 async function cleanupS3() {
   const validKeys = createdKeys.filter((k): k is string => k !== null);
@@ -51,10 +33,28 @@ async function cleanupS3() {
   createdKeys = [];
 }
 
+async function importNewsRepo() {
+  const mod = await import('@/server/repositories');
+  return mod.news;
+}
+
+async function importRoute() {
+  return import('@/app/api/news/route');
+}
+
 // Aceita `undefined` porque `found?.image` é `string | undefined`; `undefined`
 // cai fora da URL, igual a `URL.canParse("undefined")` faria em runtime.
 function isUrl(str?: string) {
   return str !== undefined && URL.canParse(str);
+}
+
+function makeImage({
+  name = 'test.jpg',
+  type = 'image/jpeg',
+  size = 1024,
+}: { name?: string; size?: number; type?: string; } = {}) {
+  const data = new Uint8Array(size);
+  return new File([data], name, { type });
 }
 
 describe('/api/news — integration', () => {

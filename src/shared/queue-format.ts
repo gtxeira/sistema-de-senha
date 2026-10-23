@@ -7,22 +7,6 @@ import { CALL_TYPES, MAX_QUEUE_NUMBER, TYPE_PREFIXES } from './constants';
  * rotas e repositórios) e pelo cliente (display e payloads de SSE).
  */
 
-/**
- * Normaliza o tipo recebido na borda para o par
- * `sequenceType` (banco) / `callType` (wire).
- */
-export function normalizeCallType(type?: string | undefined): {
-  sequenceType: SequenceType;
-  callType: CallType;
-} {
-  const isPriority =
-    type === CALL_TYPES.PREFERENTIAL || type === CALL_TYPES.PREFERENCIAL;
-  return {
-    sequenceType: isPriority ? CALL_TYPES.PREFERENCIAL : CALL_TYPES.NORMAL,
-    callType: isPriority ? CALL_TYPES.PREFERENTIAL : CALL_TYPES.NORMAL,
-  };
-}
-
 /** `N001` / `P002` — prefixo + número com 3 dígitos. */
 export function formatNumberString(num: number, type: CallType): string {
   const prefix =
@@ -34,8 +18,24 @@ export function formatNumberString(num: number, type: CallType): string {
 }
 
 /** Número cru zero-padded, sem prefixo (`001`), com o teto da fila. */
-export function formatQueueNumber(num?: number | null | undefined): string {
+export function formatQueueNumber(num?: null | undefined | number): string {
   if (!num || num <= 0) return '---';
   if (num >= MAX_QUEUE_NUMBER + 1) return String(MAX_QUEUE_NUMBER);
   return String(num).padStart(3, '0');
+}
+
+/**
+ * Normaliza o tipo recebido na borda para o par
+ * `sequenceType` (banco) / `callType` (wire).
+ */
+export function normalizeCallType(type?: undefined | string): {
+  callType: CallType;
+  sequenceType: SequenceType;
+} {
+  const isPriority =
+    type === CALL_TYPES.PREFERENTIAL || type === CALL_TYPES.PREFERENCIAL;
+  return {
+    sequenceType: isPriority ? CALL_TYPES.PREFERENCIAL : CALL_TYPES.NORMAL,
+    callType: isPriority ? CALL_TYPES.PREFERENTIAL : CALL_TYPES.NORMAL,
+  };
 }

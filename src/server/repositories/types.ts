@@ -49,112 +49,6 @@ export type {
 
 /* ── Queue ──────────────────────────────────────────────────────── */
 
-/** Payload aceito por `QueueRepository.saveCall`. */
-export interface QueueCallInput {
-  readonly sector: string;
-  readonly number: number;
-  readonly numberStr: string;
-  readonly sequenceType: SequenceType;
-  readonly callType: CallType;
-  readonly attendantId: string | null;
-}
-
-export interface QueueRepository {
-  /**
-   * Próximo número do setor/tipo, com transação atômica e wraparound em
-   * `MAX_QUEUE_NUMBER` (999 → 000).
-   */
-  nextNumber(
-    sector: string,
-    type: SequenceType,
-  ): Promise<{ number: number; wraparound: boolean }>;
-
-  /**
-   * Persiste uma chamada e devolve o id gerado + o instante gravado.
-   *
-   * O instante vem do banco (`created_at`), não de `new Date()`: é o
-   * valor que virou registro, e é ele que o SSE propaga adiante.
-   */
-  saveCall(call: QueueCallInput): Promise<{ id: string; createdAt: string }>;
-
-  /** Marcador de reset do setor (`null` quando nunca foi resetado). */
-  getSectorResetAt(sector: string): Promise<Date | null>;
-
-  /**
-   * Zera a sequência do setor. As linhas de `queue_calls` são mantidas de
-   * propósito — `/historico` as lê.
-   */
-  resetSector(sector: string): Promise<void>;
-
-  /** Fixa o próximo número (sync manual). A chamada seguinte retorna `nextNumber`. */
-  setNextNumber(
-    sector: string,
-    type: SequenceType,
-    nextNumber: number,
-  ): Promise<void>;
-
-  /**
-   * Chamadas recentes do setor. Com `resetAt`, exclui as anteriores ao reset
-   * (que sobrevivem ao reset e não devem ser repetidas num monitor).
-   */
-  getRecentCalls(
-    sector: string,
-    limit?: number,
-    resetAt?: Date | null,
-  ): Promise<RecentCall[]>;
-}
-
-/* ── Read (agregações) ──────────────────────────────────────────── */
-
-export interface StatsOptions {
-  readonly sector?: string | null;
-  /**
-   * Filtra o histórico exibido (`calls` + `pagination.total`).
-   *
-   * Não afeta `summary`: os cards são totais da janela inteira, e um
-   * filtro na tabela ("só preferenciais") não deve mudar "Total no
-   * período" nem "Atendimentos hoje".
-   */
-  readonly type?: SequenceType | null;
-  /** Inclusivo — primeira chamada dentro da janela. */
-  readonly since?: Date;
-  /**
-   * EXCLUSIVO — o instante da meia-noite BRT do dia seguinte.
-   *
-   * A janela padrão (quando `since`/`until` não vêm) é calculada por
-   * `dayWindow()` em `@/shared/time`: dia-calendário BRT, não "agora
-   * menos N×24h".
-   */
-  readonly until?: Date | null;
-  /**
-   * Página do histórico, 1-based.
-   *
-   * A paginação é feita no servidor: o cliente nunca recebe a janela
-   * inteira. O servidor clampa em `[1, totalPages]`.
-   */
-  readonly page?: number;
-  /** Linhas por página (default 20; máximo `MAX_PAGE_SIZE`). */
-  readonly pageSize?: number;
-  readonly days?: number;
-  /**
-   * O "agora" da consulta (padrão: `new Date()`).
-   *
-   * Existe para a janela ser determinística nos testes — sem ele, um
-   * teste que roda perto da meia-noite BRT muda de resultado sozinho.
-   */
-  readonly now?: Date;
-}
-
-export interface ReadRepository {
-  /**
-   * Estatísticas de uma janela, com filtros por setor/tipo. Nunca lança:
-   * em erro devolve a estrutura vazia com `noDb: true`.
-   */
-  getStats(options?: StatsOptions): Promise<QueueStats>;
-}
-
-/* ── Auth ───────────────────────────────────────────────────────── */
-
 /**
  * Verificação de credencial **não** faz parte deste contrato — ela vive em
  * `src/server/auth/config.ts` (NextAuth), para não existir um segundo caminho
@@ -165,27 +59,94 @@ export interface AuthRepository {
   resolveLoginEmail(username: string): Promise<string>;
 }
 
+export interface CreateNewsInput {
+  readonly title: string;
+  /**
+   * Vem de `FormData.get("image")`: pode chegar como string ou ausente quando
+   * o envio é inválido. O repositório valida e lança 400 — depois das checagens
+   * o tipo estreita para `File`.
+   */
+  readonly image: File | null | string;
+}
+
+/* ── Read (agregações) ──────────────────────────────────────────── */
+
+export interface NewsRepository {
+  /** Faz upload da imagem no S3 e grava a notícia (rollback do S3 se o banco falhar). */
+  create(data: CreateNewsInput): Promise<{ news: NewsItem; success: true; }>;
+
+  /** Notícias ativas, mais recentes primeiro. Nunca lança. */
+  listActive(): Promise<NewsItem[]>;
+
+  /** Soft delete + remoção da imagem no S3. */
+  remove(id: number | string): Promise<{ success: true }>;
+}
+
+/** Payload aceito por `QueueRepository.saveCall`. */
+export interface QueueCallInput {
+  readonly attendantId: null | string;
+  readonly callType: CallType;
+  readonly number: number;
+  readonly numberStr: string;
+  readonly sector: string;
+  readonly sequenceType: SequenceType;
+}
+
+/* ── Auth ───────────────────────────────────────────────────────── */
+
+export interface QueueRepository {
+  /**
+   * Chamadas recentes do setor. Com `resetAt`, exclui as anteriores ao reset
+   * (que sobrevivem ao reset e não devem ser repetidas num monitor).
+   */
+  getRecentCalls(
+    sector: string,
+    limit?: number,
+    resetAt?: Date | null,
+  ): Promise<RecentCall[]>;
+
+  /** Marcador de reset do setor (`null` quando nunca foi resetado). */
+  getSectorResetAt(sector: string): Promise<Date | null>;
+
+  /**
+   * Próximo número do setor/tipo, com transação atômica e wraparound em
+   * `MAX_QUEUE_NUMBER` (999 → 000).
+   */
+  nextNumber(
+    sector: string,
+    type: SequenceType,
+  ): Promise<{ number: number; wraparound: boolean }>;
+
+  /**
+   * Zera a sequência do setor. As linhas de `queue_calls` são mantidas de
+   * propósito — `/historico` as lê.
+   */
+  resetSector(sector: string): Promise<void>;
+
+  /**
+   * Persiste uma chamada e devolve o id gerado + o instante gravado.
+   *
+   * O instante vem do banco (`created_at`), não de `new Date()`: é o
+   * valor que virou registro, e é ele que o SSE propaga adiante.
+   */
+  saveCall(call: QueueCallInput): Promise<{ id: string; createdAt: string }>;
+
+  /** Fixa o próximo número (sync manual). A chamada seguinte retorna `nextNumber`. */
+  setNextNumber(
+    sector: string,
+    type: SequenceType,
+    nextNumber: number,
+  ): Promise<void>;
+}
+
 /* ── Users ──────────────────────────────────────────────────────── */
 
-export interface UsersRepository {
-  /** Lista todos os usuários, com cargo e overrides. */
-  list(): Promise<UserRecord[]>;
-
-  create(data: CreateUserInput): Promise<{ success: true; user: UserRecord }>;
-
-  update(id: string, data: UpdateUserInput): Promise<UserRecord>;
-
-  /** Substitui todos os overrides (grants/denials) do usuário. */
-  setPermissions(
-    id: string,
-    permissions: readonly PermissionOverride[],
-  ): Promise<PermissionOverride[]>;
-
-  /** Permissões efetivas (cargo ∪ grants − denials) para login/refresh. */
-  getEffectivePermissions(id: string): Promise<Permission[] | null>;
-
-  /** Remove o usuário — overrides e refresh tokens caem em cascata. */
-  remove(id: string): Promise<void>;
+export interface ReadRepository {
+  /**
+   * Estatísticas de uma janela, com filtros por setor/tipo. Nunca lança:
+   * em erro devolve a estrutura vazia com `noDb: true`.
+   */
+  getStats(options?: StatsOptions): Promise<QueueStats>;
 }
 
 /* ── Roles ──────────────────────────────────────────────────────── */
@@ -196,37 +157,76 @@ export interface UsersRepository {
  * built-in (admin/attendant) são imutáveis: sem eles o sistema se trancaria.
  */
 export interface RolesRepository {
-  list(): Promise<RoleRecord[]>;
+  create(data: CreateRoleInput): Promise<RoleRecord>;
 
   getByKey(key: string): Promise<RoleRecord | null>;
 
-  create(data: CreateRoleInput): Promise<RoleRecord>;
-
-  update(id: string, data: UpdateRoleInput): Promise<RoleRecord>;
+  list(): Promise<RoleRecord[]>;
 
   /** @throws 409 quando o cargo ainda tem usuários (FK RESTRICT). */
   remove(id: string): Promise<void>;
+
+  update(id: string, data: UpdateRoleInput): Promise<RoleRecord>;
 }
 
 /* ── News ───────────────────────────────────────────────────────── */
 
-export interface CreateNewsInput {
-  readonly title: string;
+export interface StatsOptions {
+  readonly days?: number;
   /**
-   * Vem de `FormData.get("image")`: pode chegar como string ou ausente quando
-   * o envio é inválido. O repositório valida e lança 400 — depois das checagens
-   * o tipo estreita para `File`.
+   * O "agora" da consulta (padrão: `new Date()`).
+   *
+   * Existe para a janela ser determinística nos testes — sem ele, um
+   * teste que roda perto da meia-noite BRT muda de resultado sozinho.
    */
-  readonly image: File | string | null;
+  readonly now?: Date;
+  /**
+   * Página do histórico, 1-based.
+   *
+   * A paginação é feita no servidor: o cliente nunca recebe a janela
+   * inteira. O servidor clampa em `[1, totalPages]`.
+   */
+  readonly page?: number;
+  /** Linhas por página (default 20; máximo `MAX_PAGE_SIZE`). */
+  readonly pageSize?: number;
+  readonly sector?: null | string;
+  /** Inclusivo — primeira chamada dentro da janela. */
+  readonly since?: Date;
+  /**
+   * Filtra o histórico exibido (`calls` + `pagination.total`).
+   *
+   * Não afeta `summary`: os cards são totais da janela inteira, e um
+   * filtro na tabela ("só preferenciais") não deve mudar "Total no
+   * período" nem "Atendimentos hoje".
+   */
+  readonly type?: SequenceType | null;
+  /**
+   * EXCLUSIVO — o instante da meia-noite BRT do dia seguinte.
+   *
+   * A janela padrão (quando `since`/`until` não vêm) é calculada por
+   * `dayWindow()` em `@/shared/time`: dia-calendário BRT, não "agora
+   * menos N×24h".
+   */
+  readonly until?: Date | null;
 }
 
-export interface NewsRepository {
-  /** Faz upload da imagem no S3 e grava a notícia (rollback do S3 se o banco falhar). */
-  create(data: CreateNewsInput): Promise<{ success: true; news: NewsItem }>;
+export interface UsersRepository {
+  create(data: CreateUserInput): Promise<{ success: true; user: UserRecord }>;
 
-  /** Soft delete + remoção da imagem no S3. */
-  remove(id: string | number): Promise<{ success: true }>;
+  /** Permissões efetivas (cargo ∪ grants − denials) para login/refresh. */
+  getEffectivePermissions(id: string): Promise<Permission[] | null>;
 
-  /** Notícias ativas, mais recentes primeiro. Nunca lança. */
-  listActive(): Promise<NewsItem[]>;
+  /** Lista todos os usuários, com cargo e overrides. */
+  list(): Promise<UserRecord[]>;
+
+  /** Remove o usuário — overrides e refresh tokens caem em cascata. */
+  remove(id: string): Promise<void>;
+
+  /** Substitui todos os overrides (grants/denials) do usuário. */
+  setPermissions(
+    id: string,
+    permissions: readonly PermissionOverride[],
+  ): Promise<PermissionOverride[]>;
+
+  update(id: string, data: UpdateUserInput): Promise<UserRecord>;
 }

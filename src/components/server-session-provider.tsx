@@ -22,9 +22,9 @@ export function ServerSessionProvider({
   session,
   children,
 }: {
+  readonly children: ReactNode;
   /** Claims lidas do cookie no servidor; `null` = anônimo. */
   readonly session: User | null;
-  readonly children: ReactNode;
 }) {
   return (
     <ServerSessionContext.Provider value={session}>

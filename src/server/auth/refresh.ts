@@ -29,69 +29,59 @@ export { REFRESH_COOKIE_NAME };
 
 /* ─── Superfície mínima de persistência ─────────────────────────────────────── */
 
+export type RotateFailure = 'conflict' | 'expired' | 'revoked' | 'unknown';
+
+/** União discriminada por `ok`: `result.raw` só existe no ramo de sucesso. */
+export type RotateResult =
+  | {
+      readonly expiresAt: Date;
+      readonly ok: true;
+      readonly raw: string;
+      readonly userId: string;
+    }
+  | { readonly ok: false; readonly reason: RotateFailure };
+
+/* ─── Valores puros ─────────────────────────────────────────────────────────── */
+
+export interface ClearRefreshCookieOptions extends RefreshCookieOptions {
+  readonly expires: Date;
+  readonly maxAge: 0;
+}
+
+export interface RefreshCookieOptions {
+  readonly httpOnly: true;
+  readonly maxAge: number;
+  readonly path: '/';
+  readonly sameSite: 'lax';
+  readonly secure: boolean;
+}
+
 export interface RefreshTokenRow {
   readonly id: string;
-  readonly user_id: string;
-  readonly token_hash: string;
-  readonly family_id: string;
-  readonly expires_at: Date;
-  readonly used_at: Date | null;
   readonly created_at: Date;
+  readonly expires_at: Date;
+  readonly family_id: string;
+  readonly token_hash: string;
+  readonly used_at: Date | null;
+  readonly user_id: string;
 }
 
 export interface RefreshTokenStore {
+  $transaction<T>(ops: ReadonlyArray<PromiseLike<T>>): Promise<T[]>;
   refresh_tokens: {
-    findUnique(args: {
-      readonly where: { readonly token_hash: string };
-    }): Promise<RefreshTokenRow | null>;
     create(args: {
-      readonly data: Record<string, unknown>;
-    }): Promise<RefreshTokenRow>;
-    update(args: {
-      readonly where: { readonly id: string };
       readonly data: Record<string, unknown>;
     }): Promise<RefreshTokenRow>;
     deleteMany(args: {
       readonly where: Record<string, unknown>;
     }): Promise<{ readonly count: number }>;
-  };
-  $transaction<T>(ops: ReadonlyArray<PromiseLike<T>>): Promise<T[]>;
-}
-
-/* ─── Valores puros ─────────────────────────────────────────────────────────── */
-
-export function hashRefreshToken(raw: string): string {
-  return createHash('sha256').update(String(raw)).digest('hex');
-}
-
-export function generateRefreshToken(): string {
-  return randomBytes(32).toString('base64url');
-}
-
-export interface RefreshCookieOptions {
-  readonly httpOnly: true;
-  readonly sameSite: 'lax';
-  readonly secure: boolean;
-  readonly path: '/';
-  readonly maxAge: number;
-}
-
-export interface ClearRefreshCookieOptions extends RefreshCookieOptions {
-  readonly maxAge: 0;
-  readonly expires: Date;
-}
-
-/** Opções do cookie de refresh (httpOnly, SameSite=Lax — já é o padrão do Auth.js). */
-export function refreshCookieOptions(
-  expiresAt: Date,
-  secure: boolean,
-): RefreshCookieOptions {
-  return {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: !!secure,
-    path: '/',
-    maxAge: Math.max(0, Math.floor((expiresAt.getTime() - Date.now()) / 1000)),
+    findUnique(args: {
+      readonly where: { readonly token_hash: string };
+    }): Promise<RefreshTokenRow | null>;
+    update(args: {
+      readonly data: Record<string, unknown>;
+      readonly where: { readonly id: string };
+    }): Promise<RefreshTokenRow>;
   };
 }
 
@@ -108,7 +98,15 @@ export function clearRefreshCookieOptions(
   };
 }
 
+export function generateRefreshToken(): string {
+  return randomBytes(32).toString('base64url');
+}
+
 /* ─── Ciclo de vida ─────────────────────────────────────────────────────────── */
+
+export function hashRefreshToken(raw: string): string {
+  return createHash('sha256').update(String(raw)).digest('hex');
+}
 
 /**
  * Emite o primeiro refresh token de um login (nova família).
@@ -116,7 +114,7 @@ export function clearRefreshCookieOptions(
 export async function issueRefreshToken(
   prisma: RefreshTokenStore,
   userId: string,
-): Promise<{ raw: string; expiresAt: Date; familyId: string }> {
+): Promise<{ expiresAt: Date; familyId: string; raw: string; }> {
   const raw = generateRefreshToken();
   const expiresAt = new Date(Date.now() + REFRESH_TOKEN_MAX_AGE * 1000);
   const familyId = crypto.randomUUID();
@@ -131,17 +129,37 @@ export async function issueRefreshToken(
   return { raw, expiresAt, familyId };
 }
 
-export type RotateFailure = 'unknown' | 'expired' | 'revoked' | 'conflict';
+/** Opções do cookie de refresh (httpOnly, SameSite=Lax — já é o padrão do Auth.js). */
+export function refreshCookieOptions(
+  expiresAt: Date,
+  secure: boolean,
+): RefreshCookieOptions {
+  return {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: !!secure,
+    path: '/',
+    maxAge: Math.max(0, Math.floor((expiresAt.getTime() - Date.now()) / 1000)),
+  };
+}
 
-/** União discriminada por `ok`: `result.raw` só existe no ramo de sucesso. */
-export type RotateResult =
-  | {
-      readonly ok: true;
-      readonly raw: string;
-      readonly userId: string;
-      readonly expiresAt: Date;
-    }
-  | { readonly ok: false; readonly reason: RotateFailure };
+/**
+ * Revoga a família do token apresentado (logout).
+ * @returns true se alguma linha foi removida
+ */
+export async function revokeRefreshToken(
+  prisma: RefreshTokenStore,
+  raw: string,
+): Promise<boolean> {
+  const row = await prisma.refresh_tokens.findUnique({
+    where: { token_hash: hashRefreshToken(raw) },
+  });
+  if (!row) return false;
+  await prisma.refresh_tokens.deleteMany({
+    where: { family_id: row.family_id },
+  });
+  return true;
+}
 
 /**
  * Rotaciona um refresh token apresentado.
@@ -199,22 +217,4 @@ export async function rotateRefreshToken(
     userId: row.user_id,
     expiresAt: row.expires_at,
   };
-}
-
-/**
- * Revoga a família do token apresentado (logout).
- * @returns true se alguma linha foi removida
- */
-export async function revokeRefreshToken(
-  prisma: RefreshTokenStore,
-  raw: string,
-): Promise<boolean> {
-  const row = await prisma.refresh_tokens.findUnique({
-    where: { token_hash: hashRefreshToken(raw) },
-  });
-  if (!row) return false;
-  await prisma.refresh_tokens.deleteMany({
-    where: { family_id: row.family_id },
-  });
-  return true;
 }

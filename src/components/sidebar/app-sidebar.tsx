@@ -48,10 +48,10 @@ export function AppSidebar({
   routeGroups,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
-  session: User | null;
-  sectorInfo?: SectorInfo;
   activeRoute: string;
   routeGroups: readonly RouteGroup[];
+  session: User | null;
+  sectorInfo?: SectorInfo;
 }) {
   const [query, setQuery] = React.useState('');
 

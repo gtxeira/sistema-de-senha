@@ -109,7 +109,7 @@ describe('/api/queue/reset — integration', () => {
       const { POST } = await importRoute();
 
       // `!`: atribuído só dentro do callback.
-      let received!: string | null;
+      let received!: null | string;
       const unsubscribe = eventManager.subscribeToReset(
         'farmacia',
         (resetAt) => {
@@ -133,7 +133,7 @@ describe('/api/queue/reset — integration', () => {
     it("'all' emite reset em cada setor", async () => {
       const { POST } = await importRoute();
 
-      const seen: Array<[string, string | null]> = [];
+      const seen: Array<[string, null | string]> = [];
       const unsubF = eventManager.subscribeToReset('farmacia', (at) =>
         seen.push(['farmacia', at]),
       );

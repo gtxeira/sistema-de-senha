@@ -22,17 +22,7 @@ import { APP_TIMEZONE, LOCALE } from './constants';
    ───────────────────────────────────────────────────────────── */
 
 /** O que o módulo aceita como "instante". */
-export type DateInput = Date | string | number;
-
-/** Relógio-mural de um instante, já no fuso pedido. */
-interface ZonedParts {
-  readonly year: number;
-  readonly month: number;
-  readonly day: number;
-  readonly hour: number;
-  readonly minute: number;
-  readonly second: number;
-}
+export type DateInput = Date | number | string;
 
 /** Janela de dias-calendário, em instantes UTC. */
 export interface DayWindow {
@@ -40,6 +30,16 @@ export interface DayWindow {
   readonly since: Date;
   /** Exclusivo — o instante da meia-noite BRT do dia seguinte. */
   readonly until: Date;
+}
+
+/** Relógio-mural de um instante, já no fuso pedido. */
+interface ZonedParts {
+  readonly day: number;
+  readonly hour: number;
+  readonly minute: number;
+  readonly month: number;
+  readonly second: number;
+  readonly year: number;
 }
 
 /* ─── Internos ───────────────────────────────────────────────── */
@@ -76,6 +76,99 @@ const dayFormatters = new Map<string, Intl.DateTimeFormat>();
 const dateTimeFormatters = new Map<string, Intl.DateTimeFormat>();
 const longDateFormatters = new Map<string, Intl.DateTimeFormat>();
 
+/**
+ * Soma de dias-calendário no fuso do app.
+ *
+ * Preserva o relógio-mural: somar 1 dia em São Paulo às 23:30 dá
+ * 23:30 do dia seguinte, e não 24 horas depois (que cairia no dia
+ * extra em DST).
+ */
+export function addDays(
+  value: DateInput,
+  days: number,
+  timeZone: string = APP_TIMEZONE,
+): Date {
+  const wall = zonedParts(toDate(value), timeZone);
+  return wallToInstant({ ...wall, day: wall.day + days }, timeZone);
+}
+
+/**
+ * Dia-calendário do instante, no fuso do app.
+ *
+ * @returns `"YYYY-MM-DD"`.
+ *
+ * É a chave que decide a que dia uma chamada pertence. Para o Brasil
+ * (UTC−03:00), uma chamada às 00:00 UTC já é do dia ANTERIOR — e é
+ * exatamente aí que o "hoje" do histórico virava no horário errado.
+ */
+export function dayKey(
+  value: DateInput,
+  timeZone: string = APP_TIMEZONE,
+): string {
+  const wall = zonedParts(toDate(value), timeZone);
+  return `${wall.year}-${pad2(wall.month)}-${pad2(wall.day)}`;
+}
+
+/** Como `dayKey`, mas devolve `null` em vez de lançar para data inválida. */
+export function dayKeyOrNull(
+  value?: DateInput | null | undefined,
+  timeZone: string = APP_TIMEZONE,
+): null | string {
+  if (value === null || value === undefined) return null;
+  try {
+    return dayKey(value, timeZone);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Janela dos últimos `days` dias-calendário, em BRT.
+ *
+ * `days: 1` → o dia de hoje (da meia-noite BRT de hoje até a meia-noite
+ * BRT de amanhã). `days: 7` → dos últimos 7 dias-calendário, contando
+ * hoje. Não é "agora menos N×24h": a diferença aparece em tudo que
+ * importa aqui (virada do dia, horário de verão, fim de semana).
+ */
+export function dayWindow(
+  days: number,
+  now: DateInput = new Date(),
+  timeZone: string = APP_TIMEZONE,
+): DayWindow {
+  const count = Math.max(1, Math.floor(days));
+  const firstDay = addDays(now, -(count - 1), timeZone);
+  return {
+    since: startOfDay(firstDay, timeZone),
+    until: endOfDay(now, timeZone),
+  };
+}
+
+/* ─── Calendário ─────────────────────────────────────────────── */
+
+/**
+ * Instante UTC da meia-noite do dia SEGUINTE — limite exclusivo do dia.
+ */
+export function endOfDay(
+  value: DateInput,
+  timeZone: string = APP_TIMEZONE,
+): Date {
+  return startOfDay(addDays(value, 1, timeZone), timeZone);
+}
+
+/**
+ * Instante UTC da meia-noite do dia do valor, no fuso do app.
+ *
+ * É o que "começa o dia" significa para o sistema: o filtro "Hoje" e
+ * o contador "Atendimentos hoje" cortam por aqui.
+ */
+export function startOfDay(
+  value: DateInput,
+  timeZone: string = APP_TIMEZONE,
+): Date {
+  const wall = zonedParts(toDate(value), timeZone);
+  return wallToInstant({ ...wall, hour: 0, minute: 0, second: 0 }, timeZone);
+}
+
 function cached(
   store: Map<string, Intl.DateTimeFormat>,
   timeZone: string,
@@ -88,6 +181,67 @@ function cached(
     store.set(key, formatter);
   }
   return formatter;
+}
+
+/**
+ * Offset do fuso (em ms) no instante dado.
+ *
+ * Positivo a leste de UTC, negativo a oeste. É a diferença entre o
+ * relógio-mural do fuso e o UTC — calculada SEM `getTimezoneOffset()`,
+ * que é o fuso do PROCESSO e não o do fuso pedido.
+ */
+function tzOffsetMs(date: Date, timeZone: string): number {
+  const wall = zonedParts(date, timeZone);
+  const asUtc = Date.UTC(
+    wall.year,
+    wall.month - 1,
+    wall.day,
+    wall.hour,
+    wall.minute,
+    wall.second,
+  );
+  // Trunca os milissegundos: o relógio-mural não os tem.
+  return asUtc - Math.floor(date.getTime() / 1000) * 1000;
+}
+
+/**
+ * Converte um relógio-mural do fuso no instante UTC correspondente.
+ *
+ * O caminho direto seria `wall - offset`, mas o offset depende do
+ * próprio instante (é o que muda na virada de DST). A iteração
+ * resolve: começa pelo offset no palpite e refaz o cálculo com o
+ * offset do instante obtido, até estabilizar.
+ */
+function wallToInstant(
+  wall: {
+    day: number;
+    hour: number;
+    minute: number;
+    month: number;
+    second: number;
+    year: number;
+  },
+  timeZone: string,
+): Date {
+  // `Date.UTC` normaliza dia/month overflow (dia 32 vira dia 1 do mês
+  // seguinte) — é o que faz `addDays` funcionar sem aritmética de calendário.
+  const guess = Date.UTC(
+    wall.year,
+    wall.month - 1,
+    wall.day,
+    wall.hour,
+    wall.minute,
+    wall.second,
+  );
+
+  let timestamp = guess;
+  for (let i = 0; i < 3; i++) {
+    const next = guess - tzOffsetMs(new Date(timestamp), timeZone);
+    if (next === timestamp) break;
+    timestamp = next;
+  }
+
+  return new Date(timestamp);
 }
 
 /**
@@ -143,160 +297,6 @@ function zonedParts(date: Date, timeZone: string): ZonedParts {
   return { year, month, day, hour, minute, second };
 }
 
-/**
- * Offset do fuso (em ms) no instante dado.
- *
- * Positivo a leste de UTC, negativo a oeste. É a diferença entre o
- * relógio-mural do fuso e o UTC — calculada SEM `getTimezoneOffset()`,
- * que é o fuso do PROCESSO e não o do fuso pedido.
- */
-function tzOffsetMs(date: Date, timeZone: string): number {
-  const wall = zonedParts(date, timeZone);
-  const asUtc = Date.UTC(
-    wall.year,
-    wall.month - 1,
-    wall.day,
-    wall.hour,
-    wall.minute,
-    wall.second,
-  );
-  // Trunca os milissegundos: o relógio-mural não os tem.
-  return asUtc - Math.floor(date.getTime() / 1000) * 1000;
-}
-
-/**
- * Converte um relógio-mural do fuso no instante UTC correspondente.
- *
- * O caminho direto seria `wall - offset`, mas o offset depende do
- * próprio instante (é o que muda na virada de DST). A iteração
- * resolve: começa pelo offset no palpite e refaz o cálculo com o
- * offset do instante obtido, até estabilizar.
- */
-function wallToInstant(
-  wall: {
-    year: number;
-    month: number;
-    day: number;
-    hour: number;
-    minute: number;
-    second: number;
-  },
-  timeZone: string,
-): Date {
-  // `Date.UTC` normaliza dia/month overflow (dia 32 vira dia 1 do mês
-  // seguinte) — é o que faz `addDays` funcionar sem aritmética de calendário.
-  const guess = Date.UTC(
-    wall.year,
-    wall.month - 1,
-    wall.day,
-    wall.hour,
-    wall.minute,
-    wall.second,
-  );
-
-  let timestamp = guess;
-  for (let i = 0; i < 3; i++) {
-    const next = guess - tzOffsetMs(new Date(timestamp), timeZone);
-    if (next === timestamp) break;
-    timestamp = next;
-  }
-
-  return new Date(timestamp);
-}
-
-/* ─── Calendário ─────────────────────────────────────────────── */
-
-/**
- * Dia-calendário do instante, no fuso do app.
- *
- * @returns `"YYYY-MM-DD"`.
- *
- * É a chave que decide a que dia uma chamada pertence. Para o Brasil
- * (UTC−03:00), uma chamada às 00:00 UTC já é do dia ANTERIOR — e é
- * exatamente aí que o "hoje" do histórico virava no horário errado.
- */
-export function dayKey(
-  value: DateInput,
-  timeZone: string = APP_TIMEZONE,
-): string {
-  const wall = zonedParts(toDate(value), timeZone);
-  return `${wall.year}-${pad2(wall.month)}-${pad2(wall.day)}`;
-}
-
-/** Como `dayKey`, mas devolve `null` em vez de lançar para data inválida. */
-export function dayKeyOrNull(
-  value?: DateInput | null | undefined,
-  timeZone: string = APP_TIMEZONE,
-): string | null {
-  if (value === null || value === undefined) return null;
-  try {
-    return dayKey(value, timeZone);
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Instante UTC da meia-noite do dia do valor, no fuso do app.
- *
- * É o que "começa o dia" significa para o sistema: o filtro "Hoje" e
- * o contador "Atendimentos hoje" cortam por aqui.
- */
-export function startOfDay(
-  value: DateInput,
-  timeZone: string = APP_TIMEZONE,
-): Date {
-  const wall = zonedParts(toDate(value), timeZone);
-  return wallToInstant({ ...wall, hour: 0, minute: 0, second: 0 }, timeZone);
-}
-
-/**
- * Instante UTC da meia-noite do dia SEGUINTE — limite exclusivo do dia.
- */
-export function endOfDay(
-  value: DateInput,
-  timeZone: string = APP_TIMEZONE,
-): Date {
-  return startOfDay(addDays(value, 1, timeZone), timeZone);
-}
-
-/**
- * Soma de dias-calendário no fuso do app.
- *
- * Preserva o relógio-mural: somar 1 dia em São Paulo às 23:30 dá
- * 23:30 do dia seguinte, e não 24 horas depois (que cairia no dia
- * extra em DST).
- */
-export function addDays(
-  value: DateInput,
-  days: number,
-  timeZone: string = APP_TIMEZONE,
-): Date {
-  const wall = zonedParts(toDate(value), timeZone);
-  return wallToInstant({ ...wall, day: wall.day + days }, timeZone);
-}
-
-/**
- * Janela dos últimos `days` dias-calendário, em BRT.
- *
- * `days: 1` → o dia de hoje (da meia-noite BRT de hoje até a meia-noite
- * BRT de amanhã). `days: 7` → dos últimos 7 dias-calendário, contando
- * hoje. Não é "agora menos N×24h": a diferença aparece em tudo que
- * importa aqui (virada do dia, horário de verão, fim de semana).
- */
-export function dayWindow(
-  days: number,
-  now: DateInput = new Date(),
-  timeZone: string = APP_TIMEZONE,
-): DayWindow {
-  const count = Math.max(1, Math.floor(days));
-  const firstDay = addDays(now, -(count - 1), timeZone);
-  return {
-    since: startOfDay(firstDay, timeZone),
-    until: endOfDay(now, timeZone),
-  };
-}
-
 /* ─── Exibição ───────────────────────────────────────────────── */
 
 /**
@@ -307,25 +307,6 @@ export function dayWindow(
  * o render.
  */
 const INVALID_DATE = '—';
-
-/**
- * Formata, tolerando data inválida.
- *
- * As funções de CÁLCULO (`dayKey`, `startOfDay`, `dayWindow`) são
- * estritas de propósito — uma data inválida ali é erro de
- * programação. Já as de EXIBIÇÃO alimentam a UI e não podem jogar.
- */
-function safeFormat(
-  formatter: Intl.DateTimeFormat,
-  value: DateInput,
-  fallback: string = INVALID_DATE,
-): string {
-  try {
-    return formatter.format(toDate(value));
-  } catch {
-    return fallback;
-  }
-}
 
 /** `"HH:mm"` no fuso do app. */
 export function formatClock(
@@ -358,21 +339,6 @@ export function formatClockSeconds(
   );
 }
 
-/** `"dd/MM/yyyy"` no fuso do app. */
-export function formatDay(
-  value: DateInput,
-  timeZone: string = APP_TIMEZONE,
-): string {
-  return safeFormat(
-    cached(dayFormatters, timeZone, {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    }),
-    value,
-  );
-}
-
 /** `"dd/MM/yyyy, HH:mm"` no fuso do app. */
 export function formatDateTime(
   value: DateInput,
@@ -386,6 +352,21 @@ export function formatDateTime(
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
+    }),
+    value,
+  );
+}
+
+/** `"dd/MM/yyyy"` no fuso do app. */
+export function formatDay(
+  value: DateInput,
+  timeZone: string = APP_TIMEZONE,
+): string {
+  return safeFormat(
+    cached(dayFormatters, timeZone, {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
     }),
     value,
   );
@@ -405,4 +386,23 @@ export function formatLongDate(
     }),
     value,
   ).toUpperCase();
+}
+
+/**
+ * Formata, tolerando data inválida.
+ *
+ * As funções de CÁLCULO (`dayKey`, `startOfDay`, `dayWindow`) são
+ * estritas de propósito — uma data inválida ali é erro de
+ * programação. Já as de EXIBIÇÃO alimentam a UI e não podem jogar.
+ */
+function safeFormat(
+  formatter: Intl.DateTimeFormat,
+  value: DateInput,
+  fallback: string = INVALID_DATE,
+): string {
+  try {
+    return formatter.format(toDate(value));
+  } catch {
+    return fallback;
+  }
 }

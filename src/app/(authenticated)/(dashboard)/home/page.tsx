@@ -17,10 +17,6 @@ import {
   SCREEN_ADMIN,
 } from '@/shared/permissions';
 
-type NavItem = {
-  id: string;
-} & NavCardProps;
-
 export default function HomePage() {
   const session = useEffectiveSession();
   if (!session) return null;
@@ -84,3 +80,7 @@ export default function HomePage() {
     </>
   );
 }
+
+type NavItem = NavCardProps & {
+  id: string;
+};

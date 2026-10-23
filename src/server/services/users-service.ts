@@ -14,14 +14,26 @@ import { users } from '@/server/repositories';
  * continua responsável por hash de senha, validação de cargo e overrides.
  */
 
-export function listUsers(): Promise<UserRecord[]> {
-  return users.list();
-}
-
 export function createUser(
   data: CreateUserInput,
 ): Promise<{ success: true; user: UserRecord }> {
   return users.create(data);
+}
+
+export async function deleteUser(
+  id: string,
+  actorId: string,
+): Promise<{ success: true }> {
+  if (id === actorId) {
+    throw routeError(400, 'Você não pode excluir o próprio usuário.');
+  }
+
+  await users.remove(id);
+  return { success: true };
+}
+
+export function listUsers(): Promise<UserRecord[]> {
+  return users.list();
 }
 
 /**
@@ -60,16 +72,4 @@ export async function updateUser(
   }
 
   return { success: true, user };
-}
-
-export async function deleteUser(
-  id: string,
-  actorId: string,
-): Promise<{ success: true }> {
-  if (id === actorId) {
-    throw routeError(400, 'Você não pode excluir o próprio usuário.');
-  }
-
-  await users.remove(id);
-  return { success: true };
 }

@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
  * The factory should clean any persisted state between calls.
  */
 export function queueRepoContract(
-  createRepo: () => QueueRepository | Promise<QueueRepository>,
+  createRepo: () => Promise<QueueRepository> | QueueRepository,
 ): void {
   describe('QueueRepository contract', () => {
     let repo: QueueRepository;

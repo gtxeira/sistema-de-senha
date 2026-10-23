@@ -44,16 +44,49 @@ let isMonitorSpeaker = false;
 let lastSpokenKey = '';
 let lastSpokenAt = 0;
 
-// ─── BroadcastChannel (ping de presença entre monitores) ──────────────────────
-// Só publica: o ping que chega de outros monitores não muda nada em quem o
-// recebe (o áudio é sempre local), então não há listener a registrar.
-function getChannel(): BroadcastChannel | null {
-  if (typeof window === 'undefined' || typeof BroadcastChannel === 'undefined')
-    return null;
-  if (!channel) channel = new BroadcastChannel(CHANNEL_NAME);
-  return channel;
+// No-op — dashboard não fala; monitor fala via SSE
+export function announceQueueCall(
+  _number: SpeechNumber,
+  _type: CallType,
+): void {}
+
+// ─── Texto de fala ─────────────────────────────────────────────────────────────
+export function buildSpeechText(number: SpeechNumber, type: CallType): string {
+  const n = Number(number) || 0;
+  const spoken = numberToPt(n);
+  return type === CALL_TYPES.PREFERENCIAL || type === CALL_TYPES.PREFERENTIAL
+    ? `Senha preferencial. ${spoken}.`
+    : `Senha. ${spoken}.`;
 }
 
+// "Chamar novamente" — força repetição ignorando dedup
+export function forceAnnounce(number: SpeechNumber, type: CallType): void {
+  const text = buildSpeechText(number, type);
+  const key = `${Number(number)}-${type}`;
+  if (lastSpokenKey === key) {
+    lastSpokenKey = '';
+    lastSpokenAt = 0;
+  }
+  void speakWithAlert(text, key, true);
+}
+
+export function initSpeechClient(): void {
+  getChannel();
+  void waitForVoices();
+}
+
+export function isMonitorSpeakerActive(): boolean {
+  return isMonitorSpeaker;
+}
+
+// Chamado pelo monitor a partir dos eventos SSE — único ponto de fala de senhas
+export function monitorSpeak(number: SpeechNumber, type: CallType): void {
+  const text = buildSpeechText(number, type);
+  const key = `${Number(number)}-${type}`;
+  // Disparo intencionalmente solto: a fala tem timers próprios e os testes
+  // (e o monitor) avançam os timers em vez de aguardar a promise.
+  void speakWithAlert(text, key);
+}
 // ─── Conversão numérica pt-BR ─────────────────────────────────────────────────
 export function numberToPt(value: SpeechNumber): string {
   const n = Math.max(0, Math.min(TTS_MAX_NUMBER, Number(value) || 0));
@@ -126,64 +159,38 @@ export function numberToPt(value: SpeechNumber): string {
     : hundreds[hundred];
 }
 
-// ─── Texto de fala ─────────────────────────────────────────────────────────────
-export function buildSpeechText(number: SpeechNumber, type: CallType): string {
-  const n = Number(number) || 0;
-  const spoken = numberToPt(n);
-  return type === CALL_TYPES.PREFERENCIAL || type === CALL_TYPES.PREFERENTIAL
-    ? `Senha preferencial. ${spoken}.`
-    : `Senha. ${spoken}.`;
+export function registerMonitorSpeaker(): () => void {
+  isMonitorSpeaker = true;
+  const ch = getChannel();
+  const ping = () => ch?.postMessage({ type: 'monitor-here' });
+  ping();
+  const timer = window.setInterval(ping, MONITOR_HEARTBEAT_MS);
+  return () => {
+    isMonitorSpeaker = false;
+    window.clearInterval(timer);
+  };
 }
 
-// ─── Voz pt-BR ────────────────────────────────────────────────────────────────
-function pickVoice(): SpeechSynthesisVoice | null {
-  const voices = window.speechSynthesis.getVoices() || [];
-  return (
-    voices.find((v) => /pt-BR|pt_BR/i.test(v.lang)) ||
-    voices.find((v) => /maria|francisca|google.*portugu/i.test(v.name)) ||
-    voices.find((v) => v.lang?.toLowerCase().startsWith('pt')) ||
-    null
-  );
+// Fala simples sem beep (mensagens de sistema)
+export function speakText(text: string): void {
+  speakNow(text);
 }
 
-// ─── Inicialização de vozes ───────────────────────────────────────────────────
-function waitForVoices(): Promise<void> {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window))
-    return Promise.resolve();
-  const voices = window.speechSynthesis.getVoices();
-  if (voices.length || voicesReady) {
-    voicesReady = true;
-    return Promise.resolve();
-  }
-  return new Promise<void>((resolve) => {
-    const done = () => {
-      voicesReady = true;
-      resolve();
-    };
-    window.speechSynthesis.addEventListener('voiceschanged', done, {
-      once: true,
-    });
-    window.setTimeout(done, TTS_VOICE_TIMEOUT);
-  });
+export function unlockSpeech(): void {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+  void waitForVoices();
+  window.speechSynthesis.resume();
+  const u = new SpeechSynthesisUtterance(' ');
+  u.volume = 0;
+  u.rate = 2;
+  window.speechSynthesis.speak(u);
 }
 
-// ─── Watchdog anti-pausa do Chrome ────────────────────────────────────────────
-function stopResumeWatch(): void {
-  if (resumeTimer) {
-    window.clearInterval(resumeTimer);
-    resumeTimer = 0;
-  }
-}
-function startResumeWatch(): void {
-  stopResumeWatch();
-  resumeTimer = window.setInterval(() => {
-    if (!window.speechSynthesis.speaking) {
-      stopResumeWatch();
-      return;
-    }
-    window.speechSynthesis.resume();
-  }, TTS_WATCHDOG_INTERVAL);
-}
+// ─── Sinal de alerta via AudioContext ─────────────────────────────────────────
+/** `webkitAudioContext` é o prefixo de engines antigas e não existe no lib.dom. */
+type WindowWithWebkitAudio = Window & {
+  readonly webkitAudioContext?: typeof AudioContext;
+};
 
 // ─── Cria e fala um utterance ─────────────────────────────────────────────────
 function doSpeak(
@@ -218,11 +225,28 @@ function doSpeak(
   synth.speak(u);
 }
 
-// ─── Sinal de alerta via AudioContext ─────────────────────────────────────────
-/** `webkitAudioContext` é o prefixo de engines antigas e não existe no lib.dom. */
-type WindowWithWebkitAudio = Window & {
-  readonly webkitAudioContext?: typeof AudioContext;
-};
+// ─── API pública ───────────────────────────────────────────────────────────────
+
+// ─── BroadcastChannel (ping de presença entre monitores) ──────────────────────
+// Só publica: o ping que chega de outros monitores não muda nada em quem o
+// recebe (o áudio é sempre local), então não há listener a registrar.
+function getChannel(): BroadcastChannel | null {
+  if (typeof window === 'undefined' || typeof BroadcastChannel === 'undefined')
+    return null;
+  if (!channel) channel = new BroadcastChannel(CHANNEL_NAME);
+  return channel;
+}
+
+// ─── Voz pt-BR ────────────────────────────────────────────────────────────────
+function pickVoice(): SpeechSynthesisVoice | null {
+  const voices = window.speechSynthesis.getVoices() || [];
+  return (
+    voices.find((v) => /pt-BR|pt_BR/i.test(v.lang)) ||
+    voices.find((v) => /maria|francisca|google.*portugu/i.test(v.name)) ||
+    voices.find((v) => v.lang?.toLowerCase().startsWith('pt')) ||
+    null
+  );
+}
 
 function playAlertBeep(): Promise<void> {
   return new Promise<void>((resolve) => {
@@ -353,66 +377,42 @@ async function speakWithAlert(
   startResumeWatch();
 }
 
-// ─── API pública ───────────────────────────────────────────────────────────────
-
-export function initSpeechClient(): void {
-  getChannel();
-  void waitForVoices();
+function startResumeWatch(): void {
+  stopResumeWatch();
+  resumeTimer = window.setInterval(() => {
+    if (!window.speechSynthesis.speaking) {
+      stopResumeWatch();
+      return;
+    }
+    window.speechSynthesis.resume();
+  }, TTS_WATCHDOG_INTERVAL);
 }
 
-export function unlockSpeech(): void {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-  void waitForVoices();
-  window.speechSynthesis.resume();
-  const u = new SpeechSynthesisUtterance(' ');
-  u.volume = 0;
-  u.rate = 2;
-  window.speechSynthesis.speak(u);
-}
-
-export function registerMonitorSpeaker(): () => void {
-  isMonitorSpeaker = true;
-  const ch = getChannel();
-  const ping = () => ch?.postMessage({ type: 'monitor-here' });
-  ping();
-  const timer = window.setInterval(ping, MONITOR_HEARTBEAT_MS);
-  return () => {
-    isMonitorSpeaker = false;
-    window.clearInterval(timer);
-  };
-}
-
-export function isMonitorSpeakerActive(): boolean {
-  return isMonitorSpeaker;
-}
-
-// Chamado pelo monitor a partir dos eventos SSE — único ponto de fala de senhas
-export function monitorSpeak(number: SpeechNumber, type: CallType): void {
-  const text = buildSpeechText(number, type);
-  const key = `${Number(number)}-${type}`;
-  // Disparo intencionalmente solto: a fala tem timers próprios e os testes
-  // (e o monitor) avançam os timers em vez de aguardar a promise.
-  void speakWithAlert(text, key);
-}
-
-// No-op — dashboard não fala; monitor fala via SSE
-export function announceQueueCall(
-  _number: SpeechNumber,
-  _type: CallType,
-): void {}
-
-// "Chamar novamente" — força repetição ignorando dedup
-export function forceAnnounce(number: SpeechNumber, type: CallType): void {
-  const text = buildSpeechText(number, type);
-  const key = `${Number(number)}-${type}`;
-  if (lastSpokenKey === key) {
-    lastSpokenKey = '';
-    lastSpokenAt = 0;
+// ─── Watchdog anti-pausa do Chrome ────────────────────────────────────────────
+function stopResumeWatch(): void {
+  if (resumeTimer) {
+    window.clearInterval(resumeTimer);
+    resumeTimer = 0;
   }
-  void speakWithAlert(text, key, true);
 }
 
-// Fala simples sem beep (mensagens de sistema)
-export function speakText(text: string): void {
-  speakNow(text);
+// ─── Inicialização de vozes ───────────────────────────────────────────────────
+function waitForVoices(): Promise<void> {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window))
+    return Promise.resolve();
+  const voices = window.speechSynthesis.getVoices();
+  if (voices.length || voicesReady) {
+    voicesReady = true;
+    return Promise.resolve();
+  }
+  return new Promise<void>((resolve) => {
+    const done = () => {
+      voicesReady = true;
+      resolve();
+    };
+    window.speechSynthesis.addEventListener('voiceschanged', done, {
+      once: true,
+    });
+    window.setTimeout(done, TTS_VOICE_TIMEOUT);
+  });
 }

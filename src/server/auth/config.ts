@@ -35,6 +35,15 @@ export const SESSION_COOKIE_NAME = 'authjs.session-token';
 // `prismaPromise` acima ter tipo, sem puxar o client para o Edge.
 let prismaPromise: Promise<PrismaClient> | undefined;
 
+/**
+ * O tipo de `credentials` é o da *config* do provider (`CredentialConfig`),
+ * mas o Auth.js entrega strings na chamada. Coagir por `typeof` — e não por
+ * `String()` — cobre as duas formas sem stringificar um objeto.
+ */
+function asCredential(value: unknown): string {
+  return typeof value === 'string' ? value : '';
+}
+
 function getPrisma(): Promise<PrismaClient> {
   prismaPromise ??= Promise.all([
     import('@/server/generated/prisma/client'),
@@ -46,15 +55,6 @@ function getPrisma(): Promise<PrismaClient> {
       }),
   );
   return prismaPromise;
-}
-
-/**
- * O tipo de `credentials` é o da *config* do provider (`CredentialConfig`),
- * mas o Auth.js entrega strings na chamada. Coagir por `typeof` — e não por
- * `String()` — cobre as duas formas sem stringificar um objeto.
- */
-function asCredential(value: unknown): string {
-  return typeof value === 'string' ? value : '';
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({

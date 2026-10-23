@@ -2,23 +2,23 @@ import type { AuthRepository } from '@/server/repositories/types';
 
 import { beforeEach, describe, expect, it } from 'vitest';
 
-/** Subconjunto do seed que o contrato usa — o Postgres aceita mais campos. */
-export interface AuthSeedUserInput {
-  readonly username: string;
-  readonly password: string;
-  readonly full_name?: string;
-  readonly role?: string;
-  readonly sector_id?: string | null;
-}
-
 /** Fábrica devolvida por quem invoca o contrato (in-memory ou Postgres). */
 export interface AuthRepoContext {
   readonly repo: AuthRepository;
   readonly seedUser: (
     data: AuthSeedUserInput,
   ) =>
-    | { username: string; password: string }
-    | Promise<{ username: string; password: string }>;
+    | Promise<{ password: string; username: string; }>
+    | { password: string; username: string; };
+}
+
+/** Subconjunto do seed que o contrato usa — o Postgres aceita mais campos. */
+export interface AuthSeedUserInput {
+  readonly password: string;
+  readonly username: string;
+  readonly full_name?: string;
+  readonly role?: string;
+  readonly sector_id?: null | string;
 }
 
 /**

@@ -30,13 +30,13 @@ if (typeof window === 'undefined') {
 } else {
   /** Subconjunto do `Storage` que o código de produção realmente lê. */
   interface StorageLike {
-    readonly store: Map<string, string>;
-    getItem(key: string): string | null;
-    setItem(key: string, value: unknown): void;
-    removeItem(key: string): void;
-    clear(): void;
-    key(index: number): string | null;
     readonly length: number;
+    readonly store: Map<string, string>;
+    clear(): void;
+    getItem(key: string): null | string;
+    key(index: number): null | string;
+    removeItem(key: string): void;
+    setItem(key: string, value: unknown): void;
   }
 
   function makeLocalStorage(): StorageLike {
@@ -71,11 +71,11 @@ if (typeof window === 'undefined') {
       this.name = name;
     }
 
+    close(): void {}
+
     postMessage(message: unknown): void {
       this.onmessage?.(new MessageEvent('message', { data: message }));
     }
-
-    close(): void {}
   }
 
   /**

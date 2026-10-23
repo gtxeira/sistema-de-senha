@@ -21,6 +21,11 @@ async function cleanupQueueTestData() {
   await prisma.queue_sequences.deleteMany();
 }
 
+/** Mesma grafia de `InMemoryReadRepository`: "P001"/"N001". */
+function seedNumberStr(type: string, number: number): string {
+  return `${seedType(type) === 'preferencial' ? 'P' : 'N'}${String(number).padStart(3, '0')}`;
+}
+
 /**
  * Seed test queue calls
  */
@@ -30,10 +35,10 @@ async function seedTestCalls(
   type: SequenceType = 'normal',
 ): Promise<void> {
   const calls: Array<{
-    sector_id: string;
-    type: SequenceType;
     number_int: number;
     number_str: string;
+    sector_id: string;
+    type: SequenceType;
   }> = [];
   for (let i = 0; i < count; i++) {
     calls.push({
@@ -51,11 +56,6 @@ function seedType(type: string): SequenceType {
   return type === 'preferencial' || type === 'preferential'
     ? 'preferencial'
     : 'normal';
-}
-
-/** Mesma grafia de `InMemoryReadRepository`: "P001"/"N001". */
-function seedNumberStr(type: string, number: number): string {
-  return `${seedType(type) === 'preferencial' ? 'P' : 'N'}${String(number).padStart(3, '0')}`;
 }
 
 describeIfPostgres('ReadRepository — Postgres integration', () => {
@@ -206,7 +206,7 @@ describeIfPostgres('ReadRepository — Postgres integration', () => {
         // puxava até 90 dias de chamadas para paginar no cliente.
         expect(findManySpy).toHaveBeenCalledTimes(1);
         const args = findManySpy.mock.calls[0]?.[0] as
-          | { take?: number; skip?: number; orderBy?: unknown }
+          | { orderBy?: unknown; skip?: number; take?: number; }
           | undefined;
         expect(args?.take).toBe(2);
         expect(args?.skip).toBe(2);

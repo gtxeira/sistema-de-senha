@@ -37,6 +37,14 @@ const call = (
 ): QueueHistoryEntry => ({ number, type, time });
 
 /**
+ * Um valor que o `JSON.parse` devolveu: existe em produção (storage/SSE)
+ * mas não cabe no tipo. É o que os guardas de `cleanHistory` protegem.
+ */
+function untypedJson<T>(raw: string): T {
+  return JSON.parse(raw) as T;
+}
+
+/**
  * `QueueEntry` é readonly: em vez de mutar, o teste monta um estado novo —
  * o mesmo que o código de produção faz ao passar para `saveQueueState`.
  */
@@ -46,14 +54,6 @@ function withEntry(
   patch: Partial<QueueEntry>,
 ): QueueState {
   return { ...state, [sector]: { ...state[sector], ...patch } };
-}
-
-/**
- * Um valor que o `JSON.parse` devolveu: existe em produção (storage/SSE)
- * mas não cabe no tipo. É o que os guardas de `cleanHistory` protegem.
- */
-function untypedJson<T>(raw: string): T {
-  return JSON.parse(raw) as T;
 }
 
 describe('SECTORS / GUICHES / keys', () => {
@@ -427,9 +427,9 @@ function seedSector(
     priorityCurrent = null,
     history = [],
   }: {
+    history?: QueueHistoryEntry[];
     normalCurrent?: CurrentPassword;
     priorityCurrent?: CurrentPassword;
-    history?: QueueHistoryEntry[];
   } = {},
 ): QueueState {
   const state = withEntry(getInitialState(), sector, {

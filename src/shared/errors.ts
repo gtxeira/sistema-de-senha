@@ -8,17 +8,17 @@
  */
 
 /**
- * Extracts `error.status` from an unknown catch value, falling back to 500.
+ * Extrai `error.code` de um valor capturado em `catch` — é assim que se lê o
+ * código do Prisma (P2002 = unique, P2003 = FK, P2025 = registro não achado).
  *
- * Use inside `catch (err)` — `err` is `unknown` em TypeScript, então ler
- * `.status` direto não compila.
+ * @returns o código ou `null` quando não for um erro com `code`
  */
-export function errorStatus(error: unknown, fallback = 500): number {
-  if (typeof error === 'object' && error !== null && 'status' in error) {
-    const status = error.status;
-    if (typeof status === 'number' && status) return status;
+export function errorCode(error: unknown): null | string {
+  if (typeof error === 'object' && error !== null && 'code' in error) {
+    const { code } = error;
+    return typeof code === 'string' ? code : null;
   }
-  return fallback;
+  return null;
 }
 
 /**
@@ -33,17 +33,17 @@ export function errorMessage(error: unknown, fallback = ''): string {
 }
 
 /**
- * Extrai `error.code` de um valor capturado em `catch` — é assim que se lê o
- * código do Prisma (P2002 = unique, P2003 = FK, P2025 = registro não achado).
+ * Extracts `error.status` from an unknown catch value, falling back to 500.
  *
- * @returns o código ou `null` quando não for um erro com `code`
+ * Use inside `catch (err)` — `err` is `unknown` em TypeScript, então ler
+ * `.status` direto não compila.
  */
-export function errorCode(error: unknown): string | null {
-  if (typeof error === 'object' && error !== null && 'code' in error) {
-    const { code } = error;
-    return typeof code === 'string' ? code : null;
+export function errorStatus(error: unknown, fallback = 500): number {
+  if (typeof error === 'object' && error !== null && 'status' in error) {
+    const status = error.status;
+    if (typeof status === 'number' && status) return status;
   }
-  return null;
+  return fallback;
 }
 
 export function isInvalidApiKeyError(error: unknown): boolean {

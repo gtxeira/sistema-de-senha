@@ -12,6 +12,40 @@ import type { PermissionOverride } from '@/shared/permissions';
 
 /* ── Registros de fila ──────────────────────────────────────────── */
 
+/** Saída de `QueueRepository.getRecentCalls`. */
+export type RecentCall = QueueCallRecord;
+
+export interface CreateRoleInput {
+  readonly name: string;
+  readonly key: string;
+  readonly description?: null | string;
+  readonly permissions?: readonly string[];
+}
+
+export interface CreateUserInput {
+  readonly full_name: string;
+  readonly password: string;
+  readonly username: string;
+  readonly active?: boolean;
+  readonly permissions?: readonly PermissionOverride[];
+  readonly role?: string;
+  readonly role_id?: string;
+  readonly sector_id?: null | string;
+}
+
+/** Saída de `ReadRepository.getStats` — carrega o setor de origem. */
+export interface HistoryCall extends QueueCallRecord {
+  readonly sector_id: string;
+}
+
+/* ── Usuários ──────────────────────────────────────────────────── */
+
+export interface NewsItem {
+  readonly id: string;
+  readonly title: string;
+  readonly image: string;
+}
+
 /**
  * Linha de chamada normalizada, no formato que a UI consome.
  *
@@ -27,31 +61,13 @@ export interface QueueCallRecord {
   readonly createdAt: string;
 }
 
-/** Saída de `QueueRepository.getRecentCalls`. */
-export type RecentCall = QueueCallRecord;
-
-/** Saída de `ReadRepository.getStats` — carrega o setor de origem. */
-export interface HistoryCall extends QueueCallRecord {
-  readonly sector_id: string;
-}
-
 /** Estatísticas de uma janela, com paginação — formato consumido pela UI. */
 export interface QueueStats {
-  readonly days: number;
-  /**
-   * Resumo da janela inteira — ignora `type` e `page`.
-   *
-   * `total` pode ser MAIOR que `pagination.total` quando há filtro de
-   * tipo: os cards resumem o período, a tabela mostra só o filtro.
-   */
-  readonly summary: {
-    readonly total: number;
-    readonly today: number;
-    readonly preferencial: number;
-    readonly normal: number;
-  };
   /** Apenas a página pedida — nunca a janela inteira. */
   readonly calls: readonly HistoryCall[];
+  readonly days: number;
+  /** Só no fallback: a query falhou e a resposta é a estrutura vazia. */
+  readonly noDb?: boolean;
   readonly pagination: {
     /** Página efetivamente devolvida (o servidor clampa em `totalPages`). */
     readonly page: number;
@@ -61,11 +77,48 @@ export interface QueueStats {
     /** `max(1, ceil(total / pageSize))` — nunca zero, para a UI. */
     readonly totalPages: number;
   };
-  /** Só no fallback: a query falhou e a resposta é a estrutura vazia. */
-  readonly noDb?: boolean;
+  /**
+   * Resumo da janela inteira — ignora `type` e `page`.
+   *
+   * `total` pode ser MAIOR que `pagination.total` quando há filtro de
+   * tipo: os cards resumem o período, a tabela mostra só o filtro.
+   */
+  readonly summary: {
+    readonly normal: number;
+    readonly preferencial: number;
+    readonly today: number;
+    readonly total: number;
+  };
 }
 
-/* ── Usuários ──────────────────────────────────────────────────── */
+/* ── Cargos ────────────────────────────────────────────────────── */
+
+export interface RoleRecord {
+  readonly id: string;
+  readonly name: string;
+  readonly built_in: boolean;
+  readonly description: null | string;
+  readonly key: string;
+  readonly permissions: readonly string[];
+}
+
+export interface UpdateRoleInput {
+  readonly name?: string;
+  readonly description?: null | string;
+  readonly permissions?: readonly string[];
+}
+
+/** `password` em branco mantém a senha atual. */
+export interface UpdateUserInput {
+  readonly active?: boolean;
+  readonly full_name?: string;
+  readonly password?: string;
+  readonly role?: string;
+  readonly role_id?: string;
+  readonly sector_id?: null | string;
+}
+
+/* ── Notícias ──────────────────────────────────────────────────── */
 
 /**
  * Usuário achatado (cargo/overrides desaninhados) — o formato consumido pela
@@ -75,68 +128,15 @@ export interface QueueStats {
  */
 export interface UserRecord {
   readonly id: string;
-  readonly username: string;
-  readonly full_name: string;
   readonly active: boolean;
-  readonly sector_id: string | null;
+  readonly full_name: string;
   /** `"none"` no banco — coluna string, não numérica. */
   readonly guiche_id: string;
-  readonly role_id: string;
-  readonly role: string | null;
-  readonly role_name: string | null;
-  readonly role_built_in: boolean;
   readonly permissions: readonly PermissionOverride[];
-}
-
-export interface CreateUserInput {
+  readonly role: null | string;
+  readonly role_built_in: boolean;
+  readonly role_id: string;
+  readonly role_name: null | string;
+  readonly sector_id: null | string;
   readonly username: string;
-  readonly password: string;
-  readonly full_name: string;
-  readonly role_id?: string;
-  readonly role?: string;
-  readonly sector_id?: string | null;
-  readonly active?: boolean;
-  readonly permissions?: readonly PermissionOverride[];
-}
-
-/** `password` em branco mantém a senha atual. */
-export interface UpdateUserInput {
-  readonly full_name?: string;
-  readonly password?: string;
-  readonly role_id?: string;
-  readonly role?: string;
-  readonly sector_id?: string | null;
-  readonly active?: boolean;
-}
-
-/* ── Cargos ────────────────────────────────────────────────────── */
-
-export interface RoleRecord {
-  readonly id: string;
-  readonly key: string;
-  readonly name: string;
-  readonly description: string | null;
-  readonly built_in: boolean;
-  readonly permissions: readonly string[];
-}
-
-export interface CreateRoleInput {
-  readonly key: string;
-  readonly name: string;
-  readonly description?: string | null;
-  readonly permissions?: readonly string[];
-}
-
-export interface UpdateRoleInput {
-  readonly name?: string;
-  readonly description?: string | null;
-  readonly permissions?: readonly string[];
-}
-
-/* ── Notícias ──────────────────────────────────────────────────── */
-
-export interface NewsItem {
-  readonly id: string;
-  readonly title: string;
-  readonly image: string;
 }

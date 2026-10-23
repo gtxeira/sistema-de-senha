@@ -12,13 +12,6 @@ import {
  * RangeError no navegador e, no signIn, navegação para /api/auth/error.
  */
 
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  });
-}
-
 /** Rota devolve a `Response` pronta ou uma função que a monta sob demanda. */
 type RouteEntry = Response | (() => Response);
 
@@ -39,6 +32,13 @@ function installNet(routes: Record<string, RouteEntry>) {
   });
   window.fetch = net;
   return { net, calls };
+}
+
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
 }
 
 const SESSION_ROUTES = {

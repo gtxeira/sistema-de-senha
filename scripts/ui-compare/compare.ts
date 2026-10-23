@@ -36,7 +36,7 @@ if (!antes || !depois) {
   process.exit(1);
 }
 
-type Item = Record<string, string | number>;
+type Item = Record<string, number | string>;
 
 const ler = (nome: string, ext: string): Buffer =>
   readFileSync(join(SHOTS, `${nome}.${ext}`));

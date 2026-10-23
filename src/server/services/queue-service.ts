@@ -24,10 +24,10 @@ import { formatNumberString, normalizeCallType } from '@/shared/queue-format';
  */
 
 export interface CallNextInput {
-  readonly sector: SectorId;
-  readonly type?: string;
   /** Id do usuário que chamou — o repositório valida o formato/UUID. */
   readonly attendantId: string;
+  readonly sector: SectorId;
+  readonly type?: string;
 }
 
 export interface CallNextResult {
@@ -35,6 +35,20 @@ export interface CallNextResult {
   readonly numberStr: string;
   readonly type: SequenceType;
   readonly wraparound: boolean;
+}
+
+export interface SyncNextInput {
+  readonly nextNumber: unknown;
+  readonly sector: SectorId;
+  readonly type?: string;
+}
+
+export interface SyncNextResult {
+  readonly message: string;
+  readonly nextNumber: number;
+  readonly numberStr: string;
+  readonly sector: SectorId;
+  readonly type: SequenceType;
 }
 
 /** Chama a próxima senha de um setor, salva e publica o evento de fila. */
@@ -80,6 +94,19 @@ export async function callNext({
   return { number, numberStr, type: sequenceType, wraparound };
 }
 
+/** Fila recente + marcador de reset — usado pelo polling dos monitores. */
+export async function getRecent(
+  sector: SectorId,
+  limit: number,
+): Promise<{ calls: RecentCall[]; resetAt: null | string }> {
+  const resetAt = await queue.getSectorResetAt(sector);
+  const calls = await queue.getRecentCalls(sector, limit, resetAt);
+  return {
+    calls,
+    resetAt: resetAt ? resetAt.toISOString() : null,
+  };
+}
+
 /** Repete a última senha do setor e publica o evento de recall. */
 export async function recallLast(
   sector: SectorId,
@@ -111,19 +138,6 @@ export async function recallLast(
   return { number: last.number, type: last.type };
 }
 
-/** Fila recente + marcador de reset — usado pelo polling dos monitores. */
-export async function getRecent(
-  sector: SectorId,
-  limit: number,
-): Promise<{ calls: RecentCall[]; resetAt: string | null }> {
-  const resetAt = await queue.getSectorResetAt(sector);
-  const calls = await queue.getRecentCalls(sector, limit, resetAt);
-  return {
-    calls,
-    resetAt: resetAt ? resetAt.toISOString() : null,
-  };
-}
-
 /** Reseta as sequências e publica um evento para cada setor. */
 export async function resetSectors(
   sectors: readonly SectorId[],
@@ -139,20 +153,6 @@ export async function resetSectors(
   }
 
   return { sectors: [...sectors] };
-}
-
-export interface SyncNextInput {
-  readonly sector: SectorId;
-  readonly type?: string;
-  readonly nextNumber: unknown;
-}
-
-export interface SyncNextResult {
-  readonly sector: SectorId;
-  readonly type: SequenceType;
-  readonly nextNumber: number;
-  readonly numberStr: string;
-  readonly message: string;
 }
 
 /** Fixa o próximo número da fila de um setor. */

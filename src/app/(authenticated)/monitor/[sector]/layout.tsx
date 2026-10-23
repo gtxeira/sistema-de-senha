@@ -4,10 +4,8 @@ import type { ReactNode } from 'react';
 import { DEFAULT_SECTOR, getSector } from '@/shared/constants';
 import { PAGE_TITLES } from '@/shared/page-title';
 
-interface MonitorLayoutProps {
-  readonly children: ReactNode;
-  /** Segmento dinâmico `[sector]` — chega como Promise no App Router. */
-  readonly params: Promise<{ readonly sector: string }>;
+export default function MonitorLayout({ children }: MonitorLayoutProps) {
+  return <>{children}</>;
 }
 
 /**
@@ -32,6 +30,8 @@ export async function generateMetadata({
   };
 }
 
-export default function MonitorLayout({ children }: MonitorLayoutProps) {
-  return <>{children}</>;
+interface MonitorLayoutProps {
+  readonly children: ReactNode;
+  /** Segmento dinâmico `[sector]` — chega como Promise no App Router. */
+  readonly params: Promise<{ readonly sector: string }>;
 }

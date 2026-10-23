@@ -10,14 +10,14 @@ import {
 } from '@/client/audio/speech';
 
 class MockSpeechSynthesisUtterance {
-  text: string;
   lang: string;
-  rate: number;
-  pitch: number;
-  volume: number;
-  voice: SpeechSynthesisVoice | null;
   onend: SpeechSynthesisUtterance['onend'];
   onerror: SpeechSynthesisUtterance['onerror'];
+  pitch: number;
+  rate: number;
+  text: string;
+  voice: SpeechSynthesisVoice | null;
+  volume: number;
 
   constructor(text: string) {
     this.text = text;

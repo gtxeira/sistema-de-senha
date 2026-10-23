@@ -6,6 +6,13 @@ import { EventEmitter } from 'node:events';
 
 import { MAX_SSE_CONNECTIONS_PER_SECTOR } from '@/shared/constants';
 
+export type QueueCallListener = (
+  call: QueueCallEvent,
+  resetAt: null | string,
+) => void;
+
+export type QueueResetListener = (resetAt: null | string) => void;
+export type Unsubscribe = () => void;
 /**
  * Payload serializado no SSE. `wraparound` só existe na chamada corrente
  * (recall repete a última senha e não tem novo número), por isso opcional.
@@ -17,16 +24,9 @@ export interface QueueCallEvent {
   readonly id: string;
   readonly number: number;
   readonly type: CallType;
-  readonly createdAt: string;
   readonly wraparound?: boolean;
+  readonly createdAt: string;
 }
-
-export type QueueCallListener = (
-  call: QueueCallEvent,
-  resetAt: string | null,
-) => void;
-export type QueueResetListener = (resetAt: string | null) => void;
-export type Unsubscribe = () => void;
 
 /**
  * In-memory pub/sub manager for realtime queue events.
@@ -51,7 +51,7 @@ class EventManager extends EventEmitter {
   emitQueueCall(
     sector: string,
     call: QueueCallEvent,
-    resetAt: string | null = null,
+    resetAt: null | string = null,
   ): void {
     this.emit(`queue:${sector}`, call, resetAt);
   }
@@ -60,48 +60,14 @@ class EventManager extends EventEmitter {
   emitQueueRecall(
     sector: string,
     call: QueueCallEvent,
-    resetAt: string | null = null,
+    resetAt: null | string = null,
   ): void {
     this.emit(`queue:recall:${sector}`, call, resetAt);
   }
 
   /** Emit a queue reset event for a sector. */
-  emitQueueReset(sector: string, resetAt: string | null = null): void {
+  emitQueueReset(sector: string, resetAt: null | string = null): void {
     this.emit(`queue:reset:${sector}`, resetAt);
-  }
-
-  /** Subscribe to queue calls for a sector. @returns unsubscribe function */
-  subscribeToQueue(sector: string, callback: QueueCallListener): Unsubscribe {
-    const handler = (call: QueueCallEvent, resetAt: string | null) =>
-      callback(call, resetAt);
-    this.on(`queue:${sector}`, handler);
-    return () => {
-      this.off(`queue:${sector}`, handler);
-    };
-  }
-
-  /** Subscribe to queue recall events for a sector. @returns unsubscribe function */
-  subscribeToRecall(sector: string, callback: QueueCallListener): Unsubscribe {
-    const handler = (call: QueueCallEvent, resetAt: string | null) =>
-      callback(call, resetAt);
-    this.on(`queue:recall:${sector}`, handler);
-    return () => {
-      this.off(`queue:recall:${sector}`, handler);
-    };
-  }
-
-  /** Subscribe to queue reset events for a sector. @returns unsubscribe function */
-  subscribeToReset(sector: string, callback: QueueResetListener): Unsubscribe {
-    const handler = (resetAt: string | null) => callback(resetAt);
-    this.on(`queue:reset:${sector}`, handler);
-    return () => {
-      this.off(`queue:reset:${sector}`, handler);
-    };
-  }
-
-  /** Get the number of active listeners for a sector (for testing/debugging). */
-  getSubscriberCount(sector: string): number {
-    return this.listenerCount(`queue:${sector}`);
   }
 
   /** Get the number of active recall listeners for a sector (for testing/debugging). */
@@ -112,6 +78,40 @@ class EventManager extends EventEmitter {
   /** Get the number of active reset listeners for a sector (for testing/debugging). */
   getResetSubscriberCount(sector: string): number {
     return this.listenerCount(`queue:reset:${sector}`);
+  }
+
+  /** Get the number of active listeners for a sector (for testing/debugging). */
+  getSubscriberCount(sector: string): number {
+    return this.listenerCount(`queue:${sector}`);
+  }
+
+  /** Subscribe to queue calls for a sector. @returns unsubscribe function */
+  subscribeToQueue(sector: string, callback: QueueCallListener): Unsubscribe {
+    const handler = (call: QueueCallEvent, resetAt: null | string) =>
+      callback(call, resetAt);
+    this.on(`queue:${sector}`, handler);
+    return () => {
+      this.off(`queue:${sector}`, handler);
+    };
+  }
+
+  /** Subscribe to queue recall events for a sector. @returns unsubscribe function */
+  subscribeToRecall(sector: string, callback: QueueCallListener): Unsubscribe {
+    const handler = (call: QueueCallEvent, resetAt: null | string) =>
+      callback(call, resetAt);
+    this.on(`queue:recall:${sector}`, handler);
+    return () => {
+      this.off(`queue:recall:${sector}`, handler);
+    };
+  }
+
+  /** Subscribe to queue reset events for a sector. @returns unsubscribe function */
+  subscribeToReset(sector: string, callback: QueueResetListener): Unsubscribe {
+    const handler = (resetAt: null | string) => callback(resetAt);
+    this.on(`queue:reset:${sector}`, handler);
+    return () => {
+      this.off(`queue:reset:${sector}`, handler);
+    };
   }
 }
 

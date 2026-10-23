@@ -14,16 +14,16 @@ import { news } from '@/server/repositories';
  * HTTP.
  */
 
+export function createNews(
+  data: CreateNewsInput,
+): Promise<{ news: NewsItem; success: true; }> {
+  return news.create(data);
+}
+
 export function listNews(): Promise<NewsItem[]> {
   return news.listActive();
 }
 
-export function createNews(
-  data: CreateNewsInput,
-): Promise<{ success: true; news: NewsItem }> {
-  return news.create(data);
-}
-
-export function removeNews(id: string | number): Promise<{ success: true }> {
+export function removeNews(id: number | string): Promise<{ success: true }> {
   return news.remove(id);
 }

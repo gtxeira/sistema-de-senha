@@ -26,8 +26,8 @@ interface StatCardProps
   extends
     React.ComponentProps<'article'>,
     VariantProps<typeof statCardVariants> {
-  value: React.ReactNode;
   label: React.ReactNode;
+  value: React.ReactNode;
 }
 
 function StatCard({ className, tone, value, label, ...props }: StatCardProps) {

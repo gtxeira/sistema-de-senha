@@ -36,10 +36,10 @@ import { hasPermission } from '@/shared/permissions';
 export interface SessionState {
   /** Sessão atual — `null` enquanto não há usuário conhecido. */
   user: User | null;
-  /** Grava a sessão e atualiza o cache local. */
-  setUser: (user: User | null) => void;
   /** Encerra a sessão e limpa o cache local. */
   clear: () => void;
+  /** Grava a sessão e atualiza o cache local. */
+  setUser: (user: User | null) => void;
 }
 
 /**
@@ -112,11 +112,6 @@ if (typeof window !== 'undefined') {
 
 /* ── hooks ──────────────────────────────────────────────────────── */
 
-/** A sessão atual (`null` = anônimo). */
-export function useSession(): User | null {
-  return useSessionStore((state) => state.user);
-}
-
 /**
  * O usuário tem a permissão?
  *
@@ -126,4 +121,9 @@ export function useSession(): User | null {
  */
 export function useCan(permission: Permission): boolean {
   return useSessionStore((state) => hasPermission(state.user, permission));
+}
+
+/** A sessão atual (`null` = anônimo). */
+export function useSession(): User | null {
+  return useSessionStore((state) => state.user);
 }

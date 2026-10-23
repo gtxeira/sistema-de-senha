@@ -14,6 +14,64 @@ import { normalizeCallType } from '@/shared/queue-format';
 
 export class PostgresQueueRepository implements QueueRepository {
   /**
+   * Get recent calls for a sector (for monitor history)
+   * When `resetAt` is given, calls made before the reset are excluded — those
+   * rows survive the reset (so `/historico` keeps working) but must never be
+   * replayed into a monitor's queue.
+   */
+  async getRecentCalls(
+    sector: string,
+    limit: number = DEFAULT_RECENT_LIMIT,
+    resetAt: Date | null = null,
+  ): Promise<RecentCall[]> {
+    try {
+      const where: Prisma.queue_callsWhereInput = { sector_id: sector };
+      if (resetAt) where.created_at = { gte: resetAt };
+
+      const calls = await prisma.queue_calls.findMany({
+        where,
+        orderBy: {
+          created_at: 'desc',
+        },
+        take: limit,
+        select: {
+          id: true,
+          number_int: true,
+          type: true,
+          created_at: true,
+        },
+      });
+
+      return calls.map((call) => ({
+        id: String(call.id),
+        number: call.number_int,
+        // O enum do banco só admite 'normal'|'preferencial'; a grafia
+        // 'preferential' existe só na API e nunca chega a esta coluna.
+        type: call.type === 'preferencial' ? 'preferencial' : 'normal',
+        // O INSTANTE, não "HH:mm": quem exibe formata em BRT, e o
+        // cliente precisa do dia para fazer a virada do histórico.
+        createdAt: new Date(call.created_at || Date.now()).toISOString(),
+      }));
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Get the reset marker for a sector.
+   * Clients compare this value against the last one they saw to know the queue
+   * was reset elsewhere and their local replica must be invalidated.
+   * Returns null when the sector was never reset.
+   */
+  async getSectorResetAt(sector: string): Promise<Date | null> {
+    const row = await prisma.sectors.findUnique({
+      where: { id: sector },
+      select: { reset_at: true },
+    });
+    return row?.reset_at ?? null;
+  }
+
+  /**
    * Get next number for sector and type (normal/preferencial)
    * Uses atomic transaction with upsert + wraparound at `MAX_QUEUE_NUMBER`.
    * Returns { number, wraparound } — wraparound is true when 999→000 occurs.
@@ -68,6 +126,34 @@ export class PostgresQueueRepository implements QueueRepository {
     });
   }
 
+  /**
+   * Reset sequence for sector.
+   * Sets counter to -1 so the next call returns 0 (first password = 000), and
+   * stamps the sector's reset marker so clients can detect the reset.
+   * `queue_calls` rows are intentionally kept: `/historico` reads them.
+   */
+  async resetSector(sector: string): Promise<void> {
+    const now = new Date();
+
+    await prisma.queue_sequences.updateMany({
+      where: {
+        sector_id: sector,
+      },
+      data: {
+        current_number: MIN_QUEUE_NUMBER - 1,
+        updated_at: now,
+      },
+    });
+
+    // The marker lives on `sectors` (not `queue_sequences`) because the
+    // updateMany above only touches existing rows — a sector that never had a
+    // call would leave no row to stamp, making the reset undetectable.
+    await prisma.sectors.updateMany({
+      where: { id: sector },
+      data: { reset_at: now },
+    });
+  }
+
   /** Save a queue call */
   async saveCall(
     call: QueueCallInput,
@@ -99,48 +185,6 @@ export class PostgresQueueRepository implements QueueRepository {
       id: String(created.id),
       createdAt: new Date(created.created_at).toISOString(),
     };
-  }
-
-  /**
-   * Get the reset marker for a sector.
-   * Clients compare this value against the last one they saw to know the queue
-   * was reset elsewhere and their local replica must be invalidated.
-   * Returns null when the sector was never reset.
-   */
-  async getSectorResetAt(sector: string): Promise<Date | null> {
-    const row = await prisma.sectors.findUnique({
-      where: { id: sector },
-      select: { reset_at: true },
-    });
-    return row?.reset_at ?? null;
-  }
-
-  /**
-   * Reset sequence for sector.
-   * Sets counter to -1 so the next call returns 0 (first password = 000), and
-   * stamps the sector's reset marker so clients can detect the reset.
-   * `queue_calls` rows are intentionally kept: `/historico` reads them.
-   */
-  async resetSector(sector: string): Promise<void> {
-    const now = new Date();
-
-    await prisma.queue_sequences.updateMany({
-      where: {
-        sector_id: sector,
-      },
-      data: {
-        current_number: MIN_QUEUE_NUMBER - 1,
-        updated_at: now,
-      },
-    });
-
-    // The marker lives on `sectors` (not `queue_sequences`) because the
-    // updateMany above only touches existing rows — a sector that never had a
-    // call would leave no row to stamp, making the reset undetectable.
-    await prisma.sectors.updateMany({
-      where: { id: sector },
-      data: { reset_at: now },
-    });
   }
 
   /**
@@ -185,49 +229,5 @@ export class PostgresQueueRepository implements QueueRepository {
         current_number: currentNumber,
       },
     });
-  }
-
-  /**
-   * Get recent calls for a sector (for monitor history)
-   * When `resetAt` is given, calls made before the reset are excluded — those
-   * rows survive the reset (so `/historico` keeps working) but must never be
-   * replayed into a monitor's queue.
-   */
-  async getRecentCalls(
-    sector: string,
-    limit: number = DEFAULT_RECENT_LIMIT,
-    resetAt: Date | null = null,
-  ): Promise<RecentCall[]> {
-    try {
-      const where: Prisma.queue_callsWhereInput = { sector_id: sector };
-      if (resetAt) where.created_at = { gte: resetAt };
-
-      const calls = await prisma.queue_calls.findMany({
-        where,
-        orderBy: {
-          created_at: 'desc',
-        },
-        take: limit,
-        select: {
-          id: true,
-          number_int: true,
-          type: true,
-          created_at: true,
-        },
-      });
-
-      return calls.map((call) => ({
-        id: String(call.id),
-        number: call.number_int,
-        // O enum do banco só admite 'normal'|'preferencial'; a grafia
-        // 'preferential' existe só na API e nunca chega a esta coluna.
-        type: call.type === 'preferencial' ? 'preferencial' : 'normal',
-        // O INSTANTE, não "HH:mm": quem exibe formata em BRT, e o
-        // cliente precisa do dia para fazer a virada do histórico.
-        createdAt: new Date(call.created_at || Date.now()).toISOString(),
-      }));
-    } catch {
-      return [];
-    }
   }
 }

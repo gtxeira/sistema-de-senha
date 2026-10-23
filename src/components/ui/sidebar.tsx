@@ -33,12 +33,12 @@ const SIDEBAR_WIDTH_ICON = '3rem';
 const SIDEBAR_KEYBOARD_SHORTCUT = 'b';
 
 interface SidebarContextProps {
-  state: 'expanded' | 'collapsed';
-  open: boolean;
-  setOpen: (open: boolean) => void;
-  openMobile: boolean;
-  setOpenMobile: (open: boolean) => void;
   isMobile: boolean;
+  open: boolean;
+  openMobile: boolean;
+  state: 'collapsed' | 'expanded';
+  setOpen: (open: boolean) => void;
+  setOpenMobile: (open: boolean) => void;
   toggleSidebar: () => void;
 }
 
@@ -74,7 +74,7 @@ function SidebarProvider({
   const [_open, _setOpen] = React.useState(defaultOpen);
   const open = openProp ?? _open;
   const setOpen = React.useCallback(
-    (value: boolean | ((value: boolean) => boolean)) => {
+    (value: ((value: boolean) => boolean) | boolean) => {
       const openState = typeof value === 'function' ? value(open) : value;
       if (setOpenProp) {
         setOpenProp(openState);
@@ -158,9 +158,9 @@ function Sidebar({
   dir,
   ...props
 }: React.ComponentProps<'div'> & {
+  collapsible?: 'icon' | 'none' | 'offcanvas';
   side?: 'left' | 'right';
-  variant?: 'sidebar' | 'floating' | 'inset';
-  collapsible?: 'offcanvas' | 'icon' | 'none';
+  variant?: 'floating' | 'inset' | 'sidebar';
 }) {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
 
@@ -394,7 +394,7 @@ function SidebarGroupLabel({
   className,
   render,
   ...props
-}: useRender.ComponentProps<'div'> & React.ComponentProps<'div'>) {
+}: React.ComponentProps<'div'> & useRender.ComponentProps<'div'>) {
   return useRender({
     defaultTagName: 'div',
     props: mergeProps<'div'>(
@@ -418,7 +418,7 @@ function SidebarGroupAction({
   className,
   render,
   ...props
-}: useRender.ComponentProps<'button'> & React.ComponentProps<'button'>) {
+}: React.ComponentProps<'button'> & useRender.ComponentProps<'button'>) {
   return useRender({
     defaultTagName: 'button',
     props: mergeProps<'button'>(
@@ -504,11 +504,11 @@ function SidebarMenuButton({
   tooltip,
   className,
   ...props
-}: useRender.ComponentProps<'button'> &
-  React.ComponentProps<'button'> & {
+}: React.ComponentProps<'button'> &
+  useRender.ComponentProps<'button'> & VariantProps<typeof sidebarMenuButtonVariants> & {
     isActive?: boolean;
-    tooltip?: string | React.ComponentProps<typeof TooltipContent>;
-  } & VariantProps<typeof sidebarMenuButtonVariants>) {
+    tooltip?: React.ComponentProps<typeof TooltipContent> | string;
+  }) {
   const { isMobile, state } = useSidebar();
   const comp = useRender({
     defaultTagName: 'button',
@@ -555,8 +555,8 @@ function SidebarMenuAction({
   render,
   showOnHover = false,
   ...props
-}: useRender.ComponentProps<'button'> &
-  React.ComponentProps<'button'> & {
+}: React.ComponentProps<'button'> &
+  useRender.ComponentProps<'button'> & {
     showOnHover?: boolean;
   }) {
   return useRender({
@@ -669,10 +669,10 @@ function SidebarMenuSubButton({
   isActive = false,
   className,
   ...props
-}: useRender.ComponentProps<'a'> &
-  React.ComponentProps<'a'> & {
-    size?: 'sm' | 'md';
+}: React.ComponentProps<'a'> &
+  useRender.ComponentProps<'a'> & {
     isActive?: boolean;
+    size?: 'md' | 'sm';
   }) {
   return useRender({
     defaultTagName: 'a',
