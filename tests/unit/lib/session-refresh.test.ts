@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { refreshSession, startSessionRefresh } from "@/lib/session-refresh";
+import { refreshSession, startSessionRefresh } from "@/client/session/session-refresh";
 
 /**
  * Regressão do "too much recursion": o interceptor instalava

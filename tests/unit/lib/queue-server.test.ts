@@ -6,7 +6,7 @@ const queueRepoMock = vi.hoisted(() => ({
   resetSector: vi.fn(),
 }));
 
-vi.mock("@/lib/repositories", () => ({
+vi.mock("@/server/repositories", () => ({
   queue: queueRepoMock,
 }));
 
@@ -19,7 +19,7 @@ import {
   resetSectorSequence,
   getQueueDb,
   getQueueDbClients,
-} from "@/lib/queue-server";
+} from "@/server/queue-server";
 
 beforeEach(() => {
   queueRepoMock.nextNumber.mockReset();

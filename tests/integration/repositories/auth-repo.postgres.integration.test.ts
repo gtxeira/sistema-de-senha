@@ -15,7 +15,7 @@ describe("AuthRepository — Postgres integration", () => {
 
   authRepoContract(async () => {
     const { PostgresAuthRepository } = await import(
-      "@/lib/repositories/auth-repo.postgres"
+      "@/server/repositories/auth-repo.postgres"
     );
     const repo = new PostgresAuthRepository();
 

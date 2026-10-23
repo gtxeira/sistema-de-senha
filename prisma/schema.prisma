@@ -17,7 +17,7 @@ enum queue_type {
 
 // ── Cargos e permissões (RBAC) ─────────────────────────────────
 // As chaves de permissão em si são um registro fixo em
-// `src/lib/permissions.js` — aqui ficam apenas as atribuições
+// `src/shared/permissions.ts` — aqui ficam apenas as atribuições
 // cargo→permissão e usuário→permissão (overrides).
 
 model roles {

@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { SESSION_COOKIE_NAME } from "@/auth";
-import { prisma } from "@/lib/prisma-client";
+import { prisma } from "@/server/db/prisma-client";
 import {
   REFRESH_COOKIE_NAME,
   clearRefreshCookieOptions,
   revokeRefreshToken,
-} from "@/lib/refresh";
+} from "@/server/auth/refresh";
 
 /**
  * POST — encerra a sessão por completo: revoga a família do refresh token

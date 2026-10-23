@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { routeRequest } from "../../../../helpers/http";
-import { readJson } from "@/lib/json";
-import type { QueueSyncBody } from "@/types/api";
+import { readJson } from "@/shared/json";
+import type { QueueSyncBody } from "@/shared/types/api";
 import {
   cleanupQueueTestData,
   prisma,
@@ -127,7 +127,7 @@ describe("/api/queue/sync — integration", () => {
           });
       await syncPost(syncReq);
 
-      const { queue } = await import("@/lib/repositories");
+      const { queue } = await import("@/server/repositories");
       const result = await queue.nextNumber("farmacia", "normal");
 
       expect(result.number).toBe(45);

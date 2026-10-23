@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { PAGE_TITLES } from "@/lib/page-title";
+import { PAGE_TITLES } from "@/shared/page-title";
 
 /**
  * Metadados da rota `/historico`.

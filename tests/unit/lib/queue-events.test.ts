@@ -4,18 +4,18 @@ import {
   subscribeQueueEvents,
   getQueueEventsSnapshot,
   __resetQueueEvents,
-} from "@/lib/queue-events";
-import type { ClientQueueCall } from "@/lib/queue-events";
-import { RESET_MARKER_KEY, SSE_EVENT_TYPES } from "@/lib/constants";
-import type { SectorId } from "@/lib/constants";
-import { formatClock } from "@/lib/time";
+} from "@/client/queue/queue-events";
+import type { ClientQueueCall } from "@/client/queue/queue-events";
+import { RESET_MARKER_KEY, SSE_EVENT_TYPES } from "@/shared/constants";
+import type { SectorId } from "@/shared/constants";
+import { formatClock } from "@/shared/time";
 import {
   getInitialState,
   normalizeQueue,
   readQueueState,
   reconcileQueueFromCalls,
   saveQueueState,
-} from "@/lib/queue";
+} from "@/client/queue/queue";
 
 /**
  * `global.fetch` é tipado como `typeof fetch`, que nenhum mock satisfaz.

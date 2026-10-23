@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { roles } from "@/lib/repositories";
-import { requirePermission } from "@/lib/api-auth";
-import { errorMessage, errorStatus } from "@/lib/repositories/utils";
-import { ROLES_MANAGE, USERS_VIEW } from "@/lib/permissions";
-import { readJson } from "@/lib/json";
-import type { CreateRoleRequest, RolePatchBody } from "@/types/api";
+import { roles } from "@/server/repositories";
+import { requirePermission } from "@/server/http/api-auth";
+import { errorMessage, errorStatus } from "@/shared/errors";
+import { ROLES_MANAGE, USERS_VIEW } from "@/shared/permissions";
+import { readJson } from "@/shared/json";
+import type { CreateRoleRequest, RolePatchBody } from "@/shared/types/api";
 
 /* ─────────────────────────────────────────────────
    Cargos e permissões (RBAC).

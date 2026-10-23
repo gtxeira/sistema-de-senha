@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 import {
   ALL_PERMISSIONS,
   SECTORS_VIEW_ALL,
-} from "@/lib/permissions";
-import { REFRESH_COOKIE_NAME } from "@/lib/constants";
-import type { Permission } from "@/lib/permissions";
+} from "@/shared/permissions";
+import { REFRESH_COOKIE_NAME } from "@/shared/constants";
+import type { Permission } from "@/shared/permissions";
 
 /**
  * Request falsa que o proxy lê: `nextUrl`, `url`, `cookies` e o `auth` que o

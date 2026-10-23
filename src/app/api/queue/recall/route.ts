@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { queue } from "@/lib/repositories";
-import { errorMessage, errorStatus } from "@/lib/repositories/utils";
-import { eventManager } from "@/lib/event-manager";
-import { assertSectorAccess, requirePermission } from "@/lib/api-auth";
-import { QUEUE_RECALL } from "@/lib/permissions";
-import { readJson } from "@/lib/json";
-import type { RecallRequestBody } from "@/types/api";
-import { isSectorId } from "@/lib/constants";
+import { queue } from "@/server/repositories";
+import { errorMessage, errorStatus } from "@/shared/errors";
+import { eventManager } from "@/server/realtime/event-manager";
+import { assertSectorAccess, requirePermission } from "@/server/http/api-auth";
+import { QUEUE_RECALL } from "@/shared/permissions";
+import { readJson } from "@/shared/json";
+import type { RecallRequestBody } from "@/shared/types/api";
+import { isSectorId } from "@/shared/constants";
 
 /* ─────────────────────────────────────────────────
    POST — repete a última senha chamada de um setor

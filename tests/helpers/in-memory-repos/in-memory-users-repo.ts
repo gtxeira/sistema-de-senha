@@ -1,14 +1,14 @@
 import crypto from "node:crypto";
-import { DEFAULT_GUICHE } from "@/lib/constants";
-import { ALL_PERMISSIONS, computeEffectivePermissions } from "@/lib/permissions";
-import type { Permission, PermissionOverride } from "@/lib/permissions";
+import { DEFAULT_GUICHE } from "@/shared/constants";
+import { ALL_PERMISSIONS, computeEffectivePermissions } from "@/shared/permissions";
+import type { Permission, PermissionOverride } from "@/shared/permissions";
 import type {
   CreateUserInput,
   UpdateUserInput,
   UserRecord,
   UsersRepository,
-} from "@/lib/repositories/types";
-import { RouteError } from "@/lib/repositories/utils";
+} from "@/server/repositories/types";
+import { RouteError } from "@/server/http/errors";
 import type { UsersSeedUserInput } from "../../contracts/users-repo.contract";
 
 /**

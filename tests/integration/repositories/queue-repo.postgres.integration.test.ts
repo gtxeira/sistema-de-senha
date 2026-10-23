@@ -1,5 +1,5 @@
 import { describe, beforeEach, afterEach } from "vitest";
-import { prisma } from "@/lib/prisma-client";
+import { prisma } from "@/server/db/prisma-client";
 import { queueRepoContract } from "../../contracts/queue-repo.contract";
 
 // Check if Postgres is available
@@ -27,7 +27,7 @@ describeIfPostgres("QueueRepository — Postgres integration", () => {
 
   queueRepoContract(async () => {
     const { PostgresQueueRepository } = await import(
-      "@/lib/repositories/queue-repo.postgres"
+      "@/server/repositories/queue-repo.postgres"
     );
     return new PostgresQueueRepository();
   });

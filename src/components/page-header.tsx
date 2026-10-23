@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@/client/utils";
 
 export interface PageHeaderProps {
   /** Linha fina acima do título (ex.: "BEM-VINDO"). */

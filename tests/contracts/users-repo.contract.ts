@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import type { UsersRepository } from "@/lib/repositories/types";
-import { errorStatus } from "@/lib/repositories/utils";
+import type { UsersRepository } from "@/server/repositories/types";
+import { errorStatus } from "@/shared/errors";
 
 /** Subconjunto do seed que os testes de contrato usam. */
 export interface UsersSeedUserInput {

@@ -12,12 +12,12 @@ import {
   normalizeQueue,
   saveQueueState,
   subscribeQueue,
-} from "@/lib/queue";
-import { CALL_TYPES, DEFAULT_SECTOR, getSector, MAX_QUEUE_NUMBER, NO_PASSWORD, SECTORS, } from "@/lib/constants";
-import type { NewsItem } from "@/lib/repositories/types";
-import { errorMessage } from "@/lib/repositories/utils";
-import { readJson } from "@/lib/json";
-import type { ApiErrorBody, NewsCreateBody, NewsListBody, QueueSyncBody, } from "@/types/api";
+} from "@/client/queue/queue";
+import { CALL_TYPES, DEFAULT_SECTOR, getSector, MAX_QUEUE_NUMBER, NO_PASSWORD, SECTORS, } from "@/shared/constants";
+import type { NewsItem } from "@/shared/types/domain";
+import { errorMessage } from "@/shared/errors";
+import { readJson } from "@/shared/json";
+import type { ApiErrorBody, NewsCreateBody, NewsListBody, QueueSyncBody, } from "@/shared/types/api";
 import {
   canAccessSector,
   hasPermission,
@@ -29,7 +29,7 @@ import {
   SCREEN_ADMIN_NOTICIAS,
   SCREEN_ADMIN_USUARIOS,
   SECTORS_MANAGE_ALL,
-} from "@/lib/permissions";
+} from "@/shared/permissions";
 import { useEffectiveSession } from "@/hooks/use-effective-session";
 import { toast } from "sonner";
 import {
@@ -62,7 +62,7 @@ import {
   sectionTitleStyle,
 } from "@/app/(authenticated)/(dashboard)/admin/admin-styles";
 import { AccessSection } from "@/app/(authenticated)/(dashboard)/admin/access-section";
-import { cn } from "@/lib/utils";
+import { cn } from "@/client/utils";
 import { PageHeader } from "@/components/page-header";
 
 /* ── classes locais desta tela (as comuns vêm de ./admin-styles) ── */

@@ -1,15 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { authMock } from "../../../../helpers/auth-mock";
 import { cleanupQueueTestData } from "../../../postgres-setup";
-import { readJson } from "@/lib/json";
-import type { QueueRecentBody } from "@/types/api";
+import { readJson } from "@/shared/json";
+import type { QueueRecentBody } from "@/shared/types/api";
 
 async function importRoute() {
   return import("@/app/api/queue/recent/route");
 }
 
 async function importQueueRepo() {
-  const mod = await import("@/lib/repositories");
+  const mod = await import("@/server/repositories");
   return mod.queue;
 }
 

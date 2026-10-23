@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
-import { users } from "@/lib/repositories";
-import { requirePermission } from "@/lib/api-auth";
-import { errorMessage, errorStatus } from "@/lib/repositories/utils";
+import { users } from "@/server/repositories";
+import { requirePermission } from "@/server/http/api-auth";
+import { errorMessage, errorStatus } from "@/shared/errors";
 import {
   USERS_CREATE,
   USERS_DELETE,
   USERS_EDIT,
   USERS_VIEW,
-} from "@/lib/permissions";
-import { readJson } from "@/lib/json";
-import type { CreateUserRequest, UserPatchBody } from "@/types/api";
+} from "@/shared/permissions";
+import { readJson } from "@/shared/json";
+import type { CreateUserRequest, UserPatchBody } from "@/shared/types/api";
 
 /* ─────────────────────────────────────────────────
    Gestão de usuários: cada operação exige a permissão

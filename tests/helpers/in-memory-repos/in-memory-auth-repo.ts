@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
-import type { AuthRepository } from "@/lib/repositories/types";
-import { RouteError } from "@/lib/repositories/utils";
+import type { AuthRepository } from "@/server/repositories/types";
+import { RouteError } from "@/server/http/errors";
 import type { AuthSeedUserInput } from "../../contracts/auth-repo.contract";
 
 /** Registro guardado no Map — só `email` é lido, o resto é o seed original. */

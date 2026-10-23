@@ -5,12 +5,12 @@ import {
   issueRefreshToken,
   revokeRefreshToken,
   rotateRefreshToken,
-} from "@/lib/refresh";
-import type { RefreshTokenRow, RotateResult } from "@/lib/refresh";
+} from "@/server/auth/refresh";
+import type { RefreshTokenRow, RotateResult } from "@/server/auth/refresh";
 import {
   REFRESH_REUSE_GRACE,
   REFRESH_TOKEN_MAX_AGE,
-} from "@/lib/constants";
+} from "@/shared/constants";
 
 /** Mesmo shape de `RefreshTokenRow`, mutável — o teste envelhece a linha. */
 type FakeRow = { -readonly [K in keyof RefreshTokenRow]: RefreshTokenRow[K] };

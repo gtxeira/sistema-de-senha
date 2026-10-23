@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import type { AuthRepository } from "@/lib/repositories/types";
+import type { AuthRepository } from "@/server/repositories/types";
 
 /** Subconjunto do seed que o contrato usa — o Postgres aceita mais campos. */
 export interface AuthSeedUserInput {

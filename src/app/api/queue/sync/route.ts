@@ -1,16 +1,12 @@
 import { NextResponse } from "next/server";
-import { queue } from "@/lib/repositories";
-import {
-  errorMessage,
-  errorStatus,
-  formatNumberString,
-  normalizeCallType,
-} from "@/lib/repositories/utils";
-import { assertSectorAccess, requirePermission } from "@/lib/api-auth";
-import { QUEUE_SYNC } from "@/lib/permissions";
-import { readJson } from "@/lib/json";
-import type { SyncRequestBody } from "@/types/api";
-import { SECTORS, MIN_QUEUE_NUMBER, MAX_QUEUE_NUMBER, isSectorId } from "@/lib/constants";
+import { queue } from "@/server/repositories";
+import { errorMessage, errorStatus } from "@/shared/errors";
+import { formatNumberString, normalizeCallType } from "@/shared/queue-format";
+import { assertSectorAccess, requirePermission } from "@/server/http/api-auth";
+import { QUEUE_SYNC } from "@/shared/permissions";
+import { readJson } from "@/shared/json";
+import type { SyncRequestBody } from "@/shared/types/api";
+import { SECTORS, MIN_QUEUE_NUMBER, MAX_QUEUE_NUMBER, isSectorId } from "@/shared/constants";
 
 /* ─────────────────────────────────────────────────
    POST — sincroniza a fila para um número específico

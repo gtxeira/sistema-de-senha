@@ -15,7 +15,7 @@ describe("UsersRepository — Postgres integration", () => {
 
   usersRepoContract(async () => {
     const { PostgresUsersRepository } = await import(
-      "@/lib/repositories/users-repo.postgres"
+      "@/server/repositories/users-repo.postgres"
     );
     const repo = new PostgresUsersRepository();
 

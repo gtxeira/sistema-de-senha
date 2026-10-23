@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import type { SequenceType } from "@/lib/constants";
-import type { QueueRepository } from "@/lib/repositories/types";
+import type { SequenceType } from "@/shared/constants";
+import type { QueueRepository } from "@/server/repositories/types";
 
 /**
  * QueueRepository contract — shared test suite.

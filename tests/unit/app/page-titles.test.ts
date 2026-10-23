@@ -7,7 +7,7 @@ import {
   APP_TITLE_SEPARATOR,
   APP_TITLE_TEMPLATE,
   PAGE_TITLES,
-} from "@/lib/page-title";
+} from "@/shared/page-title";
 
 /**
  * Anti-drift entre as **rotas do app** e os **títulos de aba**.

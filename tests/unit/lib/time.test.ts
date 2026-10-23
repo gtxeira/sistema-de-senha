@@ -11,8 +11,8 @@ import {
   formatDay,
   formatLongDate,
   startOfDay,
-} from "@/lib/time";
-import { APP_TIMEZONE } from "@/lib/constants";
+} from "@/shared/time";
+import { APP_TIMEZONE } from "@/shared/constants";
 
 /**
  * O sistema inteiro trabalha em America/Sao_Paulo (UTC−03:00).

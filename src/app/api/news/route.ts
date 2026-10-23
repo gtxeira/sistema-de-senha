@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { news } from "@/lib/repositories";
-import { requireSession, requirePermission } from "@/lib/api-auth";
-import { errorMessage, errorStatus } from "@/lib/repositories/utils";
-import { NEWS_CREATE, NEWS_DELETE } from "@/lib/permissions";
+import { news } from "@/server/repositories";
+import { requireSession, requirePermission } from "@/server/http/api-auth";
+import { errorMessage, errorStatus } from "@/shared/errors";
+import { NEWS_CREATE, NEWS_DELETE } from "@/shared/permissions";
 
 /* ─────────────────────────────────────────────────
    GET — lista notícias ativas

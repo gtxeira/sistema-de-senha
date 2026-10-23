@@ -5,7 +5,7 @@ import {
   CLOCK_INTERVAL,
   SERVER_TIME_SYNC_INTERVAL,
   API_ROUTES,
-} from "@/lib/constants";
+} from "@/shared/constants";
 
 describe("useServerClock — constantes de sincronização", () => {
   it("define APP_TIMEZONE como America/Sao_Paulo", () => {
@@ -124,7 +124,7 @@ describe("useServerClock — leitura do código-fonte", () => {
     const { resolve } = await import("node:path");
     const hookPath = resolve(
       __dirname,
-      "../../../src/lib/hooks/useServerClock.ts",
+      "../../../src/hooks/use-server-clock.ts",
     );
     const code = readFileSync(hookPath, "utf-8");
 
@@ -138,7 +138,7 @@ describe("useServerClock — leitura do código-fonte", () => {
     const { resolve } = await import("node:path");
     const hookPath = resolve(
       __dirname,
-      "../../../src/lib/hooks/useServerClock.ts",
+      "../../../src/hooks/use-server-clock.ts",
     );
     const code = readFileSync(hookPath, "utf-8");
 
@@ -151,7 +151,7 @@ describe("useServerClock — leitura do código-fonte", () => {
     const { resolve } = await import("node:path");
     const hookPath = resolve(
       __dirname,
-      "../../../src/lib/hooks/useServerClock.ts",
+      "../../../src/hooks/use-server-clock.ts",
     );
     const code = readFileSync(hookPath, "utf-8");
 
@@ -164,13 +164,13 @@ describe("useServerClock — leitura do código-fonte", () => {
     const { resolve } = await import("node:path");
     const hookPath = resolve(
       __dirname,
-      "../../../src/lib/hooks/useServerClock.ts",
+      "../../../src/hooks/use-server-clock.ts",
     );
     const code = readFileSync(hookPath, "utf-8");
 
-    // A formatação mora em `@/lib/time` — é lá que o fuso do app está
+    // A formatação mora em `@/shared/time` — é lá que o fuso do app está
     // fixado. O hook só cuida do offset servidor↔device.
-    expect(code).toContain('from "@/lib/time"');
+    expect(code).toContain('from "@/shared/time"');
     expect(code).toContain("formatClockSeconds");
     expect(code).not.toContain("Intl.DateTimeFormat");
   });
@@ -180,7 +180,7 @@ describe("useServerClock — leitura do código-fonte", () => {
     const { resolve } = await import("node:path");
     const hookPath = resolve(
       __dirname,
-      "../../../src/lib/hooks/useServerClock.ts",
+      "../../../src/hooks/use-server-clock.ts",
     );
     const code = readFileSync(hookPath, "utf-8");
 
@@ -192,7 +192,7 @@ describe("useServerClock — leitura do código-fonte", () => {
     const { resolve } = await import("node:path");
     const hookPath = resolve(
       __dirname,
-      "../../../src/lib/hooks/useServerClock.ts",
+      "../../../src/hooks/use-server-clock.ts",
     );
     const code = readFileSync(hookPath, "utf-8");
 
@@ -206,7 +206,7 @@ describe("useServerClock — leitura do código-fonte", () => {
     const { resolve } = await import("node:path");
     const hookPath = resolve(
       __dirname,
-      "../../../src/lib/hooks/useServerClock.ts",
+      "../../../src/hooks/use-server-clock.ts",
     );
     const code = readFileSync(hookPath, "utf-8");
 
@@ -240,7 +240,7 @@ describe("useServerClock — SidebarLayout usa o hook", () => {
     );
     const clockCode = readFileSync(clockPath, "utf-8");
 
-    expect(clockCode).toContain('from "@/lib/hooks/useServerClock"');
+    expect(clockCode).toContain('from "@/hooks/use-server-clock"');
     expect(clockCode).toContain("useServerClock()");
   });
 
@@ -268,7 +268,7 @@ describe("useServerClock — Monitor usa o hook", () => {
     );
     const code = readFileSync(monitorPath, "utf-8");
 
-    expect(code).toContain('from "@/lib/hooks/useServerClock"');
+    expect(code).toContain('from "@/hooks/use-server-clock"');
     expect(code).toContain("useServerClock()");
   });
 

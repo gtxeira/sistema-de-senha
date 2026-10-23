@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { authMock } from "../../helpers/auth-mock";
-import { eventManager } from "@/lib/event-manager";
+import { eventManager } from "@/server/realtime/event-manager";
 import {
   MAX_SSE_CONNECTIONS_PER_SECTOR,
   SECTORS,
-} from "@/lib/constants";
+} from "@/shared/constants";
 import {
   ALL_PERMISSIONS,
   NEWS_CREATE,
@@ -20,16 +20,16 @@ import {
   USERS_DELETE,
   USERS_EDIT,
   USERS_VIEW,
-} from "@/lib/permissions";
-import type { Permission } from "@/lib/permissions";
+} from "@/shared/permissions";
+import type { Permission } from "@/shared/permissions";
 import type { Session } from "next-auth";
-import { readJson } from "@/lib/json";
+import { readJson } from "@/shared/json";
 import type {
   ApiErrorBody,
   RoleSaveBody,
   RolesListBody,
   UserSaveBody,
-} from "@/types/api";
+} from "@/shared/types/api";
 import { seedTestUser, cleanupAllTestUsers } from "../postgres-setup";
 
 /**
@@ -129,7 +129,7 @@ const FULL = [...ALL_PERMISSIONS];
  *
  * `proxy.js` libera todo `/api`, então cada handler precisa se proteger
  * sozinho — esta é a rede de segurança contra regressões nessa barreira.
- * A autorização é por PERMISSÃO (registro em src/lib/permissions.ts), não
+ * A autorização é por PERMISSÃO (registro em src/shared/permissions.ts), não
  * mais por cargo.
  */
 describe("Autorização das rotas de API", () => {
@@ -405,7 +405,7 @@ describe("Gestão de cargos e permissões (RBAC)", () => {
 
   afterEach(async () => {
     vi.clearAllMocks();
-    const { prisma } = await import("@/lib/prisma-client");
+    const { prisma } = await import("@/server/db/prisma-client");
     if (createdRoleIds.length) {
       await prisma.roles.deleteMany({
         where: { id: { in: createdRoleIds } },

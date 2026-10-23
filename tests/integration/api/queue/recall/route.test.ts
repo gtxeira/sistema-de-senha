@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { cleanupQueueTestData, seedTestUser, cleanupTestUsers } from "../../../postgres-setup";
-import { eventManager } from "@/lib/event-manager";
-import type { QueueCallEvent } from "@/lib/event-manager";
+import { eventManager } from "@/server/realtime/event-manager";
+import type { QueueCallEvent } from "@/server/realtime/event-manager";
 import { routeRequest } from "../../../../helpers/http";
-import { readJson } from "@/lib/json";
-import type { QueueRecallBody } from "@/types/api";
+import { readJson } from "@/shared/json";
+import type { QueueRecallBody } from "@/shared/types/api";
 
 const MOCK_USER_ID = "c0f4795e-f467-4695-b479-5ef467c695a6";
 const MOCK_USERNAME = "test.attendant.recall";

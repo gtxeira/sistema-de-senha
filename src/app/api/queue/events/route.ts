@@ -1,12 +1,12 @@
-import { eventManager } from "@/lib/event-manager";
-import type { Unsubscribe } from "@/lib/event-manager";
-import { assertSectorAccess, requireSession } from "@/lib/api-auth";
+import { eventManager } from "@/server/realtime/event-manager";
+import type { Unsubscribe } from "@/server/realtime/event-manager";
+import { assertSectorAccess, requireSession } from "@/server/http/api-auth";
 import {
   KEEPALIVE_INTERVAL,
   MAX_SSE_CONNECTIONS_PER_SECTOR,
   SSE_EVENT_TYPES,
   isSectorId,
-} from "@/lib/constants";
+} from "@/shared/constants";
 
 /**
  * GET /api/queue/events?sector=farmacia

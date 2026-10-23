@@ -7,7 +7,7 @@
    Fluxo de horário:
    1. Servidor retorna UTC ISO via este endpoint
    2. Client sincroniza a cada ~60s (useServerClock hook)
-   3. Display formata em America/Sao_Paulo (via `@/lib/time`)
+   3. Display formata em America/Sao_Paulo (via `@/shared/time`)
    4. DB armazena em TIMESTAMPTZ(6) — UTC interno do PostgreSQL
 ───────────────────────────────────────────────── */
 export function GET() {

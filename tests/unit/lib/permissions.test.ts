@@ -13,11 +13,11 @@ import {
   hasPermission,
   matchRoute,
   sessionFreshnessProblem,
-} from "@/lib/permissions";
+} from "@/shared/permissions";
 import {
   PERMISSIONS_MAX_AGE,
   SESSION_ABSOLUTE_MAX_AGE,
-} from "@/lib/constants";
+} from "@/shared/constants";
 
 describe("computeEffectivePermissions", () => {
   it("retorna a união das permissões do cargo", () => {

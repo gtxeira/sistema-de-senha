@@ -3,9 +3,9 @@ import {
   getInitialState,
   saveQueueState,
   readQueueState,
-} from "@/lib/queue";
-import { readJson } from "@/lib/json";
-import type { ApiErrorBody } from "@/types/api";
+} from "@/client/queue/queue";
+import { readJson } from "@/shared/json";
+import type { ApiErrorBody } from "@/shared/types/api";
 
 /**
  * Cobre a ordem das operações no handler de reset do admin.

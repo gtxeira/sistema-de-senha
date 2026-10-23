@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { seedTestUser, cleanupAllTestUsers } from "../../postgres-setup";
 import { routeRequest } from "../../../helpers/http";
-import { readJson } from "@/lib/json";
-import type { SuccessBody, UserSaveBody, UsersListBody } from "@/types/api";
+import { readJson } from "@/shared/json";
+import type { SuccessBody, UserSaveBody, UsersListBody } from "@/shared/types/api";
 
 let createdUsernames = [];
 
@@ -11,7 +11,7 @@ async function importRoute() {
 }
 
 async function importUsersRepo() {
-  const mod = await import("@/lib/repositories");
+  const mod = await import("@/server/repositories");
   return mod.users;
 }
 

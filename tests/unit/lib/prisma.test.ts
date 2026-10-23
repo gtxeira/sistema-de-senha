@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatQueueNumber } from "@/lib/prisma";
+import { formatQueueNumber } from "@/shared/queue-format";
 
 describe("prisma#formatQueueNumber", () => {
   it("retorna '---' para valores vazios ou <= 0", () => {

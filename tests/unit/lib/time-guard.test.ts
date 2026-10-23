@@ -5,12 +5,12 @@ import { join, relative, resolve } from "node:path";
 /**
  * Guarda de fuso horário.
  *
- * O bug que motivou o módulo `@/lib/time` não era uma conta errada:
+ * O bug que motivou o módulo `@/shared/time` não era uma conta errada:
  * era um formatador de data que usava o fuso do PROCESSO. Em Docker o
  * processo roda em UTC, no dev na máquina do dev — o mesmo código
  * exibia horários diferentes nos dois lugares, e ninguém percebia.
  *
- * A regra que fecha isso: só `@/lib/time` cria formatador de data, e
+ * A regra que fecha isso: só `@/shared/time` cria formatador de data, e
  * nada no `src/` usa as APIs que dependem do fuso ambiente
  * (`toLocaleString` sem `timeZone`, `getTimezoneOffset`).
  *
@@ -19,7 +19,7 @@ import { join, relative, resolve } from "node:path";
  */
 
 const SRC = resolve(__dirname, "../../../src");
-const TIME_MODULE = join(SRC, "lib", "time.ts");
+const TIME_MODULE = join(SRC, "shared", "time.ts");
 
 /** APIs que usam o fuso do ambiente quando nenhum `timeZone` é passado. */
 const AMBIENT_TZ_APIS: ReadonlyArray<{ pattern: RegExp; what: string }> = [
@@ -51,7 +51,7 @@ describe("guarda de fuso horário", () => {
     expect(sources.length).toBeGreaterThan(10);
   });
 
-  it("só @/lib/time cria formatador de data", () => {
+  it("só @/shared/time cria formatador de data", () => {
     const offenders: string[] = [];
     for (const file of sources) {
       if (file === TIME_MODULE) continue;
@@ -66,7 +66,7 @@ describe("guarda de fuso horário", () => {
     expect(offenders).toEqual([]);
   });
 
-  it("@/lib/time é o dono do fuso do app", () => {
+  it("@/shared/time é o dono do fuso do app", () => {
     const code = readFileSync(TIME_MODULE, "utf-8");
     expect(code).toContain("APP_TIMEZONE");
     // Todo formatador passa o `timeZone` explicitamente.

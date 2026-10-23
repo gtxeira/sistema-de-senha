@@ -15,7 +15,7 @@ describe("NewsRepository — Postgres integration", () => {
 
   newsRepoContract(async () => {
     const { PostgresNewsRepository } = await import(
-      "@/lib/repositories/news-repo.postgres"
+      "@/server/repositories/news-repo.postgres"
     );
     const repo = new PostgresNewsRepository();
 

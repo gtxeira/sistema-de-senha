@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { SESSION_KEY } from "@/lib/constants";
+import { SESSION_KEY } from "@/shared/constants";
 import {
   readCachedSession,
   useSessionStore,

@@ -1,6 +1,6 @@
-import { queue } from "@/lib/repositories";
-import { assertSectorAccess, requireSession } from "@/lib/api-auth";
-import { SECTORS, DEFAULT_RECENT_LIMIT } from "@/lib/constants";
+import { queue } from "@/server/repositories";
+import { assertSectorAccess, requireSession } from "@/server/http/api-auth";
+import { SECTORS, DEFAULT_RECENT_LIMIT } from "@/shared/constants";
 
 /**
  * GET /api/queue/recent?sector=farmacia&limit=30

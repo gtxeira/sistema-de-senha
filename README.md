@@ -1,5 +1,8 @@
 # Sistema de Senhas
 
+A organização entre cliente, servidor e contratos compartilhados está em
+[`docs/architecture.md`](docs/architecture.md).
+
 ## Docker
 
 A segmentação de ambiente usa 3 arquivos no padrão moderno do Compose:

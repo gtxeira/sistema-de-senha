@@ -2,7 +2,7 @@
 
 import { useEffect, type ReactNode } from "react";
 import { Toaster } from "sonner";
-import { startSessionRefresh } from "@/lib/session-refresh";
+import { startSessionRefresh } from "@/client/session/session-refresh";
 import { readCachedSession, useSessionStore } from "@/stores/use-session-store";
 
 export default function Providers({ children }: { children: ReactNode }) {

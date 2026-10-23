@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { readJson } from "@/lib/json";
-import type { TimeBody } from "@/types/api";
+import { readJson } from "@/shared/json";
+import type { TimeBody } from "@/shared/types/api";
 
 async function importRoute() {
   return import("@/app/api/time/route");

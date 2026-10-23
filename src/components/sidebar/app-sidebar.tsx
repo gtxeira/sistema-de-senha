@@ -5,9 +5,9 @@ import Link from "next/link"
 import type { Route } from "next"
 import { ChevronRight, Monitor } from "lucide-react"
 import { SearchForm } from "@/components/search-form"
-import { SECTORS } from "@/lib/constants"
-import type { SectorInfo } from "@/lib/constants"
-import { canAccessSector } from "@/lib/permissions"
+import { SECTORS } from "@/shared/constants"
+import type { SectorInfo } from "@/shared/constants"
+import { canAccessSector } from "@/shared/permissions"
 import type { User } from "next-auth"
 import {
   Sidebar,

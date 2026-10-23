@@ -15,7 +15,7 @@ vi.mock("@prisma/adapter-pg", () => ({
 
 import { PrismaClient } from "@/generated/prisma/client";
 
-/** Espelha o alias que `src/lib/prisma-client.ts` usa para gravar em globalThis. */
+/** Espelha o alias que `src/server/db/prisma-client.ts` usa para gravar em globalThis. */
 const globalForPrisma = globalThis as typeof globalThis & {
   prisma?: PrismaClient;
 };
@@ -29,7 +29,7 @@ beforeEach(() => {
 });
 
 async function importClient() {
-  const mod = await import("@/lib/prisma-client");
+  const mod = await import("@/server/db/prisma-client");
   return mod.prisma;
 }
 

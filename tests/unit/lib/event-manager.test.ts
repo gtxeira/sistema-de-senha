@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { EventManager } from "../../../src/lib/event-manager";
-import type { QueueCallEvent } from "../../../src/lib/event-manager";
+import { EventManager } from "../../../src/server/realtime/event-manager";
+import type { QueueCallEvent } from "../../../src/server/realtime/event-manager";
 
 describe("EventManager", () => {
   let manager: EventManager;

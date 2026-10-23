@@ -1,17 +1,13 @@
 import { NextResponse } from "next/server";
-import { queue } from "@/lib/repositories";
-import { eventManager } from "@/lib/event-manager";
-import {
-  errorMessage,
-  errorStatus,
-  formatNumberString,
-  normalizeCallType,
-} from "@/lib/repositories/utils";
-import { assertSectorAccess, requirePermission } from "@/lib/api-auth";
-import { QUEUE_CALL } from "@/lib/permissions";
-import { readJson } from "@/lib/json";
-import type { CallRequestBody } from "@/types/api";
-import { isSectorId } from "@/lib/constants";
+import { queue } from "@/server/repositories";
+import { eventManager } from "@/server/realtime/event-manager";
+import { errorMessage, errorStatus } from "@/shared/errors";
+import { formatNumberString, normalizeCallType } from "@/shared/queue-format";
+import { assertSectorAccess, requirePermission } from "@/server/http/api-auth";
+import { QUEUE_CALL } from "@/shared/permissions";
+import { readJson } from "@/shared/json";
+import type { CallRequestBody } from "@/shared/types/api";
+import { isSectorId } from "@/shared/constants";
 
 /* ─────────────────────────────────────────────────
    POST — chama próxima senha de um setor

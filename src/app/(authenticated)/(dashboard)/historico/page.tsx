@@ -7,14 +7,14 @@ import {
 import {
   formatQueueNumber,
   TYPE_LABELS,
-} from "@/lib/queue";
-import { SECTORS, CALL_TYPES, PAGE_SIZES, DEFAULT_SECTOR, ALL_SECTORS, getSector, getSectorScope, isSectorId } from "@/lib/constants";
-import type { SectorScope } from "@/lib/constants";
-import { readJson } from "@/lib/json";
-import type { QueueStats } from "@/lib/repositories/types";
-import { SECTORS_VIEW_ALL, hasPermission } from "@/lib/permissions";
+} from "@/client/queue/queue";
+import { SECTORS, CALL_TYPES, PAGE_SIZES, DEFAULT_SECTOR, ALL_SECTORS, getSector, getSectorScope, isSectorId } from "@/shared/constants";
+import type { SectorScope } from "@/shared/constants";
+import { readJson } from "@/shared/json";
+import type { QueueStats } from "@/shared/types/domain";
+import { SECTORS_VIEW_ALL, hasPermission } from "@/shared/permissions";
 import { useEffectiveSession } from "@/hooks/use-effective-session";
-import { formatClock, formatDay } from "@/lib/time";
+import { formatClock, formatDay } from "@/shared/time";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,7 +38,7 @@ import { Pagination } from "@/components/pagination";
 import { SectorSelect } from "@/components/sector-select";
 import { StatCard } from "@/components/stat-card";
 import { PageHeader } from "@/components/page-header";
-import { cn } from "@/lib/utils";
+import { cn } from "@/client/utils";
 import { useSetDashboardLayoutInfo } from "@/hooks/use-set-dashboard-layout-info";
 
 const ITEMS_PER_PAGE = PAGE_SIZES.historico;

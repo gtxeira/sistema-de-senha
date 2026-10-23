@@ -18,13 +18,13 @@ import {
   reconcileQueueFromCalls,
   saveQueueState,
   subscribeQueue,
-} from "@/lib/queue";
-import { SECTORS, CALL_TYPES, TYPE_FIELDS, TYPE_LABELS, HISTORY_LIMITS, PAGE_SIZES, DEFAULT_SECTOR, DEFAULT_NAME, KEYBOARD_SHORTCUTS, API_ROUTES, isSectorId, getSector } from "@/lib/constants";
-import type { CallType, SectorId, SectorScope } from "@/lib/constants";
-import { SECTORS_VIEW_ALL, hasPermission } from "@/lib/permissions";
+} from "@/client/queue/queue";
+import { SECTORS, CALL_TYPES, TYPE_FIELDS, TYPE_LABELS, HISTORY_LIMITS, PAGE_SIZES, DEFAULT_SECTOR, DEFAULT_NAME, KEYBOARD_SHORTCUTS, API_ROUTES, isSectorId, getSector } from "@/shared/constants";
+import type { CallType, SectorId, SectorScope } from "@/shared/constants";
+import { SECTORS_VIEW_ALL, hasPermission } from "@/shared/permissions";
 import { useEffectiveSession } from "@/hooks/use-effective-session";
-import { useQueueEvents } from "@/lib/hooks/useQueueEvents";
-import { formatClock } from "@/lib/time";
+import { useQueueEvents } from "@/hooks/use-queue-events";
+import { formatClock } from "@/shared/time";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -39,7 +39,7 @@ import {
 import { Pagination } from "@/components/pagination";
 import { SectorSelect } from "@/components/sector-select";
 import { PageHeader } from "@/components/page-header";
-import { cn } from "@/lib/utils";
+import { cn } from "@/client/utils";
 import { useSetDashboardLayoutInfo } from "@/hooks/use-set-dashboard-layout-info";
 
 const HISTORY_LIMIT = HISTORY_LIMITS.painel;

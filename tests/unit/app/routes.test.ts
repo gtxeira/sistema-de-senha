@@ -2,13 +2,13 @@ import { describe, expect, it } from "vitest";
 import { readdirSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { matchRoute, ROUTE_RULES } from "@/lib/permissions";
-import { SIGN_IN_PATH } from "@/lib/constants";
+import { matchRoute, ROUTE_RULES } from "@/shared/permissions";
+import { SIGN_IN_PATH } from "@/shared/constants";
 
 /**
  * Anti-drift entre o **filesystem** e o **registro de rotas**.
  *
- * O registro canônico (`ROUTE_RULES`, em `src/lib/permissions.ts`) é o que o
+ * O registro canônico (`ROUTE_RULES`, em `src/shared/permissions.ts`) é o que o
  * proxy usa para saber o que cada rota exige. Este teste garante que ele
  * acompanha a aplicação: uma página nova que ninguém registrou não pode
  * existir — o proxy trata "rota não registrada" como **negado**, então o

@@ -1,14 +1,14 @@
 import { auth, SESSION_COOKIE_NAME } from "@/auth";
 import { NextResponse } from "next/server";
-import { REFRESH_COOKIE_NAME, SIGN_IN_PATH } from "@/lib/constants";
+import { REFRESH_COOKIE_NAME, SIGN_IN_PATH } from "@/shared/constants";
 import {
   SCREEN_HOME,
   canAccessSector,
   hasPermission,
   matchRoute,
   sessionFreshnessProblem,
-} from "@/lib/permissions";
-import type { PermissionCarrier } from "@/lib/permissions";
+} from "@/shared/permissions";
+import type { PermissionCarrier } from "@/shared/permissions";
 import type { NextAuthRequest } from "next-auth";
 
 /**
@@ -105,7 +105,7 @@ export default auth((req) => {
     return resumeSessionOrLogin(req, pathname, hasRefresh);
   }
 
-  // O que a rota exige vem do registro canônico (src/lib/permissions.ts):
+  // O que a rota exige vem do registro canônico (src/shared/permissions.ts):
   // permissão de tela e, quando a rota é escopada, o setor alvo.
   const requirement = matchRoute(pathname);
   if (!requirement) {

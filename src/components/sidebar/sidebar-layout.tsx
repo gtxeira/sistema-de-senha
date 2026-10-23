@@ -19,7 +19,7 @@ import {
   BreadcrumbList, BreadcrumbPage,
   BreadcrumbSeparator
 } from "@/components/ui/breadcrumb";
-import { hasPermission, SCREEN_ADMIN } from "@/lib/permissions";
+import { hasPermission, SCREEN_ADMIN } from "@/shared/permissions";
 import type { Route } from "next";
 import { ServerClock } from "@/components/server-clock";
 

@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { queue } from "@/lib/repositories";
-import { errorMessage, errorStatus } from "@/lib/repositories/utils";
-import { eventManager } from "@/lib/event-manager";
-import { assertSectorAccess, requirePermission } from "@/lib/api-auth";
-import { QUEUE_RESET } from "@/lib/permissions";
-import { readJson } from "@/lib/json";
-import type { ResetRequestBody } from "@/types/api";
-import { SECTORS, ALL_SECTORS, isSectorId } from "@/lib/constants";
+import { queue } from "@/server/repositories";
+import { errorMessage, errorStatus } from "@/shared/errors";
+import { eventManager } from "@/server/realtime/event-manager";
+import { assertSectorAccess, requirePermission } from "@/server/http/api-auth";
+import { QUEUE_RESET } from "@/shared/permissions";
+import { readJson } from "@/shared/json";
+import type { ResetRequestBody } from "@/shared/types/api";
+import { SECTORS, ALL_SECTORS, isSectorId } from "@/shared/constants";
 
 /* ─────────────────────────────────────────────────
    POST — reseta a sequência de senhas de um setor

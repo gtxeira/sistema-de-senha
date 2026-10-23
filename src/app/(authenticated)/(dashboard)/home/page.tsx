@@ -1,8 +1,8 @@
 "use client";
 
 import { Monitor, Settings2, Headphones, History } from "lucide-react";
-import { SECTORS } from "@/lib/constants";
-import { SCREEN_ADMIN, canAccessSector, hasPermission } from "@/lib/permissions";
+import { SECTORS } from "@/shared/constants";
+import { SCREEN_ADMIN, canAccessSector, hasPermission } from "@/shared/permissions";
 import { useEffectiveSession } from "@/hooks/use-effective-session";
 import { PageHeader } from "@/components/page-header";
 import { NavCard, type NavCardProps } from "@/app/(authenticated)/(dashboard)/home/nav-card";

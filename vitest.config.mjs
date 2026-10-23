@@ -18,6 +18,10 @@ export default defineConfig(() => {
     resolve: {
       alias: {
         "@": fileURLToPath(new URL("./src", import.meta.url)),
+        // Em produção o Next resolve `server-only` para o marcador que
+        // rejeita imports em Client Components. Nos testes o pacote lança
+        // por padrão, então apontamos para um stub vazio.
+        "server-only": fileURLToPath(new URL("./tests/stubs/server-only.ts", import.meta.url)),
       },
     },
     test: {
@@ -46,11 +50,10 @@ export default defineConfig(() => {
       coverage: {
         provider: "v8",
         include: [
-          "src/lib/repositories/**/*.ts",
-          "src/lib/queue-server.ts",
-          "src/lib/prisma-client.ts",
-          "src/lib/event-manager.ts",
-          "src/lib/hooks/**/*.ts",
+          "src/server/**/*.ts",
+          "src/client/**/*.ts",
+          "src/shared/**/*.ts",
+          "src/hooks/**/*.ts",
           "src/app/api/**/*.ts",
           "src/proxy.ts",
         ],

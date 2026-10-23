@@ -1,14 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { cleanupQueueTestData } from "../../postgres-setup";
-import { readJson } from "@/lib/json";
-import type { StatsBody } from "@/types/api";
+import { readJson } from "@/shared/json";
+import type { StatsBody } from "@/shared/types/api";
 
 async function importRoute() {
   return import("@/app/api/stats/route");
 }
 
 async function importQueueRepo() {
-  const mod = await import("@/lib/repositories");
+  const mod = await import("@/server/repositories");
   return mod.queue;
 }
 

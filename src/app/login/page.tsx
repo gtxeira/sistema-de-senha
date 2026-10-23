@@ -3,17 +3,16 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { Eye, EyeOff, LockKeyhole } from "lucide-react";
-import { readJson } from "@/lib/json";
+import { LockKeyhole } from "lucide-react";
+import { readJson } from "@/shared/json";
 import { useSessionStore } from "@/stores/use-session-store";
-import type { AuthSessionBody } from "@/types/api";
+import type { AuthSessionBody } from "@/shared/types/api";
 import brandIcon from "@/app/icon.ico";
 import Image from "next/image";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/components/ui/input-group";
 import { PasswordInput } from "@/components/ui/password-input";
 
 export default function LoginPage() {
@@ -22,7 +21,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();

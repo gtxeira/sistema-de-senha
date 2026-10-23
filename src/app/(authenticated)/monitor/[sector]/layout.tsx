@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { DEFAULT_SECTOR, getSector } from "@/lib/constants";
-import { PAGE_TITLES } from "@/lib/page-title";
+import { DEFAULT_SECTOR, getSector } from "@/shared/constants";
+import { PAGE_TITLES } from "@/shared/page-title";
 
 interface MonitorLayoutProps {
   readonly children: ReactNode;

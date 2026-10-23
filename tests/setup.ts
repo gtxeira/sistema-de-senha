@@ -5,7 +5,7 @@ import { beforeEach, vi } from "vitest";
 // JWT em produção — aqui são geradas em cada chamada para o teste nunca
 // estourar o janela de 15min por causa de relógio do teste).
 vi.mock("@/auth", async () => {
-  const { ALL_PERMISSIONS } = await import("@/lib/permissions");
+  const { ALL_PERMISSIONS } = await import("@/shared/permissions");
   return {
     // Nome do cookie fixado em src/auth.ts — as rotas de refresh o importam.
     SESSION_COOKIE_NAME: "authjs.session-token",

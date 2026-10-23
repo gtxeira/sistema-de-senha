@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { read } from "@/lib/repositories";
-import { assertSectorAccess, requireSession } from "@/lib/api-auth";
-import { hasPermission, SECTORS_VIEW_ALL } from "@/lib/permissions";
-import { MIN_DAYS, MAX_DAYS, DEFAULT_DAYS, CALL_TYPES } from "@/lib/constants";
-import { normalizePage, normalizePageSize } from "@/lib/repositories/utils";
-import { sanitizeNull } from "@/lib/sanitization";
+import { read } from "@/server/repositories";
+import { assertSectorAccess, requireSession } from "@/server/http/api-auth";
+import { hasPermission, SECTORS_VIEW_ALL } from "@/shared/permissions";
+import { MIN_DAYS, MAX_DAYS, DEFAULT_DAYS, CALL_TYPES } from "@/shared/constants";
+import { normalizePage, normalizePageSize } from "@/shared/validation";
+import { sanitizeNull } from "@/shared/sanitization";
 
 /* ─────────────────────────────────────────────────
    GET — retorna estatísticas e histórico paginado

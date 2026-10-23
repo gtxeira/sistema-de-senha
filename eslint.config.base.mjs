@@ -35,6 +35,56 @@ export const unusedVarsRules = [
 ];
 
 /**
+ * Regras de fronteira entre as camadas.
+ *
+ * `no-restricted-imports` é estático e roda nos dois lints (rápido e
+ * type-aware). A ideia é que a pasta diga o lado do código:
+ *
+ *  - `client`/`components`/`hooks`/`stores` → não importam `server`/`generated`;
+ *  - `server` → não importa UI;
+ *  - `shared` → não importa nenhum dos dois (é contrato puro);
+ *  - `app/api` → pode importar `server`/`shared`, mas não UI.
+ *
+ * O `server-only` cobre o caso que o lint não vê: um Client Component
+ * importando um módulo de servidor por engano.
+ */
+const boundary = (patterns) => ({
+  rules: {
+    "no-restricted-imports": ["error", { patterns }],
+  },
+});
+
+const uiBoundary = boundary([
+  {
+    group: ["@/server/*", "@/generated/*"],
+    message:
+      "Código de UI não pode importar backend. Use a API HTTP ou tipos de @/shared.",
+  },
+]);
+
+const serverBoundary = boundary([
+  {
+    group: ["@/app/*", "@/components/*", "@/hooks/*", "@/stores/*", "@/client/*"],
+    message: "Código de servidor não pode importar UI. Mantenha a regra no service/rota.",
+  },
+]);
+
+const sharedBoundary = boundary([
+  {
+    group: [
+      "@/server/*",
+      "@/client/*",
+      "@/app/*",
+      "@/components/*",
+      "@/hooks/*",
+      "@/stores/*",
+    ],
+    message:
+      "Código compartilhado deve ser puro: sem backend, UI ou runtime específico.",
+  },
+]);
+
+/**
  * Base compartilhada pelas duas configurações:
  *
  *  - `eslint.config.mjs`               → lint do dia a dia (rápido, sem tipos);
@@ -59,6 +109,43 @@ const config = [
         },
       ],
     },
+  },
+  {
+    files: [
+      "src/components/**/*.{ts,tsx}",
+      "src/hooks/**/*.{ts,tsx}",
+      "src/stores/**/*.{ts,tsx}",
+      "src/client/**/*.{ts,tsx}",
+    ],
+    ...uiBoundary,
+  },
+  {
+    files: ["src/shared/**/*.{ts,tsx}"],
+    ...sharedBoundary,
+  },
+  {
+    files: ["src/server/**/*.{ts,tsx}"],
+    ...serverBoundary,
+  },
+  {
+    files: ["src/app/**/*.{ts,tsx}"],
+    ...boundary([
+      {
+        group: ["@/server/*", "@/generated/*"],
+        message:
+          "Páginas não importam backend diretamente. Use a API HTTP ou `@/auth` para sessão.",
+      },
+    ]),
+  },
+  {
+    // As rotas são a borda HTTP: podem importar `server`, mas não UI.
+    files: ["src/app/api/**/*.{ts,tsx}"],
+    ...boundary([
+      {
+        group: ["@/components/*", "@/hooks/*", "@/stores/*", "@/client/*"],
+        message: "Rotas de API não importam UI.",
+      },
+    ]),
   },
   ...unusedVarsRules,
   // Override default ignores of eslint-config-next.

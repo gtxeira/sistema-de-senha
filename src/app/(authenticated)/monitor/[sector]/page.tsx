@@ -18,27 +18,27 @@ import {
   saveQueueState,
   subscribeQueue,
   type QueueState,
-} from "@/lib/queue";
+} from "@/client/queue/queue";
 import {
   SECTORS, DEFAULT_SECTOR, CALL_TYPES, TYPE_FIELDS, NEWS_CAROUSEL_INTERVAL, HISTORY_LIMITS,
   NO_PASSWORD,
   isSectorId,
   getSector,
-} from "@/lib/constants";
-import type { CallType, SectorId } from "@/lib/constants";
-import type { NewsItem } from "@/lib/repositories/types";
-import { useQueueEvents } from "@/lib/hooks/useQueueEvents";
-import { useServerClock } from "@/lib/hooks/useServerClock";
+} from "@/shared/constants";
+import type { CallType, SectorId } from "@/shared/constants";
+import type { NewsItem } from "@/shared/types/domain";
+import { useQueueEvents } from "@/hooks/use-queue-events";
+import { useServerClock } from "@/hooks/use-server-clock";
 import {
   forceAnnounce,
   monitorSpeak,
   registerMonitorSpeaker,
   speakText,
   unlockSpeech,
-} from "@/lib/speech";
-import { formatClock } from "@/lib/time";
-import { readJson } from "@/lib/json";
-import type { NewsListBody } from "@/types/api";
+} from "@/client/audio/speech";
+import { formatClock } from "@/shared/time";
+import { readJson } from "@/shared/json";
+import type { NewsListBody } from "@/shared/types/api";
 
 /* ─── notícias ─── */
 let newsSnapshot: NewsItem[] = [];

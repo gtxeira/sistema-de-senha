@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const hookPath = resolve(__dirname, "../../../src/lib/hooks/useQueueEvents.ts");
+const hookPath = resolve(__dirname, "../../../src/hooks/use-queue-events.ts");
 const hookCode = readFileSync(hookPath, "utf-8");
 
 /**

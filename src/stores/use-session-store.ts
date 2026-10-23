@@ -1,15 +1,15 @@
 import { create } from "zustand";
 import type { User } from "next-auth";
-import { SESSION_KEY } from "@/lib/constants";
-import { parseJson } from "@/lib/json";
-import { hasPermission } from "@/lib/permissions";
-import type { Permission } from "@/lib/permissions";
+import { SESSION_KEY } from "@/shared/constants";
+import { parseJson } from "@/shared/json";
+import { hasPermission } from "@/shared/permissions";
+import type { Permission } from "@/shared/permissions";
 
 /**
  * Fonte única da sessão no cliente.
  *
  * Antes a sessão vivia em três lugares ao mesmo tempo: o snapshot no
- * `localStorage` (`src/lib/queue.ts`), o `useSyncExternalStore` de cada
+ * `localStorage` (`src/client/queue/queue.ts`), o `useSyncExternalStore` de cada
  * página e o `SessionProvider` do next-auth (montado e nunca usado). Esta
  * store junta os três em um só estado, com os hooks de leitura derivados.
  *

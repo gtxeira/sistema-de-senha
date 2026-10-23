@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterAll, describe, expect, it } from "vitest";
-import { deleteFromS3, extractKeyFromUrl, getPublicUrl, uploadToS3 } from "@/lib/s3-client";
+import { deleteFromS3, extractKeyFromUrl, getPublicUrl, uploadToS3 } from "@/server/storage/s3-client";
 import { checkIsRunningInDocker } from "../../scripts/check-is-running-in-docker";
 
 const TEST_PREFIX = "integration-test/";

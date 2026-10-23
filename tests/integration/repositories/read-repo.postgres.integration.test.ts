@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { prisma } from "@/lib/prisma-client";
-import type { SequenceType } from "@/lib/constants";
-import type { ReadRepository } from "@/lib/repositories/types";
+import { prisma } from "@/server/db/prisma-client";
+import type { SequenceType } from "@/shared/constants";
+import type { ReadRepository } from "@/server/repositories/types";
 import {
   readRepoContract,
   type SeedCall,
@@ -62,7 +62,7 @@ describeIfPostgres("ReadRepository — Postgres integration", () => {
   beforeEach(async () => {
     await cleanupQueueTestData();
     const { PostgresReadRepository } = await import(
-      "@/lib/repositories/read-repo.postgres"
+      "@/server/repositories/read-repo.postgres"
     );
     repo = new PostgresReadRepository();
   });

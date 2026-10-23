@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { seedTestNews, cleanupTestNews, cleanupAllNews } from "../../postgres-setup";
-import { objectExistsInS3, extractKeyFromUrl, deleteFromS3 } from "@/lib/s3-client";
-import { readJson } from "@/lib/json";
-import type { NewsCreateBody, NewsListBody, SuccessBody } from "@/types/api";
+import { objectExistsInS3, extractKeyFromUrl, deleteFromS3 } from "@/server/storage/s3-client";
+import { readJson } from "@/shared/json";
+import type { NewsCreateBody, NewsListBody, SuccessBody } from "@/shared/types/api";
 
 const S3_PUBLIC_URL = process.env.S3_PUBLIC_URL;
 
@@ -14,7 +14,7 @@ async function importRoute() {
 }
 
 async function importNewsRepo() {
-  const mod = await import("@/lib/repositories");
+  const mod = await import("@/server/repositories");
   return mod.news;
 }
 

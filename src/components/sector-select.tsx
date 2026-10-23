@@ -13,8 +13,8 @@ import {
   ALL_SECTORS,
   ALL_SECTORS_INFO,
   SECTORS,
-} from "@/lib/constants";
-import type { SectorScope } from "@/lib/constants";
+} from "@/shared/constants";
+import type { SectorScope } from "@/shared/constants";
 
 export interface SectorSelectProps {
   /** Escopo selecionado: um setor real ou "Todos". */

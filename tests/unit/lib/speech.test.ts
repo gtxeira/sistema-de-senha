@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { numberToPt, buildSpeechText, monitorSpeak, forceAnnounce, initSpeechClient, announceQueueCall } from "@/lib/speech";
+import { numberToPt, buildSpeechText, monitorSpeak, forceAnnounce, initSpeechClient, announceQueueCall } from "@/client/audio/speech";
 
 class MockSpeechSynthesisUtterance {
   text: string;

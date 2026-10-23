@@ -19,9 +19,9 @@ import {
   USERNAME_REGEX,
   USERNAME_REGEX_LABEL,
   getSector,
-} from "@/lib/constants";
-import { errorMessage } from "@/lib/repositories/utils";
-import { readJson } from "@/lib/json";
+} from "@/shared/constants";
+import { errorMessage } from "@/shared/errors";
+import { readJson } from "@/shared/json";
 import { toast } from "sonner";
 import type {
   RolesListBody,
@@ -29,8 +29,8 @@ import type {
   SuccessBody,
   UsersListBody,
   UserSaveBody,
-} from "@/types/api";
-import type { RoleRecord, UserRecord } from "@/lib/repositories/types";
+} from "@/shared/types/api";
+import type { RoleRecord, UserRecord } from "@/shared/types/domain";
 import {
   ALL_PERMISSIONS,
   PERMISSION_GROUPS,
@@ -40,7 +40,7 @@ import {
   USERS_EDIT,
   USERS_VIEW,
   computeEffectivePermissions,
-} from "@/lib/permissions";
+} from "@/shared/permissions";
 import { useCan } from "@/stores/use-session-store";
 import {
   AlertDialog,
@@ -88,7 +88,7 @@ import {
   sectionStyle,
   sectionTitleStyle,
 } from "@/app/(authenticated)/(dashboard)/admin/admin-styles";
-import { cn } from "@/lib/utils";
+import { cn } from "@/client/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PasswordInput } from "@/components/ui/password-input";

@@ -7,7 +7,7 @@ import {
   getSectorScope,
   isSectorId,
   isSectorScope,
-} from "@/lib/constants";
+} from "@/shared/constants";
 
 describe("escopo de setor", () => {
   it("resolve setores reais", () => {

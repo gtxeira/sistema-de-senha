@@ -4,10 +4,10 @@ import {
   seedTestQueueSequence,
   prisma,
 } from "../../../postgres-setup";
-import { eventManager } from "@/lib/event-manager";
+import { eventManager } from "@/server/realtime/event-manager";
 import { routeRequest } from "../../../../helpers/http";
-import { readJson } from "@/lib/json";
-import type { QueueResetBody } from "@/types/api";
+import { readJson } from "@/shared/json";
+import type { QueueResetBody } from "@/shared/types/api";
 
 async function importRoute() {
   return import("@/app/api/queue/reset/route");

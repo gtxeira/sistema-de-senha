@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { CallType } from "@/lib/constants";
+import type { CallType } from "@/shared/constants";
 import {
   SECTORS,
   GUICHES,
@@ -18,18 +18,18 @@ import {
   withQueueLock,
   getQueueSnapshot,
   NO_PASSWORD,
-} from "@/lib/queue";
+} from "@/client/queue/queue";
 import {
   addDays,
   dayKey as dayKeyBrt,
   startOfDay,
-} from "@/lib/time";
+} from "@/shared/time";
 import type {
   CurrentPassword,
   QueueEntry,
   QueueHistoryEntry,
   QueueState,
-} from "@/lib/queue";
+} from "@/client/queue/queue";
 
 /** Entrada de histórico pronta — `type`/`time` são obrigatórios no tipo. */
 const call = (

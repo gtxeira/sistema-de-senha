@@ -2,8 +2,8 @@ import type {
   CreateNewsInput,
   NewsItem,
   NewsRepository,
-} from "@/lib/repositories/types";
-import { RouteError } from "@/lib/repositories/utils";
+} from "@/server/repositories/types";
+import { RouteError } from "@/server/http/errors";
 import type { NewsSeedInput } from "../../contracts/news-repo.contract";
 
 /**

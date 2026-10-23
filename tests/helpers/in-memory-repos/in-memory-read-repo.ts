@@ -1,16 +1,13 @@
-import {
-  normalizeCallType,
-  normalizePage,
-  normalizePageSize,
-} from "@/lib/repositories/utils";
-import { MIN_DAYS, MAX_DAYS } from "@/lib/constants";
-import { dayWindow, startOfDay } from "@/lib/time";
+import { normalizeCallType } from "@/shared/queue-format";
+import { normalizePage, normalizePageSize } from "@/shared/validation";
+import { MIN_DAYS, MAX_DAYS } from "@/shared/constants";
+import { dayWindow, startOfDay } from "@/shared/time";
 import type {
   HistoryCall,
   QueueStats,
   ReadRepository,
   StatsOptions,
-} from "@/lib/repositories/types";
+} from "@/server/repositories/types";
 import type { SeedCall } from "../../contracts/read-repo.contract";
 
 /** Linha interna: o seed de contrato com o timestamp já preenchido. */
