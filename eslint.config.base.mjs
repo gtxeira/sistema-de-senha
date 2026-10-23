@@ -40,7 +40,7 @@ export const unusedVarsRules = [
  * `no-restricted-imports` é estático e roda nos dois lints (rápido e
  * type-aware). A ideia é que a pasta diga o lado do código:
  *
- *  - `client`/`components`/`hooks`/`stores` → não importam `server`/`generated`;
+ *  - `client`/`components`/`hooks`/`stores` → não importam `server`;
  *  - `server` → não importa UI;
  *  - `shared` → não importa nenhum dos dois (é contrato puro);
  *  - `app/api` → pode importar `server`/`shared`, mas não UI.
@@ -56,7 +56,7 @@ const boundary = (patterns) => ({
 
 const uiBoundary = boundary([
   {
-    group: ["@/server/*", "@/generated/*"],
+    group: ["@/server/*"],
     message:
       "Código de UI não pode importar backend. Use a API HTTP ou tipos de @/shared.",
   },
@@ -131,7 +131,7 @@ const config = [
     files: ["src/app/**/*.{ts,tsx}"],
     ...boundary([
       {
-        group: ["@/server/*", "@/generated/*"],
+        group: ["@/server/*"],
         message:
           "Páginas não importam backend diretamente. Use a API HTTP ou `@/auth` para sessão.",
       },
@@ -156,7 +156,7 @@ const config = [
     "build/**",
     "next-env.d.ts",
     // Cliente Prisma gerado (prisma generate) — código de terceiros.
-    "src/generated/**",
+    "src/server/generated/**",
     // Saída de build/ferramenta, não código da aplicação.
     "dist-electron/**",
     "coverage/**",

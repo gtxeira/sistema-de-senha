@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // O client gerado (prisma-client) importa o runtime real do Prisma; o adapter
 // também é substituído para o teste não depender de um DATABASE_URL válido.
-vi.mock("@/generated/prisma/client", () => ({
+vi.mock("@/server/generated/prisma/client", () => ({
   PrismaClient: vi.fn(),
 }));
 
@@ -13,7 +13,7 @@ vi.mock("@prisma/adapter-pg", () => ({
   }),
 }));
 
-import { PrismaClient } from "@/generated/prisma/client";
+import { PrismaClient } from "@/server/generated/prisma/client";
 
 /** Espelha o alias que `src/server/db/prisma-client.ts` usa para gravar em globalThis. */
 const globalForPrisma = globalThis as typeof globalThis & {

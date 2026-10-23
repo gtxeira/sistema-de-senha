@@ -26,7 +26,7 @@ RUN --mount=type=cache,id=bun,target=/root/.bun/install/cache \
 # ── 3. Build: compila o Next.js e monta o standalone de produção ──
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/src/generated ./src/generated
+COPY --from=deps /app/src/server/generated ./src/server/generated
 COPY . .
 RUN --mount=type=cache,target=/app/.next/cache \
     bunx next build && \
@@ -37,7 +37,7 @@ RUN --mount=type=cache,target=/app/.next/cache \
 # ── Desenvolvimento (Para uso com Docker Compose) ──
 FROM base AS dev
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/src/generated ./src/generated
+COPY --from=deps /app/src/server/generated ./src/server/generated
 COPY . .
 EXPOSE 3000
 EXPOSE 9229

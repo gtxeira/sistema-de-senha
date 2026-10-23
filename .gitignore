@@ -27,7 +27,7 @@ tests/fixtures/news/*
 /dist-electron/
 
 # prisma-client gerado (prisma generate)
-/src/generated/
+/src/server/generated/
 
 # misc
 .DS_Store

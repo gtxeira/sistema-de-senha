@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 import { USERNAME_REGEX, DEFAULT_GUICHE, ACCESS_TOKEN_MAX_AGE, SIGN_IN_PATH } from "@/shared/constants";
 import { computeEffectivePermissions } from "@/shared/permissions";
 import { initials } from "@/shared/format";
-import type { PrismaClient } from "@/generated/prisma/client";
+import type { PrismaClient } from "@/server/generated/prisma/client";
 
 // Nome fixo do cookie de sessão (e `salt` do JWE do Auth.js). Fixá-lo no
 // config garante que o `encode()` da rota de refresh derive a mesma chave
@@ -30,7 +30,7 @@ let prismaPromise: Promise<PrismaClient> | undefined;
 
 function getPrisma(): Promise<PrismaClient> {
   prismaPromise ??= Promise.all([
-    import("@/generated/prisma/client"),
+    import("@/server/generated/prisma/client"),
     import("@prisma/adapter-pg"),
   ]).then(
     ([{ PrismaClient }, { PrismaPg }]) =>

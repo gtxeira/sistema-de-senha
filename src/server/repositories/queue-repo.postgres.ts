@@ -1,7 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/server/db/prisma-client";
-import type { Prisma } from "@/generated/prisma/client";
+import type { Prisma } from "@/server/generated/prisma/client";
 import { normalizeCallType } from "@/shared/queue-format";
 import {
   DEFAULT_RECENT_LIMIT,

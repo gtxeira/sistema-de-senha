@@ -1,5 +1,5 @@
-import { PrismaClient } from "../src/generated/prisma/client";
-import type { rolesModel } from "../src/generated/prisma/models/roles";
+import { PrismaClient } from "../src/server/generated/prisma/client";
+import type { rolesModel } from "../src/server/generated/prisma/models/roles";
 import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcryptjs";
 

@@ -1,7 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/server/db/prisma-client";
-import type { Prisma } from "@/generated/prisma/client";
+import type { Prisma } from "@/server/generated/prisma/client";
 import { routeError } from "@/server/http/errors";
 import { errorCode, errorStatus, errorMessage } from "@/shared/errors";
 import { ALL_PERMISSIONS } from "@/shared/permissions";

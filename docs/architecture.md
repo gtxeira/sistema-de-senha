@@ -26,6 +26,7 @@ src/
 ├── server/              # Backend
 │   ├── auth/            # Configuração do Auth.js e refresh tokens
 │   ├── db/              # Client Prisma
+│   ├── generated/       # Prisma Client gerado (não editar)
 │   ├── http/            # Helpers de borda (autorização e erros HTTP)
 │   ├── realtime/        # Event manager do SSE
 │   ├── repositories/    # Contratos e implementações de dados
@@ -33,7 +34,6 @@ src/
 │   └── storage/         # Integração com S3
 ├── shared/              # Contratos puros (sem I/O e sem runtime de UI)
 │   └── types/           # Tipos de domínio e da API
-├── generated/           # Prisma Client gerado (server-only na prática)
 ├── auth.ts              # Reexport fino do Auth.js para o Next
 └── proxy.ts             # Middleware do Next (Edge-safe)
 ```
@@ -47,11 +47,11 @@ negócio ficam em `src/server/services`.
 | Origem | Pode importar | Não pode importar |
 | --- | --- | --- |
 | `shared/` | bibliotecas puras e outros arquivos de `shared` | `server`, `client`, `app`, `components`, `hooks`, `stores` |
-| `client/` | `shared`, `client` | `server`, `generated` |
-| `components/`, `hooks/`, `stores/` | `client`, `components`, `shared` | `server`, `generated` |
-| `app/` (páginas e layouts) | `components`, `client`, `hooks`, `stores`, `shared`, `@/auth` | `server`, `generated` |
+| `client/` | `shared`, `client` | `server` |
+| `components/`, `hooks/`, `stores/` | `client`, `components`, `shared` | `server` |
+| `app/` (páginas e layouts) | `components`, `client`, `hooks`, `stores`, `shared`, `@/auth` | `server` |
 | `app/api/` (Route Handlers) | `server`, `shared`, `@/auth` | `components`, `hooks`, `stores`, `client` |
-| `server/` | `server`, `shared`, `generated` | `app`, `components`, `hooks`, `stores`, `client` |
+| `server/` | `server`, `shared` e `server/generated` | `app`, `components`, `hooks`, `stores`, `client` |
 | `proxy.ts` | `@/auth` e `shared` (Edge-safe) | qualquer coisa que carregue Prisma/Node no module scope |
 
 ### Por que essas regras
@@ -62,8 +62,8 @@ negócio ficam em `src/server/services`.
   no fuso do app.
 - **`client` é navegador.** Reinclui o runtime que não é componente React:
   fila, eventos SSE, áudio e refresh de sessão. Nada aqui importa `server`.
-- **`server` é o backend.** Pode importar `shared` e o Prisma gerado, mas não
-  componentes, hooks ou stores.
+- **`server` é o backend.** Pode importar `shared` e o Prisma gerado em
+  `server/generated`, mas não componentes, hooks ou stores.
 - **`app/api` é a borda.** As rotas continuam em `app/api` porque o Next exige
   esse caminho. Elas traduzem HTTP (request/response, status, cookies) para
   chamadas de serviço/repositório, e não contêm regra de negócio pesada.
@@ -105,6 +105,8 @@ SSE, proteção contra auto-lockout e fallbacks — as rotas só traduzem HTTP.
 - `server/realtime/event-manager.ts`: hub do SSE.
 - `server/db/prisma-client.ts` e `server/storage/s3-client.ts`: clients de
   infraestrutura.
+- `server/generated/prisma/`: Prisma Client produzido por `prisma generate`.
+  Não é versionado nem editado à mão; fica fora do ESLint e da cobertura.
 
 ## O que é compartilhado
 
@@ -144,5 +146,6 @@ resposta JSON ou no formulário, fica em `shared/types/domain.ts`.
 - **Fase 2 (concluída):** extrair os serviços de `queue`, `news`, `users`,
   `roles` e `stats`, deixar as rotas finas e remover o shim
   `server/queue-server.ts`.
-- **Fase 3 (opcional):** avaliar a movimentação de `src/generated/prisma` para
-  `src/server/generated/prisma`, ajustando schema, Dockerfile e imports.
+- **Fase 3 (concluída):** mover `src/generated/prisma` para
+  `src/server/generated/prisma`, ajustando schema, Dockerfile, imports e
+  ignores. O client continua sendo gerado e não versionado.

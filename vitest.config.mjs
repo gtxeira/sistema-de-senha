@@ -61,6 +61,8 @@ export default defineConfig(() => {
           "tests/**",
           "src/**/*.test.{js,jsx,ts,tsx}",
           "src/**/*.module.css",
+          // Cliente Prisma gerado — não é código nosso.
+          "src/server/generated/**",
         ],
         reporter: ["text", "html", "json-summary"],
       },

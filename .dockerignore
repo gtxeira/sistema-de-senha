@@ -34,4 +34,4 @@ uploads
 
 dist
 
-src/generated
+src/server/generated
