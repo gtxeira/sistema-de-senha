@@ -10,8 +10,8 @@ import {
 } from '@/components/ui/sidebar';
 
 export function SearchForm({
-  value,
   onValueChange,
+  value,
   ...props
 }: React.ComponentProps<'form'> & {
   value: string;

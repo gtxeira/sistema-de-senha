@@ -19,8 +19,8 @@ import { createContext, type ReactNode, useContext } from 'react';
 const ServerSessionContext = createContext<User | null>(null);
 
 export function ServerSessionProvider({
-  session,
   children,
+  session,
 }: {
   readonly children: ReactNode;
   /** Claims lidas do cookie no servidor; `null` = anônimo. */

@@ -9,15 +9,15 @@ import * as React from 'react';
 const statCardVariants = cva(
   'rounded-[10px] border border-border bg-card px-5 py-[18px]',
   {
+    defaultVariants: {
+      tone: 'default',
+    },
     variants: {
       tone: {
         default: 'text-primary-hover',
         normal: 'text-[#1972a0]',
         preferencial: 'text-[#ef4444]/90',
       },
-    },
-    defaultVariants: {
-      tone: 'default',
     },
   },
 );
@@ -30,7 +30,7 @@ interface StatCardProps
   value: React.ReactNode;
 }
 
-function StatCard({ className, tone, value, label, ...props }: StatCardProps) {
+function StatCard({ className, label, tone, value, ...props }: StatCardProps) {
   return (
     <article
       data-slot="stat-card"

@@ -42,10 +42,10 @@ const normalize = (value: string) =>
   value.normalize('NFD').replaceAll(/\p{M}/gu, '').toLowerCase();
 
 export function AppSidebar({
-  session,
-  sectorInfo,
   activeRoute,
   routeGroups,
+  sectorInfo,
+  session,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   activeRoute: string;

@@ -15,9 +15,9 @@ interface PaginationProps extends React.ComponentProps<'nav'> {
 
 function Pagination({
   className,
+  onPageChange,
   page,
   totalPages,
-  onPageChange,
   ...props
 }: PaginationProps) {
   return (

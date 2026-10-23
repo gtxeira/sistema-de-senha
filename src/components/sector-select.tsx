@@ -32,9 +32,9 @@ export interface SectorSelectProps {
  * consulta sem filtro de setor.
  */
 export function SectorSelect({
-  value,
-  onValueChange,
   allowAll = false,
+  onValueChange,
+  value,
 }: SectorSelectProps) {
   const sectors = Object.values(SECTORS);
 

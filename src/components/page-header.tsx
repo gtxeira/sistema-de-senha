@@ -22,7 +22,7 @@ export interface PageHeaderProps {
  * produzia — o `gap-4` do `<main>` continua valendo porque o fragmento
  * da página não cria nó DOM.
  */
-export function PageHeader({ eyebrow, title, subtitle }: PageHeaderProps) {
+export function PageHeader({ title, eyebrow, subtitle }: PageHeaderProps) {
   if (!eyebrow && !title && !subtitle) return null;
 
   return (

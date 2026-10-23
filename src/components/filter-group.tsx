@@ -13,10 +13,10 @@ interface FilterGroupProps extends React.ComponentProps<typeof Field> {
 }
 
 function FilterGroup({
-  className,
-  label,
-  htmlFor,
   children,
+  className,
+  htmlFor,
+  label,
   ...props
 }: FilterGroupProps) {
   return (

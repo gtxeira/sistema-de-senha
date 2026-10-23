@@ -73,31 +73,31 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
   const headerActions = useDashboardLayoutStore((s) => s.headerActions);
 
   const principalItems: readonly NavItem[] = [
-    { route: 'home', href: '/home', label: 'Home', icon: Home },
+    { href: '/home', icon: Home, label: 'Home', route: 'home' },
   ];
 
   const mainItems: readonly NavItem[] = [
     {
-      route: 'painel',
       href: '/painel',
-      label: 'Painel de Atendimentos',
       icon: Headphones,
+      label: 'Painel de Atendimentos',
+      route: 'painel',
     },
     {
-      route: 'historico',
       href: '/historico',
-      label: 'Histórico',
       icon: History,
+      label: 'Histórico',
+      route: 'historico',
     },
   ];
 
   const manageItems: readonly NavItem[] = hasPermission(session, SCREEN_ADMIN)
     ? [
         {
-          route: 'admin',
           href: '/admin',
-          label: 'Administração',
           icon: Settings2,
+          label: 'Administração',
+          route: 'admin',
         },
       ]
     : [];
