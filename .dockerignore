@@ -35,3 +35,8 @@ uploads
 dist
 
 src/server/generated
+
+.agents
+.claude
+
+docs
