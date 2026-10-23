@@ -12,14 +12,14 @@ try {
 }
 
 export default defineConfig({
-  schema: 'prisma/schema.prisma',
-  migrations: {
-    path: 'prisma/migrations',
-    seed: 'bun prisma/seed.ts',
-  },
   datasource: {
     // Usa process.env em vez do helper env() porque `prisma generate` também lê
     // este arquivo e precisa funcionar sem DATABASE_URL (build Docker).
     url: process.env.DATABASE_URL ?? '',
   },
+  migrations: {
+    path: 'prisma/migrations',
+    seed: 'bun prisma/seed.ts',
+  },
+  schema: 'prisma/schema.prisma',
 });

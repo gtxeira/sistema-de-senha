@@ -11,16 +11,16 @@ function createWindow(): void {
   // não para a pasta do bundle — o ícone é lido de lá tanto em dev quanto
   // dentro do asar empacotado.
   const browserWindow = new BrowserWindow({
-    width: 1280,
-    height: 800,
     title: 'Sistema de Atendimento',
     autoHideMenuBar: true,
+    height: 800,
     icon: path.join(app.getAppPath(), 'src', 'app', 'icon.ico'),
     webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
       backgroundThrottling: false, // Impede a suspensão do app ao minimizar
+      contextIsolation: true,
+      nodeIntegration: false,
     },
+    width: 1280,
   });
   win = browserWindow;
 

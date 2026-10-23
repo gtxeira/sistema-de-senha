@@ -29,19 +29,19 @@ export default defineConfig(() => {
     },
     test: {
       environment: 'happy-dom',
+      fileParallelism: false,
       globals: true,
       include: ['tests/**/*.test.{js,jsx,ts,tsx}'],
       setupFiles: ['./tests/setup.ts'],
-      fileParallelism: false,
 
       env: {
         DATABASE_URL: testEnv.DATABASE_URL,
-        S3_ENDPOINT: s3Endpoint,
-        S3_REGION: testEnv.S3_REGION,
         S3_ACCESS_KEY: testEnv.S3_ACCESS_KEY,
-        S3_SECRET_KEY: testEnv.S3_SECRET_KEY,
         S3_BUCKET: testEnv.S3_BUCKET,
+        S3_ENDPOINT: s3Endpoint,
         S3_PUBLIC_URL: testEnv.S3_PUBLIC_URL,
+        S3_REGION: testEnv.S3_REGION,
+        S3_SECRET_KEY: testEnv.S3_SECRET_KEY,
       },
 
       server: {
@@ -51,7 +51,13 @@ export default defineConfig(() => {
       },
 
       coverage: {
-        provider: 'v8',
+        exclude: [
+          'tests/**',
+          'src/**/*.test.{js,jsx,ts,tsx}',
+          'src/**/*.module.css',
+          // Cliente Prisma gerado — não é código nosso.
+          'src/server/generated/**',
+        ],
         include: [
           'src/server/**/*.ts',
           'src/client/**/*.ts',
@@ -60,13 +66,7 @@ export default defineConfig(() => {
           'src/app/api/**/*.ts',
           'src/proxy.ts',
         ],
-        exclude: [
-          'tests/**',
-          'src/**/*.test.{js,jsx,ts,tsx}',
-          'src/**/*.module.css',
-          // Cliente Prisma gerado — não é código nosso.
-          'src/server/generated/**',
-        ],
+        provider: 'v8',
         reporter: ['text', 'html', 'json-summary'],
       },
     },

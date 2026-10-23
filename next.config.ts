@@ -5,21 +5,21 @@ const nextConfig: NextConfig = {
   // para a imagem de produção — ver Dockerfile, estágio `runner`.
   output: 'standalone',
 
-  turbopack: {
-    root: process.cwd(),
-  },
+  allowedDevOrigins: ['192.168.18.75'],
   images: {
     remotePatterns: [
       {
         // Garage / S3 compatível local
-        protocol: 'http',
         hostname: 'localhost',
-        port: '3900',
         pathname: '/**',
+        port: '3900',
+        protocol: 'http',
       },
     ],
   },
-  allowedDevOrigins: ['192.168.18.75'],
+  turbopack: {
+    root: process.cwd(),
+  },
 
   // Valida `href`/`router.push()` literalmente contra as rotas da aplicação.
   typedRoutes: true,

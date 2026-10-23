@@ -22,28 +22,28 @@ const DEFAULT_NEWS = {
 
 const USERS = [
   {
-    username: 'admin',
     email: 'admin.sistema@central-atendimento.local',
-    password: 'admin123',
     full_name: 'Administrador do Sistema',
+    password: 'admin123',
     role: 'admin',
     sector_id: null,
+    username: 'admin',
   },
   {
-    username: 'atendente.recepcao',
     email: 'atendente.recepcao@central-atendimento.local',
-    password: 'recepcao123',
     full_name: 'Atendente Recepção',
+    password: 'recepcao123',
     role: 'attendant',
     sector_id: 'recepcao',
+    username: 'atendente.recepcao',
   },
   {
-    username: 'atendente.farmacia',
     email: 'atendente.farmacia@central-atendimento.local',
-    password: 'farmacia123',
     full_name: 'Atendente Farmácia',
+    password: 'farmacia123',
     role: 'attendant',
     sector_id: 'farmacia',
+    username: 'atendente.farmacia',
   },
 ];
 
@@ -65,9 +65,9 @@ async function main() {
     ['attendant', 'Atendente'],
   ]) {
     roles[key] = await prisma.roles.upsert({
-      where: { key },
+      create: { name, built_in: true, key },
       update: {},
-      create: { key, name, built_in: true },
+      where: { key },
     });
   }
   console.log(`  ✓ ${Object.keys(roles).length} cargos criados/verificados`);
@@ -75,9 +75,9 @@ async function main() {
   // ── Setores ──────────────────────────────────────────────────
   for (const sector of SECTORS) {
     await prisma.sectors.upsert({
-      where: { id: sector.id },
-      update: {},
       create: sector,
+      update: {},
+      where: { id: sector.id },
     });
   }
   console.log(`  ✓ ${SECTORS.length} setores criados/verificados`);
@@ -97,17 +97,17 @@ async function main() {
   for (const user of USERS) {
     const passwordHash = await bcrypt.hash(user.password, 10);
     await prisma.users.upsert({
-      where: { username: user.username },
-      update: {},
       create: {
         id: crypto.randomUUID(),
-        username: user.username,
         email: user.email,
-        password_hash: passwordHash,
         full_name: user.full_name,
+        password_hash: passwordHash,
         role_id: roles[user.role].id,
         sector_id: user.sector_id,
+        username: user.username,
       },
+      update: {},
+      where: { username: user.username },
     });
     console.log(`  ✓ ${user.username} / ${user.password} (${user.role})`);
   }
