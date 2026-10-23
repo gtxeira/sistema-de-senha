@@ -44,55 +44,55 @@ export const SECTORS_MANAGE_ALL = 'setores.todos.gerenciar';
  */
 export const PERMISSION_GROUPS = [
   {
+    items: [
+      { label: 'Home', permission: SCREEN_HOME },
+      { label: 'Painel de chamadas', permission: SCREEN_PAINEL },
+      { label: 'Histórico', permission: SCREEN_HISTORICO },
+      { label: 'Monitores (telas de espera)', permission: SCREEN_MONITOR },
+      { label: 'Administração (acesso à seção)', permission: SCREEN_ADMIN },
+      {
+        label: 'Admin · Filas e sincronização',
+        permission: SCREEN_ADMIN_FILAS,
+      },
+      { label: 'Admin · Notícias', permission: SCREEN_ADMIN_NOTICIAS },
+      {
+        label: 'Admin · Usuários e permissões',
+        permission: SCREEN_ADMIN_USUARIOS,
+      },
+    ],
     key: 'telas',
     label: 'Telas',
-    items: [
-      { permission: SCREEN_HOME, label: 'Home' },
-      { permission: SCREEN_PAINEL, label: 'Painel de chamadas' },
-      { permission: SCREEN_HISTORICO, label: 'Histórico' },
-      { permission: SCREEN_MONITOR, label: 'Monitores (telas de espera)' },
-      { permission: SCREEN_ADMIN, label: 'Administração (acesso à seção)' },
-      {
-        permission: SCREEN_ADMIN_FILAS,
-        label: 'Admin · Filas e sincronização',
-      },
-      { permission: SCREEN_ADMIN_NOTICIAS, label: 'Admin · Notícias' },
-      {
-        permission: SCREEN_ADMIN_USUARIOS,
-        label: 'Admin · Usuários e permissões',
-      },
-    ],
   },
   {
+    items: [
+      { label: 'Visualizar usuários', permission: USERS_VIEW },
+      { label: 'Criar usuários', permission: USERS_CREATE },
+      { label: 'Editar usuários', permission: USERS_EDIT },
+      { label: 'Excluir usuários', permission: USERS_DELETE },
+      { label: 'Gerenciar cargos e permissões', permission: ROLES_MANAGE },
+      { label: 'Chamar senhas', permission: QUEUE_CALL },
+      { label: 'Repetir última senha', permission: QUEUE_RECALL },
+      { label: 'Zerar filas', permission: QUEUE_RESET },
+      { label: 'Sincronizar senhas', permission: QUEUE_SYNC },
+      { label: 'Publicar notícias', permission: NEWS_CREATE },
+      { label: 'Excluir notícias', permission: NEWS_DELETE },
+    ],
     key: 'acoes',
     label: 'Ações',
-    items: [
-      { permission: USERS_VIEW, label: 'Visualizar usuários' },
-      { permission: USERS_CREATE, label: 'Criar usuários' },
-      { permission: USERS_EDIT, label: 'Editar usuários' },
-      { permission: USERS_DELETE, label: 'Excluir usuários' },
-      { permission: ROLES_MANAGE, label: 'Gerenciar cargos e permissões' },
-      { permission: QUEUE_CALL, label: 'Chamar senhas' },
-      { permission: QUEUE_RECALL, label: 'Repetir última senha' },
-      { permission: QUEUE_RESET, label: 'Zerar filas' },
-      { permission: QUEUE_SYNC, label: 'Sincronizar senhas' },
-      { permission: NEWS_CREATE, label: 'Publicar notícias' },
-      { permission: NEWS_DELETE, label: 'Excluir notícias' },
-    ],
   },
   {
-    key: 'escopo',
-    label: 'Escopo de setor',
     items: [
       {
-        permission: SECTORS_VIEW_ALL,
         label: 'Visualizar filas de todos os setores',
+        permission: SECTORS_VIEW_ALL,
       },
       {
-        permission: SECTORS_MANAGE_ALL,
         label: 'Operar filas de todos os setores',
+        permission: SECTORS_MANAGE_ALL,
       },
     ],
+    key: 'escopo',
+    label: 'Escopo de setor',
   },
 ] as const;
 
@@ -222,11 +222,11 @@ export function permissionsOf(
  * usuário do setor ou para quem tem a permissão de escopo.
  */
 export const ROUTE_RULES = [
-  { prefix: '/home', permission: SCREEN_HOME },
-  { prefix: '/painel', permission: SCREEN_PAINEL },
-  { prefix: '/historico', permission: SCREEN_HISTORICO },
-  { prefix: '/monitor', permission: SCREEN_MONITOR, sectorScoped: true },
-  { prefix: '/admin', permission: SCREEN_ADMIN },
+  { permission: SCREEN_HOME, prefix: '/home' },
+  { permission: SCREEN_PAINEL, prefix: '/painel' },
+  { permission: SCREEN_HISTORICO, prefix: '/historico' },
+  { permission: SCREEN_MONITOR, prefix: '/monitor', sectorScoped: true },
+  { permission: SCREEN_ADMIN, prefix: '/admin' },
 ] as const;
 
 /** O que uma rota exige de quem a acessa. */

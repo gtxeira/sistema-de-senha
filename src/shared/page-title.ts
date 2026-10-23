@@ -31,12 +31,12 @@ export const APP_TITLE_TEMPLATE = `%s${APP_TITLE_SEPARATOR}${APP_NAME}`;
  * registros serem lidos lado a lado.
  */
 export const PAGE_TITLES = {
-  '/login': 'Login',
-  '/home': 'Home',
-  '/painel': 'Painel de Atendimento',
-  '/historico': 'Histórico',
   '/admin': 'Administração',
+  '/historico': 'Histórico',
+  '/home': 'Home',
+  '/login': 'Login',
   '/monitor/[sector]': 'Monitor',
+  '/painel': 'Painel de Atendimento',
 } as const satisfies Record<string, string>;
 
 /** Rota que tem título no registro. */

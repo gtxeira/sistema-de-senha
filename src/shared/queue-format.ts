@@ -35,7 +35,7 @@ export function normalizeCallType(type?: undefined | string): {
   const isPriority =
     type === CALL_TYPES.PREFERENTIAL || type === CALL_TYPES.PREFERENCIAL;
   return {
-    sequenceType: isPriority ? CALL_TYPES.PREFERENCIAL : CALL_TYPES.NORMAL,
     callType: isPriority ? CALL_TYPES.PREFERENTIAL : CALL_TYPES.NORMAL,
+    sequenceType: isPriority ? CALL_TYPES.PREFERENCIAL : CALL_TYPES.NORMAL,
   };
 }

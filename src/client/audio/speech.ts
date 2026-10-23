@@ -266,11 +266,11 @@ function playAlertBeep(): Promise<void> {
     try {
       const ctx = new AudioContextCtor();
       const beeps = [
-        { freq: TTS_BEEP_FREQ_LOW, start: 0, dur: TTS_BEEP_DURATION },
+        { dur: TTS_BEEP_DURATION, freq: TTS_BEEP_FREQ_LOW, start: 0 },
         {
+          dur: TTS_BEEP_DURATION,
           freq: TTS_BEEP_FREQ_HIGH,
           start: TTS_BEEP_OFFSET,
-          dur: TTS_BEEP_DURATION,
         },
       ];
       let lastEnd = 0;

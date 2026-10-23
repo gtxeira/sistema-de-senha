@@ -14,8 +14,8 @@ import { useDashboardLayoutStore } from '@/stores/use-dashboard-layout-store';
  * renderizado pela própria página (`<PageHeader>`).
  */
 export function useSetDashboardLayoutInfo({
-  sectorInfo,
   headerActions,
+  sectorInfo,
 }: SetDashboardLayoutOptions) {
   const setSectorInfo = useDashboardLayoutStore((s) => s.setSectorInfo);
   const setHeaderActions = useDashboardLayoutStore((s) => s.setHeaderActions);

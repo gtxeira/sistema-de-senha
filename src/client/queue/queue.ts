@@ -98,16 +98,16 @@ export interface ReconcileOptions {
 
 const serverQueueSnapshot: QueueState = {
   farmacia: {
-    normalCurrent: NO_PASSWORD,
-    priorityCurrent: NO_PASSWORD,
     history: [],
     historyDate: '',
+    normalCurrent: NO_PASSWORD,
+    priorityCurrent: NO_PASSWORD,
   },
   recepcao: {
-    normalCurrent: NO_PASSWORD,
-    priorityCurrent: NO_PASSWORD,
     history: [],
     historyDate: '',
+    normalCurrent: NO_PASSWORD,
+    priorityCurrent: NO_PASSWORD,
   },
 };
 
@@ -128,9 +128,9 @@ export async function callNextNumber({
     let next: null | number = null;
     try {
       const res = await fetch('/api/queue/call', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sector, type }),
+        headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
       });
       const data = await readJson<QueueCallBody>(res);
       if (!res.ok) {
@@ -142,8 +142,8 @@ export async function callNextNumber({
               : nextQueueNumber(ls.normalCurrent);
         } else {
           return {
-            ok: false,
             error: data.error || 'Erro ao conectar à sequência central.',
+            ok: false,
           };
         }
       } else {
@@ -163,7 +163,7 @@ export async function callNextNumber({
       next < MIN_QUEUE_NUMBER ||
       next > MAX_QUEUE_NUMBER
     ) {
-      return { ok: false, error: 'Número de senha inválido.' };
+      return { error: 'Número de senha inválido.', ok: false };
     }
 
     const latest = readQueueState();
@@ -175,7 +175,7 @@ export async function callNextNumber({
       [sector]: { ...q, [field]: next },
     });
 
-    return { ok: true, next, type };
+    return { next, ok: true, type };
   });
 }
 
@@ -240,16 +240,16 @@ export function formatQueueNumber(
 export function getInitialState(): QueueState {
   return {
     farmacia: {
-      normalCurrent: NO_PASSWORD,
-      priorityCurrent: NO_PASSWORD,
       history: [],
       historyDate: appDateKey(),
+      normalCurrent: NO_PASSWORD,
+      priorityCurrent: NO_PASSWORD,
     },
     recepcao: {
-      normalCurrent: NO_PASSWORD,
-      priorityCurrent: NO_PASSWORD,
       history: [],
       historyDate: appDateKey(),
+      normalCurrent: NO_PASSWORD,
+      priorityCurrent: NO_PASSWORD,
     },
   };
 }
@@ -298,10 +298,10 @@ export function invalidateQueueState(sector: null | string = null): void {
   for (const s of targets) {
     next[s] = {
       ...normalizeQueue(current[s]),
-      normalCurrent: NO_PASSWORD,
-      priorityCurrent: NO_PASSWORD,
       history: [],
       historyDate: appDateKey(),
+      normalCurrent: NO_PASSWORD,
+      priorityCurrent: NO_PASSWORD,
     };
   }
 
@@ -319,10 +319,10 @@ export function nextQueueNumber(current?: CurrentPassword): number {
 
 export function normalizeQueue(queue?: Partial<QueueEntry> | null): QueueEntry {
   return {
-    normalCurrent: queue?.normalCurrent ?? queue?.current ?? NO_PASSWORD,
-    priorityCurrent: queue?.priorityCurrent ?? NO_PASSWORD,
     history: queue?.history ?? [],
     historyDate: queue?.historyDate ?? appDateKey(),
+    normalCurrent: queue?.normalCurrent ?? queue?.current ?? NO_PASSWORD,
+    priorityCurrent: queue?.priorityCurrent ?? NO_PASSWORD,
   };
 }
 

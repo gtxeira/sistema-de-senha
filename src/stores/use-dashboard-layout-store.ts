@@ -25,16 +25,16 @@ interface LayoutState {
 }
 
 export const useDashboardLayoutStore = create<LayoutState>()((set) => ({
-  sectorInfo: undefined,
   headerActions: undefined,
+  sectorInfo: undefined,
 
-  setSectorInfo: (sectorInfo) => set({ sectorInfo }),
   setHeaderActions: (headerActions) =>
     set({ headerActions: headerActions ?? null }),
+  setSectorInfo: (sectorInfo) => set({ sectorInfo }),
 
   resetLayout: () =>
     set({
-      sectorInfo: undefined,
       headerActions: undefined,
+      sectorInfo: undefined,
     }),
 }));

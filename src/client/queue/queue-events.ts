@@ -97,8 +97,8 @@ interface SsePayload {
 }
 
 const EMPTY_SNAPSHOT: QueueEventsSnapshot = Object.freeze({
-  connected: false,
   calls: {},
+  connected: false,
   lastCall: {},
 });
 
@@ -323,13 +323,13 @@ function ensureConnection(sector: SectorId): ConnectionState {
   if (existing) return existing;
 
   const conn: ConnectionState = {
+    closed: false,
     es: null,
+    lastCallId: null,
     open: false,
     pollTimer: null,
-    retryTimer: null,
     retryCount: 0,
-    lastCallId: null,
-    closed: false,
+    retryTimer: null,
   };
   connections.set(sector, conn);
 

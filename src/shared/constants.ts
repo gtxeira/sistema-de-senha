@@ -89,19 +89,19 @@ export const CALL_TYPES = {
   PREFERENTIAL: 'preferential',
 } as const satisfies Record<string, CallType>;
 export const TYPE_FIELDS = {
+  normal: 'normalCurrent',
   preferencial: 'priorityCurrent',
   preferential: 'priorityCurrent',
-  normal: 'normalCurrent',
 } as const satisfies Record<CallType, string>;
 export const TYPE_LABELS = {
+  normal: 'Normal',
   preferencial: 'Preferencial',
   preferential: 'Preferencial',
-  normal: 'Normal',
 } as const satisfies Record<CallType, string>;
 export const TYPE_PREFIXES = {
+  normal: 'N',
   preferencial: 'P',
   preferential: 'P',
-  normal: 'N',
 } as const satisfies Record<CallType, string>;
 
 // ── Fila ──
@@ -122,7 +122,7 @@ export const PAGE_SIZES = { historico: 20, painel: 10 };
 export const MAX_PAGE_SIZE = 100;
 
 // ── Histórico ──
-export const HISTORY_LIMITS = { painel: 100, monitor: 30 };
+export const HISTORY_LIMITS = { monitor: 30, painel: 100 };
 
 // ── Timing ──
 export const CLOCK_INTERVAL = 1000;
@@ -221,24 +221,24 @@ export const TTS_PRE_SPEECH_PAUSE = 250;
 
 // ── Rotas ──
 export const API_ROUTES = {
-  QUEUE_CALL: '/api/queue/call',
-  QUEUE_RECENT: '/api/queue/recent',
-  QUEUE_EVENTS: '/api/queue/events',
-  QUEUE_SYNC: '/api/queue/sync',
-  QUEUE_RESET: '/api/queue/reset',
-  QUEUE_RECALL: '/api/queue/recall',
   AUTH: '/api/auth',
-  LOGIN: '/login',
   HOME: '/home',
+  LOGIN: '/login',
+  QUEUE_CALL: '/api/queue/call',
+  QUEUE_EVENTS: '/api/queue/events',
+  QUEUE_RECALL: '/api/queue/recall',
+  QUEUE_RECENT: '/api/queue/recent',
+  QUEUE_RESET: '/api/queue/reset',
+  QUEUE_SYNC: '/api/queue/sync',
   TIME: '/api/time',
 } as const;
 
 // ── Navegação ──
 export const NAV_ITEMS = [
-  { label: 'Home', href: '/home', icon: 'Home' },
-  { label: 'Administração', href: '/admin', icon: 'Settings', onlyAdmin: true },
-  { label: 'Chamadas', href: '/painel', icon: 'Monitor' },
-  { label: 'Histórico', href: '/historico', icon: 'History' },
+  { href: '/home', icon: 'Home', label: 'Home' },
+  { href: '/admin', icon: 'Settings', label: 'Administração', onlyAdmin: true },
+  { href: '/painel', icon: 'Monitor', label: 'Chamadas' },
+  { href: '/historico', icon: 'History', label: 'Histórico' },
 ];
 
 // ── Atalhos de teclado ──

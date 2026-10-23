@@ -128,10 +128,10 @@ export function useServerClock(): ServerClock {
     // Vazio até montar (ver `useHasMounted`): o HTML do servidor e o
     // primeiro render do client precisam ser idênticos, e o horário do
     // servidor não é determinístico.
-    timeString: mounted ? formatTime(now) : '',
     dateString: mounted ? formatDate(now) : '',
-    timeShort: mounted ? formatTimeShort(now) : '',
     formatTime: formatTimeShort,
+    timeShort: mounted ? formatTimeShort(now) : '',
+    timeString: mounted ? formatTime(now) : '',
   };
 }
 

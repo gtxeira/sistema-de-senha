@@ -46,8 +46,8 @@ export function useQueueEvents(sector: SectorId | null): QueueEventsResult {
   }, [sector]);
 
   return {
-    connected: snapshot.connected,
     calls: sector ? (snapshot.calls[sector] ?? null) : null,
+    connected: snapshot.connected,
     lastCall: sector ? (snapshot.lastCall[sector] ?? null) : null,
   };
 }

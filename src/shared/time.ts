@@ -253,13 +253,13 @@ function wallToInstant(
  */
 function zonedParts(date: Date, timeZone: string): ZonedParts {
   const formatter = cached(partsFormatters, timeZone, {
-    hourCycle: 'h23',
-    year: 'numeric',
-    month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
+    hourCycle: 'h23',
     minute: '2-digit',
+    month: '2-digit',
     second: '2-digit',
+    year: 'numeric',
   });
 
   let year = 0;
@@ -294,7 +294,7 @@ function zonedParts(date: Date, timeZone: string): ZonedParts {
     }
   }
 
-  return { year, month, day, hour, minute, second };
+  return { day, hour, minute, month, second, year };
 }
 
 /* ─── Exibição ───────────────────────────────────────────────── */
@@ -315,8 +315,8 @@ export function formatClock(
 ): string {
   return safeFormat(
     cached(clockFormatters, timeZone, {
-      hourCycle: 'h23',
       hour: '2-digit',
+      hourCycle: 'h23',
       minute: '2-digit',
     }),
     value,
@@ -330,8 +330,8 @@ export function formatClockSeconds(
 ): string {
   return safeFormat(
     cached(clockSecondsFormatters, timeZone, {
-      hourCycle: 'h23',
       hour: '2-digit',
+      hourCycle: 'h23',
       minute: '2-digit',
       second: '2-digit',
     }),
@@ -346,12 +346,12 @@ export function formatDateTime(
 ): string {
   return safeFormat(
     cached(dateTimeFormatters, timeZone, {
-      hourCycle: 'h23',
       day: '2-digit',
+      hour: '2-digit',
+      hourCycle: 'h23',
+      minute: '2-digit',
       month: '2-digit',
       year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
     }),
     value,
   );
@@ -379,9 +379,9 @@ export function formatLongDate(
 ): string {
   return safeFormat(
     cached(longDateFormatters, timeZone, {
-      weekday: 'long',
       day: '2-digit',
       month: 'long',
+      weekday: 'long',
       year: 'numeric',
     }),
     value,
