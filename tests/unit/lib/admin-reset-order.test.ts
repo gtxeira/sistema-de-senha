@@ -45,30 +45,30 @@ async function runReset({
   // Reproduz admin/page.tsx:105-163 na ordem correta.
   try {
     const res = await fetch('/api/queue/reset', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sector: 'farmacia' }),
+      headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
     });
     const data = await readJson<ApiErrorBody>(res).catch<ApiErrorBody>(
       () => ({}),
     );
-    if (!res.ok) return { ok: false, error: data.error };
+    if (!res.ok) return { error: data.error, ok: false };
 
     const currentState = readQueueState();
     saveQueueState({
       ...currentState,
       farmacia: {
         ...currentState.farmacia,
+        history: [],
         normalCurrent: null,
         priorityCurrent: null,
-        history: [],
       },
     });
 
     return { ok: true };
   } catch {
     // Espelha o catch do componente: nada de local, nada de servidor.
-    return { ok: false, error: 'Erro ao zerar os contadores.' };
+    return { error: 'Erro ao zerar os contadores.', ok: false };
   }
 }
 
@@ -81,8 +81,8 @@ describe('admin — reset da fila', () => {
       ...state,
       farmacia: {
         ...state.farmacia,
+        history: [{ number: 42, time: '14:30', type: 'normal' }],
         normalCurrent: 42,
-        history: [{ number: 42, type: 'normal', time: '14:30' }],
       },
     });
   });
@@ -90,9 +90,9 @@ describe('admin — reset da fila', () => {
   it('zera a réplica local quando o servidor confirma', async () => {
     const result = await runReset({
       fetchImpl: async () => ({
+        json: async () => ({ sectors: ['farmacia'], success: true }),
         ok: true,
         status: 200,
-        json: async () => ({ success: true, sectors: ['farmacia'] }),
       }),
     });
 
@@ -108,9 +108,9 @@ describe('admin — reset da fila', () => {
     // uma falha deixava todo cliente limpo com o servidor intacto.
     const result = await runReset({
       fetchImpl: async () => ({
+        json: async () => ({ error: 'Não foi possível zerar a fila.' }),
         ok: false,
         status: 500,
-        json: async () => ({ error: 'Não foi possível zerar a fila.' }),
       }),
     });
 
@@ -123,9 +123,9 @@ describe('admin — reset da fila', () => {
   it('preserva a réplica local quando a API retorna 403 (não-admin)', async () => {
     const result = await runReset({
       fetchImpl: async () => ({
+        json: async () => ({ error: 'Forbidden.' }),
         ok: false,
         status: 403,
-        json: async () => ({ error: 'Forbidden.' }),
       }),
     });
 
@@ -136,9 +136,9 @@ describe('admin — reset da fila', () => {
   it('preserva a réplica local quando a API retorna 401 (sem sessão)', async () => {
     const result = await runReset({
       fetchImpl: async () => ({
+        json: async () => ({ error: 'Unauthorized.' }),
         ok: false,
         status: 401,
-        json: async () => ({ error: 'Unauthorized.' }),
       }),
     });
 

@@ -98,8 +98,8 @@ export async function seedTestNews(data: SeedTestNewsInput = {}) {
   const result = await prisma.news.create({
     data: {
       title: data.title || `Test News ${Date.now()}`,
-      image_url: data.image || 'https://fake.test/news.jpg',
       active: data.active !== undefined ? data.active : true,
+      image_url: data.image || 'https://fake.test/news.jpg',
       ...(data.created_at ? { created_at: data.created_at } : {}),
     },
     select: { id: true, title: true },
@@ -120,17 +120,17 @@ export async function seedTestQueueSequence(
   currentNumber: number,
 ) {
   await prisma.queue_sequences.upsert({
-    where: {
-      sector_id_call_type: {
-        sector_id: sector,
-        call_type: type,
-      },
-    },
-    update: { current_number: currentNumber, updated_at: new Date() },
     create: {
-      sector_id: sector,
       call_type: type,
       current_number: currentNumber,
+      sector_id: sector,
+    },
+    update: { current_number: currentNumber, updated_at: new Date() },
+    where: {
+      sector_id_call_type: {
+        call_type: type,
+        sector_id: sector,
+      },
     },
   });
 }
@@ -152,19 +152,19 @@ export async function seedTestUser(data: SeedTestUserInput) {
   await prisma.users.create({
     data: {
       id,
-      username,
       email,
-      password_hash: passwordHash,
       full_name: data.full_name || 'Test User',
+      password_hash: passwordHash,
       role_id: role.id,
       sector_id: data.sector_id || null,
+      username,
     },
   });
 
   // Devolve a senha que foi de fato hasheada (`rawPassword`): quando o teste
   // não informa, entra o padrão — devolver `data.password` solto aqui quebraria
   // quem usa o retorno para montar a credencial.
-  return { id, username, password: rawPassword };
+  return { id, password: rawPassword, username };
 }
 
 export { prisma };

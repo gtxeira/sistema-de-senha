@@ -45,28 +45,28 @@ describe('/api/stats — integration', () => {
     it('retorna estatísticas com chamadas reais', async () => {
       const repo = await importQueueRepo();
       await repo.saveCall({
-        sector: 'farmacia',
+        attendantId: null,
+        callType: 'normal',
         number: 1,
         numberStr: 'N001',
+        sector: 'farmacia',
         sequenceType: 'normal',
-        callType: 'normal',
-        attendantId: null,
       });
       await repo.saveCall({
-        sector: 'farmacia',
+        attendantId: null,
+        callType: 'normal',
         number: 2,
         numberStr: 'N002',
+        sector: 'farmacia',
         sequenceType: 'normal',
-        callType: 'normal',
-        attendantId: null,
       });
       await repo.saveCall({
-        sector: 'recepcao',
+        attendantId: null,
+        callType: 'normal',
         number: 1,
         numberStr: 'N001',
+        sector: 'recepcao',
         sequenceType: 'normal',
-        callType: 'normal',
-        attendantId: null,
       });
 
       const { GET } = await importRoute();
@@ -83,12 +83,12 @@ describe('/api/stats — integration', () => {
       const repo = await importQueueRepo();
       for (let number = 1; number <= 3; number++) {
         await repo.saveCall({
-          sector: 'farmacia',
+          attendantId: null,
+          callType: 'normal',
           number,
           numberStr: `N00${number}`,
+          sector: 'farmacia',
           sequenceType: 'normal',
-          callType: 'normal',
-          attendantId: null,
         });
       }
 
@@ -122,20 +122,20 @@ describe('/api/stats — integration', () => {
     it('filtra por setor', async () => {
       const repo = await importQueueRepo();
       await repo.saveCall({
-        sector: 'farmacia',
+        attendantId: null,
+        callType: 'normal',
         number: 1,
         numberStr: 'N001',
+        sector: 'farmacia',
         sequenceType: 'normal',
-        callType: 'normal',
-        attendantId: null,
       });
       await repo.saveCall({
-        sector: 'recepcao',
+        attendantId: null,
+        callType: 'normal',
         number: 1,
         numberStr: 'N001',
+        sector: 'recepcao',
         sequenceType: 'normal',
-        callType: 'normal',
-        attendantId: null,
       });
 
       const { GET } = await importRoute();
@@ -173,12 +173,12 @@ describe('/api/stats — integration', () => {
     it('conta chamadas de hoje (today)', async () => {
       const repo = await importQueueRepo();
       await repo.saveCall({
-        sector: 'farmacia',
+        attendantId: null,
+        callType: 'normal',
         number: 1,
         numberStr: 'N001',
+        sector: 'farmacia',
         sequenceType: 'normal',
-        callType: 'normal',
-        attendantId: null,
       });
 
       const { GET } = await importRoute();
@@ -192,12 +192,12 @@ describe('/api/stats — integration', () => {
     it('retorna a página do histórico', async () => {
       const repo = await importQueueRepo();
       await repo.saveCall({
-        sector: 'farmacia',
+        attendantId: null,
+        callType: 'normal',
         number: 1,
         numberStr: 'N001',
+        sector: 'farmacia',
         sequenceType: 'normal',
-        callType: 'normal',
-        attendantId: null,
       });
 
       const { GET } = await importRoute();
@@ -216,20 +216,20 @@ describe('/api/stats — integration', () => {
     it('filtra por tipo sem alterar o resumo', async () => {
       const repo = await importQueueRepo();
       await repo.saveCall({
-        sector: 'farmacia',
+        attendantId: null,
+        callType: 'normal',
         number: 1,
         numberStr: 'N001',
+        sector: 'farmacia',
         sequenceType: 'normal',
-        callType: 'normal',
-        attendantId: null,
       });
       await repo.saveCall({
-        sector: 'farmacia',
+        attendantId: null,
+        callType: 'preferential',
         number: 1,
         numberStr: 'P001',
+        sector: 'farmacia',
         sequenceType: 'preferencial',
-        callType: 'preferential',
-        attendantId: null,
       });
 
       const { GET } = await importRoute();
@@ -251,12 +251,12 @@ describe('/api/stats — integration', () => {
     it('ignora type inválido', async () => {
       const repo = await importQueueRepo();
       await repo.saveCall({
-        sector: 'farmacia',
+        attendantId: null,
+        callType: 'normal',
         number: 1,
         numberStr: 'N001',
+        sector: 'farmacia',
         sequenceType: 'normal',
-        callType: 'normal',
-        attendantId: null,
       });
 
       const { GET } = await importRoute();

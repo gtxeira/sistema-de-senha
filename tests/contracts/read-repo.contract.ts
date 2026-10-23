@@ -55,9 +55,9 @@ export function readRepoContract(
 
       it('summary.total é soma de preferencial + normal', async () => {
         await seedCalls([
-          { sector: 'farmacia', type: 'normal', number: 1 },
-          { sector: 'farmacia', type: 'preferencial', number: 1 },
-          { sector: 'recepcao', type: 'normal', number: 1 },
+          { number: 1, sector: 'farmacia', type: 'normal' },
+          { number: 1, sector: 'farmacia', type: 'preferencial' },
+          { number: 1, sector: 'recepcao', type: 'normal' },
         ]);
         const stats = await repo.getStats();
         expect(stats.summary.total).toBe(
@@ -67,9 +67,9 @@ export function readRepoContract(
 
       it('filtra por sector quando informado', async () => {
         await seedCalls([
-          { sector: 'farmacia', type: 'normal', number: 1 },
-          { sector: 'recepcao', type: 'normal', number: 1 },
-          { sector: 'recepcao', type: 'normal', number: 2 },
+          { number: 1, sector: 'farmacia', type: 'normal' },
+          { number: 1, sector: 'recepcao', type: 'normal' },
+          { number: 2, sector: 'recepcao', type: 'normal' },
         ]);
         const stats = await repo.getStats({ sector: 'farmacia' });
         expect(stats.summary.total).toBe(1);
@@ -80,17 +80,17 @@ export function readRepoContract(
         // Postgres, string sequencial no in-memory) — o contrato não afirma
         // ordem nesse caso.
         const calls = Array.from({ length: 5 }, (_, i) => ({
+          created_at: `2026-10-22T1${i}:00:00.000Z`,
+          number: i + 1,
           sector: 'farmacia',
           type: 'normal',
-          number: i + 1,
-          created_at: `2026-10-22T1${i}:00:00.000Z`,
         }));
         await seedCalls(calls);
 
         const stats = await repo.getStats({
           days: 30,
-          pageSize: 2,
           now: new Date('2026-10-22T23:00:00.000Z'),
+          pageSize: 2,
         });
 
         expect(stats.calls).toHaveLength(2);
@@ -105,9 +105,9 @@ export function readRepoContract(
 
         const page2 = await repo.getStats({
           days: 30,
-          pageSize: 2,
-          page: 2,
           now: new Date('2026-10-22T23:00:00.000Z'),
+          page: 2,
+          pageSize: 2,
         });
         expect(page2.pagination.page).toBe(2);
         expect(page2.calls.map((c) => c.number)).toEqual([3, 2]);
@@ -116,18 +116,18 @@ export function readRepoContract(
       it('página além do fim é clampada na última', async () => {
         await seedCalls(
           Array.from({ length: 3 }, (_, i) => ({
+            created_at: `2026-10-22T1${i}:00:00.000Z`,
+            number: i + 1,
             sector: 'farmacia',
             type: 'normal',
-            number: i + 1,
-            created_at: `2026-10-22T1${i}:00:00.000Z`,
           })),
         );
 
         const stats = await repo.getStats({
           days: 30,
-          pageSize: 2,
-          page: 99,
           now: new Date('2026-10-22T23:00:00.000Z'),
+          page: 99,
+          pageSize: 2,
         });
 
         expect(stats.pagination.page).toBe(2);
@@ -146,29 +146,29 @@ export function readRepoContract(
       it('filtro de tipo afeta a tabela, mas não o resumo', async () => {
         await seedCalls([
           {
+            created_at: '2026-10-22T13:00:00.000Z',
+            number: 1,
             sector: 'farmacia',
             type: 'normal',
-            number: 1,
-            created_at: '2026-10-22T13:00:00.000Z',
           },
           {
-            sector: 'farmacia',
-            type: 'preferencial',
-            number: 1,
             created_at: '2026-10-22T14:00:00.000Z',
-          },
-          {
+            number: 1,
             sector: 'farmacia',
             type: 'preferencial',
-            number: 2,
+          },
+          {
             created_at: '2026-10-22T15:00:00.000Z',
+            number: 2,
+            sector: 'farmacia',
+            type: 'preferencial',
           },
         ]);
 
         const stats = await repo.getStats({
           days: 30,
-          type: 'preferencial',
           now: new Date('2026-10-22T23:00:00.000Z'),
+          type: 'preferencial',
         });
 
         // Cards: janela inteira, sem o filtro.
@@ -183,7 +183,7 @@ export function readRepoContract(
       });
 
       it('calls têm formato correto', async () => {
-        await seedCalls([{ sector: 'farmacia', type: 'normal', number: 1 }]);
+        await seedCalls([{ number: 1, sector: 'farmacia', type: 'normal' }]);
         const stats = await repo.getStats();
         if (stats.calls.length > 0) {
           const call = stats.calls[0];
@@ -206,16 +206,16 @@ export function readRepoContract(
 
         await seedCalls([
           {
+            created_at: yesterdayBrt,
+            number: 1,
             sector: 'farmacia',
             type: 'normal',
-            number: 1,
-            created_at: yesterdayBrt,
           },
           {
+            created_at: todayBrt,
+            number: 2,
             sector: 'farmacia',
             type: 'normal',
-            number: 2,
-            created_at: todayBrt,
           },
         ]);
 
@@ -236,16 +236,16 @@ export function readRepoContract(
 
         await seedCalls([
           {
+            created_at: yesterdayBrt,
+            number: 1,
             sector: 'farmacia',
             type: 'normal',
-            number: 1,
-            created_at: yesterdayBrt,
           },
           {
+            created_at: todayBrt,
+            number: 2,
             sector: 'farmacia',
             type: 'normal',
-            number: 2,
-            created_at: todayBrt,
           },
         ]);
 
@@ -264,16 +264,16 @@ export function readRepoContract(
         const t1 = '2026-10-22T14:00:00.000Z';
 
         await seedCalls([
-          { sector: 'farmacia', type: 'normal', number: 1, created_at: t0 },
-          { sector: 'farmacia', type: 'normal', number: 2, created_at: t1 },
+          { created_at: t0, number: 1, sector: 'farmacia', type: 'normal' },
+          { created_at: t1, number: 2, sector: 'farmacia', type: 'normal' },
         ]);
 
         const stats = await repo.getStats({
           since: new Date(t0),
           // Exclusivo: a chamada DAS 14:00 não entra — é o limite da
           // meia-noite BRT do dia seguinte, que não pertence ao dia.
-          until: new Date(t1),
           now: new Date('2026-10-22T16:00:00.000Z'),
+          until: new Date(t1),
         });
 
         expect(stats.summary.total).toBe(1);
@@ -286,14 +286,14 @@ export function readRepoContract(
         const t1 = '2026-10-22T14:00:00.000Z';
 
         await seedCalls([
-          { sector: 'farmacia', type: 'normal', number: 1, created_at: t0 },
-          { sector: 'farmacia', type: 'normal', number: 2, created_at: t1 },
+          { created_at: t0, number: 1, sector: 'farmacia', type: 'normal' },
+          { created_at: t1, number: 2, sector: 'farmacia', type: 'normal' },
         ]);
 
         const stats = await repo.getStats({
+          now: new Date('2026-10-22T16:00:00.000Z'),
           since: new Date(t0),
           until: null,
-          now: new Date('2026-10-22T16:00:00.000Z'),
         });
 
         expect(stats.summary.total).toBe(2);

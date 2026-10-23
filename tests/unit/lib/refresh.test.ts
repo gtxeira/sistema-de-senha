@@ -43,7 +43,6 @@ function makeFakePrisma() {
   }
 
   return {
-    rows,
     refresh_tokens: {
       findUnique: async ({
         where,
@@ -56,27 +55,15 @@ function makeFakePrisma() {
       create: async ({ data }: { readonly data: Record<string, unknown> }) => {
         const row: FakeRow = {
           id: crypto.randomUUID(),
-          used_at: null,
           created_at: new Date(),
-          user_id: '',
-          token_hash: '',
-          family_id: '',
           expires_at: new Date(0),
+          family_id: '',
+          token_hash: '',
+          used_at: null,
+          user_id: '',
           ...data,
         };
         rows.push(row);
-        return row;
-      },
-      update: async ({
-        where,
-        data,
-      }: {
-        readonly data: Record<string, unknown>;
-        readonly where: { readonly id: string };
-      }) => {
-        const row = rows.find((r) => match(r, where));
-        if (!row) throw new Error('not found');
-        Object.assign(row, data);
         return row;
       },
       deleteMany: async ({
@@ -90,7 +77,20 @@ function makeFakePrisma() {
         }
         return { count: before - rows.length };
       },
+      update: async ({
+        data,
+        where,
+      }: {
+        readonly data: Record<string, unknown>;
+        readonly where: { readonly id: string };
+      }) => {
+        const row = rows.find((r) => match(r, where));
+        if (!row) throw new Error('not found');
+        Object.assign(row, data);
+        return row;
+      },
     },
+    rows,
     // No Prisma, os argumentos de $transaction são PrismaPromises; aqui
     // basta aguardar em ordem.
     $transaction: async <T>(ops: ReadonlyArray<PromiseLike<T>>): Promise<T[]> =>
@@ -108,7 +108,7 @@ describe('refresh tokens — rotação', () => {
   });
 
   it('emite token opaco e guarda apenas o hash', async () => {
-    const { raw, expiresAt, familyId } = await issueRefreshToken(prisma, USER);
+    const { expiresAt, familyId, raw } = await issueRefreshToken(prisma, USER);
 
     expect(typeof raw).toBe('string');
     expect(raw.length).toBeGreaterThanOrEqual(32);

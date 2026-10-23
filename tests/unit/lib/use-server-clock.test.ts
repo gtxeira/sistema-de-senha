@@ -46,11 +46,11 @@ describe('useServerClock — formatação', () => {
   it('formata data completa no fuso America/Sao_Paulo', () => {
     const date = new Date('2026-09-18T15:30:00Z'); // 12:30 em BRT
     const formatted = new Intl.DateTimeFormat(LOCALE, {
-      weekday: 'long',
       day: '2-digit',
       month: 'long',
-      year: 'numeric',
       timeZone: APP_TIMEZONE,
+      weekday: 'long',
+      year: 'numeric',
     })
       .format(date)
       .toUpperCase();

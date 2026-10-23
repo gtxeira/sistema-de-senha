@@ -8,20 +8,20 @@ vi.mock('@/auth', async () => {
   const { ALL_PERMISSIONS } = await import('@/shared/permissions');
   return {
     // Nome do cookie fixado em src/auth.ts — as rotas de refresh o importam.
-    SESSION_COOKIE_NAME: 'authjs.session-token',
     auth: vi.fn().mockImplementation(async () => ({
+      expires: new Date(Date.now() + 2 * 86400000).toISOString(),
       user: {
         id: 'c0f4795e-f467-4695-b479-5ef467c695a6',
         name: 'Dev Teste',
+        authAt: Date.now(),
         email: 'dev@teste.com',
-        sector: null,
         guiche: 'none',
         permissions: [...ALL_PERMISSIONS],
-        authAt: Date.now(),
         permsAt: Date.now(),
+        sector: null,
       },
-      expires: new Date(Date.now() + 2 * 86400000).toISOString(),
     })),
+    SESSION_COOKIE_NAME: 'authjs.session-token',
   };
 });
 
@@ -42,15 +42,15 @@ if (typeof window === 'undefined') {
   function makeLocalStorage(): StorageLike {
     const store = new Map<string, string>();
     return {
-      store,
-      getItem: (key) => store.get(key) ?? null,
-      setItem: (key, value) => store.set(key, String(value)),
-      removeItem: (key) => store.delete(key),
       clear: () => store.clear(),
+      getItem: (key) => store.get(key) ?? null,
       key: (index) => [...store.keys()][index] ?? null,
       get length() {
         return store.size;
       },
+      removeItem: (key) => store.delete(key),
+      setItem: (key, value) => store.set(key, String(value)),
+      store,
     };
   }
 
@@ -87,10 +87,10 @@ if (typeof window === 'undefined') {
    */
   function overrideGlobal(target: object, key: string, value?: unknown): void {
     Object.defineProperty(target, key, {
+      configurable: true,
+      enumerable: true,
       value,
       writable: true,
-      enumerable: true,
-      configurable: true,
     });
   }
 
@@ -98,8 +98,8 @@ if (typeof window === 'undefined') {
     localStorage.clear();
 
     Object.defineProperty(window, 'localStorage', {
-      value: localStorage,
       configurable: true,
+      value: localStorage,
     });
 
     window.dispatchEvent = window.dispatchEvent.bind(window) || (() => true);
@@ -128,14 +128,14 @@ if (typeof window === 'undefined') {
 
     if (!('speechSynthesis' in window)) {
       overrideGlobal(window, 'speechSynthesis', {
-        getVoices: () => [],
-        speak: () => {},
-        cancel: () => {},
-        resume: () => {},
-        speaking: false,
-        pending: false,
         addEventListener: () => {},
+        cancel: () => {},
+        getVoices: () => [],
+        pending: false,
         removeEventListener: () => {},
+        resume: () => {},
+        speak: () => {},
+        speaking: false,
       });
     }
 

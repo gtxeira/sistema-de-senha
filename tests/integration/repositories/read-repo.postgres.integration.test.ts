@@ -42,10 +42,10 @@ async function seedTestCalls(
   }> = [];
   for (let i = 0; i < count; i++) {
     calls.push({
-      sector_id: sector,
-      type,
       number_int: i + 1,
       number_str: `${type === 'preferencial' ? 'P' : 'N'}${String(i + 1).padStart(3, '0')}`,
+      sector_id: sector,
+      type,
     });
   }
   await prisma.queue_calls.createMany({ data: calls });
@@ -81,10 +81,10 @@ describeIfPostgres('ReadRepository — Postgres integration', () => {
       if (calls.length === 0) return;
       await prisma.queue_calls.createMany({
         data: calls.map((call) => ({
-          sector_id: call.sector,
-          type: seedType(call.type),
           number_int: call.number,
           number_str: seedNumberStr(call.type, call.number),
+          sector_id: call.sector,
+          type: seedType(call.type),
           ...(call.created_at ? { created_at: new Date(call.created_at) } : {}),
         })),
       });
@@ -123,8 +123,8 @@ describeIfPostgres('ReadRepository — Postgres integration', () => {
 
       const stats = await repo.getStats({
         days: 30,
-        sector: 'farmacia',
         pageSize: 2,
+        sector: 'farmacia',
       });
 
       // O total é o do setor, não o da tabela inteira.
@@ -159,21 +159,21 @@ describeIfPostgres('ReadRepository — Postgres integration', () => {
       // 02:30 UTC = 23:30 de ONTEM em BRT (UTC−03:00).
       await prisma.queue_calls.create({
         data: {
-          sector_id: 'farmacia',
-          type: 'normal',
+          created_at: new Date('2026-10-21T02:30:00.000Z'),
           number_int: 1,
           number_str: 'N001',
-          created_at: new Date('2026-10-21T02:30:00.000Z'),
+          sector_id: 'farmacia',
+          type: 'normal',
         },
       });
       // 13:00 UTC = 10:00 de HOJE em BRT.
       await prisma.queue_calls.create({
         data: {
-          sector_id: 'farmacia',
-          type: 'normal',
+          created_at: new Date('2026-10-22T13:00:00.000Z'),
           number_int: 2,
           number_str: 'N002',
-          created_at: new Date('2026-10-22T13:00:00.000Z'),
+          sector_id: 'farmacia',
+          type: 'normal',
         },
       });
 
@@ -194,7 +194,7 @@ describeIfPostgres('ReadRepository — Postgres integration', () => {
       const findManySpy = vi.spyOn(prisma.queue_calls, 'findMany');
 
       try {
-        const stats = await repo.getStats({ days: 30, pageSize: 2, page: 2 });
+        const stats = await repo.getStats({ days: 30, page: 2, pageSize: 2 });
 
         // total + hoje
         expect(countSpy).toHaveBeenCalledTimes(2);

@@ -54,7 +54,7 @@ describe('/api/queue/reset — integration', () => {
 
       const seq = await prisma.queue_sequences.findUnique({
         where: {
-          sector_id_call_type: { sector_id: 'farmacia', call_type: 'normal' },
+          sector_id_call_type: { call_type: 'normal', sector_id: 'farmacia' },
         },
       });
       expect(seq?.current_number).toBe(-1);
@@ -74,12 +74,12 @@ describe('/api/queue/reset — integration', () => {
 
       const farmaciaSeq = await prisma.queue_sequences.findUnique({
         where: {
-          sector_id_call_type: { sector_id: 'farmacia', call_type: 'normal' },
+          sector_id_call_type: { call_type: 'normal', sector_id: 'farmacia' },
         },
       });
       const recepcaoSeq = await prisma.queue_sequences.findUnique({
         where: {
-          sector_id_call_type: { sector_id: 'recepcao', call_type: 'normal' },
+          sector_id_call_type: { call_type: 'normal', sector_id: 'recepcao' },
         },
       });
       expect(farmaciaSeq?.current_number).toBe(-1);
@@ -91,7 +91,7 @@ describe('/api/queue/reset — integration', () => {
       const res = await POST(routeRequest(RESET_URL, { sector: 'farmacia' }));
       const body = await readJson<QueueResetBody>(res);
 
-      expect(body).toEqual({ success: true, sectors: ['farmacia'] });
+      expect(body).toEqual({ sectors: ['farmacia'], success: true });
     });
 
     it('grava o marcador de reset no setor', async () => {
@@ -99,8 +99,8 @@ describe('/api/queue/reset — integration', () => {
       await POST(routeRequest(RESET_URL, { sector: 'farmacia' }));
 
       const sector = await prisma.sectors.findUnique({
-        where: { id: 'farmacia' },
         select: { reset_at: true },
+        where: { id: 'farmacia' },
       });
       expect(sector?.reset_at).toBeInstanceOf(Date);
     });

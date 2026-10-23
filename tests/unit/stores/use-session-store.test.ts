@@ -18,13 +18,13 @@ function fakeUser(overrides: Partial<User> = {}): User {
   return {
     id: 'u1',
     name: 'João',
+    authAt: 1,
     email: 'joao@central.local',
-    sector: 'farmacia',
     guiche: 'guiche-1',
     initials: 'JO',
     permissions: ['tela.home', 'tela.admin'],
-    authAt: 1,
     permsAt: 1,
+    sector: 'farmacia',
     ...overrides,
   } as User;
 }

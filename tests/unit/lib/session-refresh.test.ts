@@ -31,13 +31,13 @@ function installNet(routes: Record<string, RouteEntry>) {
     return typeof handler === 'function' ? handler() : handler;
   });
   window.fetch = net;
-  return { net, calls };
+  return { calls, net };
 }
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
-    status,
     headers: { 'Content-Type': 'application/json' },
+    status,
   });
 }
 
@@ -79,7 +79,7 @@ describe('session-refresh — interceptor de fetch', () => {
       '/api/dados': () => {
         dataCalls += 1;
         return dataCalls === 1
-          ? jsonResponse({ error: 'x', code: 'refresh_required' }, 401)
+          ? jsonResponse({ code: 'refresh_required', error: 'x' }, 401)
           : jsonResponse({ ok: true });
       },
     });
@@ -108,12 +108,12 @@ describe('session-refresh — interceptor de fetch', () => {
         // o refresh do start funciona; o do interceptor falha
         return refreshCalls === 1
           ? jsonResponse({ ok: true })
-          : jsonResponse({ error: 'x', code: 'session_expired' }, 401);
+          : jsonResponse({ code: 'session_expired', error: 'x' }, 401);
       },
       '/api/auth/session': jsonResponse({ user: { id: 'u1' } }),
       '/api/dados': () => {
         dataCalls += 1;
-        return jsonResponse({ error: 'x', code: 'session_expired' }, 401);
+        return jsonResponse({ code: 'session_expired', error: 'x' }, 401);
       },
     });
 
@@ -145,7 +145,7 @@ describe('session-refresh — interceptor de fetch', () => {
   });
 
   it('start duplo não re-instala; cleanup remove o interceptor', async () => {
-    const { net, calls } = installNet({
+    const { calls, net } = installNet({
       ...SESSION_ROUTES,
       '/api/restrito': jsonResponse({ code: 'refresh_required' }, 401),
     });

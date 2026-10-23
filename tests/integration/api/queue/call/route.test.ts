@@ -60,9 +60,9 @@ describe('/api/queue/call — integration', () => {
     it('chama com sucesso (farmacia, normal) e persiste no banco', async () => {
       const { POST } = await importRoute();
       const req = routeRequest('http://localhost/api/queue/call', {
+        attendantId: null,
         sector: 'farmacia',
         type: 'normal',
-        attendantId: null,
       });
       const res = await POST(req);
       const body = await readJson<QueueCallBody>(res);
@@ -83,9 +83,9 @@ describe('/api/queue/call — integration', () => {
     it('chama com sucesso (recepcao, preferencial) e persiste', async () => {
       const { POST } = await importRoute();
       const req = routeRequest('http://localhost/api/queue/call', {
+        attendantId: null,
         sector: 'recepcao',
         type: 'preferencial',
-        attendantId: null,
       });
       const res = await POST(req);
       const body = await readJson<QueueCallBody>(res);
@@ -106,9 +106,9 @@ describe('/api/queue/call — integration', () => {
 
       for (let i = 0; i < 3; i++) {
         const req = routeRequest('http://localhost/api/queue/call', {
+          attendantId: null,
           sector: 'farmacia',
           type: 'normal',
-          attendantId: null,
         });
         const res = await POST(req);
         const body = await readJson<QueueCallBody>(res);
@@ -120,9 +120,9 @@ describe('/api/queue/call — integration', () => {
       const attendantId = '12345678-1234-1234-1234-123456789abc';
       const { POST } = await importRoute();
       const req = routeRequest('http://localhost/api/queue/call', {
+        attendantId,
         sector: 'farmacia',
         type: 'normal',
-        attendantId,
       });
       const res = await POST(req);
       const body = await readJson<QueueCallBody>(res);
@@ -142,9 +142,9 @@ describe('/api/queue/call — integration', () => {
       try {
         const { POST } = await importRoute();
         const req = routeRequest('http://localhost/api/queue/call', {
+          attendantId: null,
           sector: 'farmacia',
           type: 'normal',
-          attendantId: null,
         });
         await POST(req);
 
@@ -176,9 +176,9 @@ describe('/api/queue/call — integration', () => {
         const { POST } = await importRoute();
         await POST(
           routeRequest('http://localhost/api/queue/call', {
+            attendantId: null,
             sector: 'farmacia',
             type: 'normal',
-            attendantId: null,
           }),
         );
         expect(receivedResetAt).toBeNull();
@@ -190,9 +190,9 @@ describe('/api/queue/call — integration', () => {
 
         await POST(
           routeRequest('http://localhost/api/queue/call', {
+            attendantId: null,
             sector: 'farmacia',
             type: 'normal',
-            attendantId: null,
           }),
         );
 
@@ -213,9 +213,9 @@ describe('/api/queue/call — integration', () => {
       const results = [];
       for (let i = 0; i < 3; i++) {
         const req = routeRequest('http://localhost/api/queue/call', {
+          attendantId: null,
           sector: 'farmacia',
           type: 'normal',
-          attendantId: null,
         });
         const res = await POST(req);
         const body = await readJson<QueueCallBody>(res);

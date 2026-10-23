@@ -29,7 +29,7 @@ describe('computeEffectivePermissions', () => {
   it('grants do usuário somam ao cargo', () => {
     const result = computeEffectivePermissions(
       [SCREEN_HOME],
-      [{ permission: USERS_VIEW, granted: true }],
+      [{ granted: true, permission: USERS_VIEW }],
     );
     expect(result).toEqual([SCREEN_HOME, USERS_VIEW]);
   });
@@ -37,7 +37,7 @@ describe('computeEffectivePermissions', () => {
   it('denials do usuário vencem o cargo', () => {
     const result = computeEffectivePermissions(
       [SCREEN_HOME, QUEUE_CALL],
-      [{ permission: QUEUE_CALL, granted: false }],
+      [{ granted: false, permission: QUEUE_CALL }],
     );
     expect(result).toEqual([SCREEN_HOME]);
   });
@@ -45,7 +45,7 @@ describe('computeEffectivePermissions', () => {
   it('deny de permissão inexistente no cargo é um no-op', () => {
     const result = computeEffectivePermissions(
       [SCREEN_HOME],
-      [{ permission: QUEUE_RESET, granted: false }],
+      [{ granted: false, permission: QUEUE_RESET }],
     );
     expect(result).toEqual([SCREEN_HOME]);
   });
@@ -53,7 +53,7 @@ describe('computeEffectivePermissions', () => {
   it('ignora chaves desconhecidas (registro fixo no código)', () => {
     const result = computeEffectivePermissions(
       ['permissao.fantasma', SCREEN_HOME],
-      [{ permission: 'outra.fantasma', granted: true }],
+      [{ granted: true, permission: 'outra.fantasma' }],
     );
     expect(result).toEqual([SCREEN_HOME]);
   });
@@ -62,8 +62,8 @@ describe('computeEffectivePermissions', () => {
     const result = computeEffectivePermissions(
       [QUEUE_CALL],
       [
-        { permission: QUEUE_CALL, granted: true },
-        { permission: QUEUE_CALL, granted: false },
+        { granted: true, permission: QUEUE_CALL },
+        { granted: false, permission: QUEUE_CALL },
       ],
     );
     expect(result).toEqual([]);
@@ -109,10 +109,10 @@ describe('hasPermission / shape da sessão', () => {
 });
 
 describe('canAccessSector (escopo de setor)', () => {
-  const own = { sector: 'farmacia', permissions: [] };
-  const scopedRead = { sector: null, permissions: [SECTORS_VIEW_ALL] };
-  const scopedWrite = { sector: null, permissions: [SECTORS_MANAGE_ALL] };
-  const noSector = { sector: null, permissions: [] };
+  const own = { permissions: [], sector: 'farmacia' };
+  const scopedRead = { permissions: [SECTORS_VIEW_ALL], sector: null };
+  const scopedWrite = { permissions: [SECTORS_MANAGE_ALL], sector: null };
+  const noSector = { permissions: [], sector: null };
 
   it('setor próprio sempre pode ser lido', () => {
     expect(canAccessSector(own, 'farmacia', 'read')).toBe(true);

@@ -116,12 +116,12 @@ export function queueRepoContract(
       it('salva uma chamada sem erro', async () => {
         const { number: num } = await repo.nextNumber('farmacia', 'normal');
         const result = await repo.saveCall({
-          sector: 'farmacia',
+          attendantId: null,
+          callType: 'normal',
           number: num,
           numberStr: `N${String(num).padStart(3, '0')}`,
+          sector: 'farmacia',
           sequenceType: 'normal',
-          callType: 'normal',
-          attendantId: null,
         });
         expect(result).toEqual(
           expect.objectContaining({ id: expect.any(String) as string }),
@@ -134,12 +134,12 @@ export function queueRepoContract(
           'preferencial',
         );
         const result = await repo.saveCall({
-          sector: 'farmacia',
+          attendantId: null,
+          callType: 'preferencial',
           number: num,
           numberStr: `P${String(num).padStart(3, '0')}`,
+          sector: 'farmacia',
           sequenceType: 'preferencial',
-          callType: 'preferencial',
-          attendantId: null,
         });
         expect(result).toEqual(
           expect.objectContaining({ id: expect.any(String) as string }),
@@ -149,12 +149,12 @@ export function queueRepoContract(
       it('aceita attendantId com valor', async () => {
         const { number: num } = await repo.nextNumber('recepcao', 'normal');
         const result = await repo.saveCall({
-          sector: 'recepcao',
+          attendantId: 'some-uuid',
+          callType: 'normal',
           number: num,
           numberStr: `N${String(num).padStart(3, '0')}`,
+          sector: 'recepcao',
           sequenceType: 'normal',
-          callType: 'normal',
-          attendantId: 'some-uuid',
         });
         expect(result).toEqual(
           expect.objectContaining({ id: expect.any(String) as string }),
@@ -203,12 +203,12 @@ export function queueRepoContract(
       ): Promise<void> {
         const { number: num } = await repo.nextNumber(sector, sequenceType);
         await repo.saveCall({
-          sector,
+          attendantId: null,
+          callType: sequenceType,
           number: num,
           numberStr: `N${String(num).padStart(3, '0')}`,
+          sector,
           sequenceType,
-          callType: sequenceType,
-          attendantId: null,
         });
       }
 

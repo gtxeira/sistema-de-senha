@@ -19,23 +19,23 @@ describe('isInvalidApiKeyError', () => {
 describe('normalizeCallType', () => {
   it('normaliza preferencial/preferential', () => {
     expect(normalizeCallType('preferencial')).toEqual({
-      sequenceType: 'preferencial',
       callType: 'preferential',
+      sequenceType: 'preferencial',
     });
     expect(normalizeCallType('preferential')).toEqual({
-      sequenceType: 'preferencial',
       callType: 'preferential',
+      sequenceType: 'preferencial',
     });
   });
 
   it('trata qualquer outro valor como normal', () => {
     expect(normalizeCallType('normal')).toEqual({
-      sequenceType: 'normal',
       callType: 'normal',
+      sequenceType: 'normal',
     });
     expect(normalizeCallType()).toEqual({
-      sequenceType: 'normal',
       callType: 'normal',
+      sequenceType: 'normal',
     });
   });
 });

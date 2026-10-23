@@ -66,9 +66,9 @@ describe('/api/queue/recall — integration', () => {
     it('retorna 200 com sucesso e dados da última chamada', async () => {
       const { POST: callPOST } = await importCallRoute();
       const callReq = routeRequest('http://localhost/api/queue/recall', {
+        attendantId: null,
         sector: 'farmacia',
         type: 'normal',
-        attendantId: null,
       });
       await callPOST(callReq);
 
@@ -88,9 +88,9 @@ describe('/api/queue/recall — integration', () => {
     it('emite evento emitQueueRecall (não emitQueueCall)', async () => {
       const { POST: callPOST } = await importCallRoute();
       const callReq = routeRequest('http://localhost/api/queue/recall', {
+        attendantId: null,
         sector: 'farmacia',
         type: 'normal',
-        attendantId: null,
       });
       await callPOST(callReq);
 
@@ -136,16 +136,16 @@ describe('/api/queue/recall — integration', () => {
       const { POST: callPOST } = await importCallRoute();
 
       const callReq1 = routeRequest('http://localhost/api/queue/recall', {
+        attendantId: null,
         sector: 'farmacia',
         type: 'normal',
-        attendantId: null,
       });
       await callPOST(callReq1);
 
       const callReq2 = routeRequest('http://localhost/api/queue/recall', {
+        attendantId: null,
         sector: 'farmacia',
         type: 'preferencial',
-        attendantId: null,
       });
       await callPOST(callReq2);
 

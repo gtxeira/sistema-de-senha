@@ -110,7 +110,7 @@ export class InMemoryUsersRepository implements UsersRepository {
       if (!KNOWN_PERMISSIONS.has(row.permission)) {
         throw new RouteError(400, `Permissão desconhecida: ${row.permission}`);
       }
-      rows.push({ permission: row.permission, granted: !!row.granted });
+      rows.push({ granted: !!row.granted, permission: row.permission });
     }
 
     user.permissions = rows;
@@ -173,17 +173,17 @@ function buildUser(
   const role = data.role || 'attendant';
   return {
     id,
-    username,
     full_name: data.full_name || 'Test User',
     role,
+    username,
     // Sem `roles` em memória o id do cargo é a própria chave.
+    active: data.active ?? true,
+    guiche_id: DEFAULT_GUICHE,
+    permissions: [],
+    role_built_in: role === 'admin' || role === 'attendant',
     role_id: role,
     role_name: null,
-    role_built_in: role === 'admin' || role === 'attendant',
-    guiche_id: DEFAULT_GUICHE,
     sector_id: data.sector_id || null,
-    active: data.active ?? true,
-    permissions: [],
   };
 }
 
@@ -206,15 +206,15 @@ function isValidUsername(username: string): boolean {
 function toUserRecord(user: StoredUser): UserRecord {
   return {
     id: user.id,
-    username: user.username,
-    full_name: user.full_name,
     active: user.active,
-    sector_id: user.sector_id,
+    full_name: user.full_name,
     guiche_id: user.guiche_id,
-    role_id: user.role_id,
-    role: user.role,
-    role_name: user.role_name,
-    role_built_in: user.role_built_in,
     permissions: user.permissions,
+    role: user.role,
+    role_built_in: user.role_built_in,
+    role_id: user.role_id,
+    role_name: user.role_name,
+    sector_id: user.sector_id,
+    username: user.username,
   };
 }

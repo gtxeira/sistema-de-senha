@@ -30,14 +30,14 @@ export class InMemoryAuthRepository implements AuthRepository {
     const email = `${username}@central-atendimento.local`;
     this.#users.set(username, {
       id,
+      active: true,
       email,
-      password: data.password,
       full_name: data.full_name,
+      password: data.password,
       role: data.role || 'attendant',
       sector_id: data.sector_id || null,
-      active: true,
     });
-    return { username, password: data.password };
+    return { password: data.password, username };
   }
 }
 

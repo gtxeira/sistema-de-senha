@@ -37,9 +37,9 @@ beforeEach(() => {
   // `defineProperty` em vez de atribuição: o stub é um construtor parcial e
   // não satisfaz o `typeof SpeechSynthesisUtterance` do DOM.
   Object.defineProperty(globalThis, 'SpeechSynthesisUtterance', {
+    configurable: true,
     value: MockSpeechSynthesisUtterance,
     writable: true,
-    configurable: true,
   });
 });
 

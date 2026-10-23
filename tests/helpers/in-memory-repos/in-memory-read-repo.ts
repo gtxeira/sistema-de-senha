@@ -28,11 +28,11 @@ export class InMemoryReadRepository implements ReadRepository {
   #rebuild(): void {
     this.#calls = this.#rawCalls.map((c, i) => ({
       id: String(i + 1),
-      sector_id: c.sector,
-      type: c.type === 'preferential' ? 'preferencial' : c.type,
+      created_at: c.created_at || new Date(),
       number_int: c.number,
       number_str: `${c.type === 'preferencial' ? 'P' : 'N'}${String(c.number).padStart(3, '0')}`,
-      created_at: c.created_at || new Date(),
+      sector_id: c.sector,
+      type: c.type === 'preferential' ? 'preferencial' : c.type,
     }));
   }
 
@@ -40,7 +40,7 @@ export class InMemoryReadRepository implements ReadRepository {
     // Rebuild to pick up any new calls added to the raw array
     this.#rebuild();
 
-    const { sector = null, type = null, days = 30, now = new Date() } = options;
+    const { days = 30, now = new Date(), sector = null, type = null } = options;
 
     const pageSize = normalizePageSize(options.pageSize);
     const requestedPage = normalizePage(options.page);
@@ -95,8 +95,8 @@ export class InMemoryReadRepository implements ReadRepository {
       .slice((page - 1) * pageSize, page * pageSize)
       .map((c) => ({
         id: c.id,
-        sector_id: c.sector_id,
         number: c.number_int,
+        sector_id: c.sector_id,
         // `normalizeCallType` aceita as duas grafias e devolve `SequenceType`
         // — é o mesmo encurtamento de `formatCallRecord` no Postgres.
         type: normalizeCallType(c.type).sequenceType,
@@ -113,10 +113,10 @@ export class InMemoryReadRepository implements ReadRepository {
       : days;
 
     return {
-      days: Math.min(MAX_DAYS, Math.max(MIN_DAYS, windowDays)),
-      summary: { total, today: todayCount, preferencial, normal },
       calls,
+      days: Math.min(MAX_DAYS, Math.max(MIN_DAYS, windowDays)),
       pagination: { page, pageSize, total: filteredTotal, totalPages },
+      summary: { normal, preferencial, today: todayCount, total },
     };
   }
 }

@@ -34,7 +34,7 @@ const call = (
   number: number,
   type: CallType = 'normal',
   time = '14:30',
-): QueueHistoryEntry => ({ number, type, time });
+): QueueHistoryEntry => ({ number, time, type });
 
 /**
  * Um valor que o `JSON.parse` devolveu: existe em produção (storage/SSE)
@@ -135,10 +135,10 @@ describe('getInitialState', () => {
 describe('normalizeQueue', () => {
   it('preenche defaults (null = sem senha) quando faltam campos', () => {
     expect(normalizeQueue()).toEqual({
-      normalCurrent: null,
-      priorityCurrent: null,
       history: [],
       historyDate: expect.any(String) as string,
+      normalCurrent: null,
+      priorityCurrent: null,
     });
   });
 
@@ -181,13 +181,13 @@ describe('readQueueState / saveQueueState / invalidateQueueState', () => {
   it('invalidateQueueState zera o setor indicado', () => {
     let state = getInitialState();
     state = withEntry(state, 'farmacia', {
+      history: [call(10)],
       normalCurrent: 10,
       priorityCurrent: 7,
-      history: [call(10)],
     });
     state = withEntry(state, 'recepcao', {
-      normalCurrent: 22,
       history: [call(22)],
+      normalCurrent: 22,
     });
     saveQueueState(state);
 
@@ -218,9 +218,9 @@ describe('readQueueState / saveQueueState / invalidateQueueState', () => {
   it("invalidateQueueState mantém o '---' (NO_PASSWORD) em ambos os campos", () => {
     saveQueueState(
       withEntry(getInitialState(), 'farmacia', {
+        history: [call(10)],
         normalCurrent: 10,
         priorityCurrent: 3,
-        history: [call(10)],
       }),
     );
 
@@ -293,10 +293,10 @@ describe('clearHistoryFromNewDay', () => {
     const oldDate = '2020-01-01';
     const state = {
       farmacia: {
-        normalCurrent: 5,
-        priorityCurrent: 2,
         history: [call(1)],
         historyDate: oldDate,
+        normalCurrent: 5,
+        priorityCurrent: 2,
       },
     };
     const next = clearHistoryFromNewDay(state);
@@ -341,8 +341,8 @@ describe('withQueueLock', () => {
 
   it('fallback: adquire lock e remove ao final', async () => {
     Object.defineProperty(navigator, 'locks', {
-      value: undefined,
       configurable: true,
+      value: undefined,
     });
     const cb = vi.fn().mockResolvedValue('done');
     const result = await withQueueLock(cb);
@@ -352,8 +352,8 @@ describe('withQueueLock', () => {
 
   it('fallback: espera lock expirado e não libera o de outros', async () => {
     Object.defineProperty(navigator, 'locks', {
-      value: undefined,
       configurable: true,
+      value: undefined,
     });
     vi.useFakeTimers();
     try {
@@ -423,9 +423,9 @@ function isoLocal(offsetDays = 0, hour = 12, minute = 0) {
 function seedSector(
   sector: string,
   {
+    history = [],
     normalCurrent = null,
     priorityCurrent = null,
-    history = [],
   }: {
     history?: QueueHistoryEntry[];
     normalCurrent?: CurrentPassword;
@@ -433,9 +433,9 @@ function seedSector(
   } = {},
 ): QueueState {
   const state = withEntry(getInitialState(), sector, {
+    history,
     normalCurrent,
     priorityCurrent,
-    history,
   });
   saveQueueState(state);
   return state;
@@ -467,7 +467,7 @@ describe('cleanHistory', () => {
 
 describe('reconcileQueueFromCalls', () => {
   it('retrato vazio zera a senha atual e o histórico', () => {
-    seedSector('farmacia', { normalCurrent: 42, history: [call(42)] });
+    seedSector('farmacia', { history: [call(42)], normalCurrent: 42 });
 
     reconcileQueueFromCalls('farmacia', []);
 
@@ -497,7 +497,7 @@ describe('reconcileQueueFromCalls', () => {
 
   it('guarda de corrida: não regride quando o retrato já contém calls[0]', () => {
     // `callNextNumber` grava a senha atual ANTES de o servidor confirmar.
-    seedSector('farmacia', { normalCurrent: 43, history: [call(42)] });
+    seedSector('farmacia', { history: [call(42)], normalCurrent: 43 });
 
     // Retrato que partiu antes do commit: ainda não sabe da 43.
     reconcileQueueFromCalls('farmacia', [call(42), call(41)]);
@@ -509,7 +509,7 @@ describe('reconcileQueueFromCalls', () => {
   });
 
   it('adota quando outro dispositivo chamou mais novo', () => {
-    seedSector('farmacia', { normalCurrent: 42, history: [call(42)] });
+    seedSector('farmacia', { history: [call(42)], normalCurrent: 42 });
 
     reconcileQueueFromCalls('farmacia', [call(44), call(43), call(42)]);
 
@@ -531,7 +531,7 @@ describe('reconcileQueueFromCalls', () => {
 
   it('não toca o outro setor', () => {
     seedSector('farmacia');
-    seedSector('recepcao', { normalCurrent: 77, history: [call(77)] });
+    seedSector('recepcao', { history: [call(77)], normalCurrent: 77 });
 
     reconcileQueueFromCalls('farmacia', [call(40)]);
 
@@ -550,7 +550,7 @@ describe('reconcileQueueFromCalls', () => {
 
   it("normaliza 'preferential' para 'preferencial'", () => {
     reconcileQueueFromCalls('farmacia', [
-      { number: 5, type: 'preferential', time: '14:30' },
+      { number: 5, time: '14:30', type: 'preferential' },
     ]);
 
     const state = readQueueState().farmacia;
@@ -561,8 +561,8 @@ describe('reconcileQueueFromCalls', () => {
 
   it('funde em vez de substituir — preserva entrada local ausente do servidor', () => {
     seedSector('farmacia', {
-      normalCurrent: 43,
       history: [call(43), call(42)],
+      normalCurrent: 43,
     });
 
     reconcileQueueFromCalls('farmacia', [call(42)]);
@@ -573,7 +573,7 @@ describe('reconcileQueueFromCalls', () => {
   });
 
   it('invalida o memo do getQueueSnapshot', () => {
-    seedSector('farmacia', { normalCurrent: 42, history: [call(42)] });
+    seedSector('farmacia', { history: [call(42)], normalCurrent: 42 });
     expect(getQueueSnapshot().farmacia.normalCurrent).toBe(42);
 
     reconcileQueueFromCalls('farmacia', []);
@@ -592,7 +592,7 @@ describe('reconcileQueueFromCalls', () => {
   });
 
   it('aceita um retrato ausente (undefined) como vazio', () => {
-    seedSector('farmacia', { normalCurrent: 42, history: [call(42)] });
+    seedSector('farmacia', { history: [call(42)], normalCurrent: 42 });
 
     reconcileQueueFromCalls('farmacia');
 
@@ -603,9 +603,9 @@ describe('reconcileQueueFromCalls', () => {
     const state = getInitialState();
     state.farmacia = {
       ...state.farmacia,
-      normalCurrent: 40,
       history: [call(40)],
       historyDate: dayKey(-1),
+      normalCurrent: 40,
     };
     saveQueueState(state);
 
@@ -626,9 +626,9 @@ describe('reconcileQueueFromCalls', () => {
     const state = getInitialState();
     state.farmacia = {
       ...state.farmacia,
-      normalCurrent: 40,
       history: [call(40)],
       historyDate: dayKey(-1),
+      normalCurrent: 40,
     };
     saveQueueState(state);
 

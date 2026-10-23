@@ -44,9 +44,9 @@ export function authRepoContract(
     describe('resolveLoginEmail()', () => {
       it('retorna email para username válido', async () => {
         const { username } = await seedUser({
-          username: 'teste.resolver',
-          password: '123456',
           full_name: 'Teste Resolver',
+          password: '123456',
+          username: 'teste.resolver',
         });
         const email = await repo.resolveLoginEmail(username);
         expect(typeof email).toBe('string');

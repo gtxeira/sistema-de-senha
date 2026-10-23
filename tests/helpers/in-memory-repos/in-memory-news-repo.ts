@@ -56,19 +56,19 @@ export class InMemoryNewsRepository implements NewsRepository {
     const item: StoredNews = {
       id,
       title: title.trim(),
-      image_url: imageUrl,
       active: true,
       created_at: new Date(),
+      image_url: imageUrl,
     };
     this.#news.set(id, item);
 
     return {
-      success: true,
       news: {
         id: String(id),
         title: item.title,
         image: imageUrl,
       },
+      success: true,
     };
   }
 
@@ -110,9 +110,9 @@ export class InMemoryNewsRepository implements NewsRepository {
     const item: StoredNews = {
       id,
       title: data.title || `News ${Date.now()}`,
-      image_url: data.image || `https://fake.storage/news/${id}.jpg`,
       active: true,
       created_at: new Date(),
+      image_url: data.image || `https://fake.storage/news/${id}.jpg`,
     };
     this.#news.set(id, item);
     return { id, title: item.title };

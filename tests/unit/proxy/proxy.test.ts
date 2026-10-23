@@ -27,7 +27,6 @@ interface ProxyRequest {
 // Mock auth() pass-through: o valor do cookie de sessão É o JSON do usuário,
 // então cada teste monta a sessão que quiser (permissões, setor, frescor).
 vi.mock('@/auth', () => ({
-  SESSION_COOKIE_NAME: 'authjs.session-token',
   auth:
     (fn: (req: ProxyRequest) => Response) =>
     (req: ProxyRequest): Response => {
@@ -35,6 +34,7 @@ vi.mock('@/auth', () => ({
       req.auth = sessionCookie ? { user: JSON.parse(sessionCookie) } : null;
       return fn(req);
     },
+  SESSION_COOKIE_NAME: 'authjs.session-token',
 }));
 
 // Import the default export (auth-wrapped proxy)
@@ -57,10 +57,10 @@ function freshUser(overrides: Partial<FreshUser> = {}): FreshUser {
   return {
     id: 'u1',
     name: 'Teste',
-    sector: 'farmacia',
-    permissions: [...ALL_PERMISSIONS],
     authAt: now,
+    permissions: [...ALL_PERMISSIONS],
     permsAt: now,
+    sector: 'farmacia',
     ...overrides,
   };
 }
@@ -83,11 +83,11 @@ function makeRequest(
     cookies[REFRESH_COOKIE_NAME] = { value: refreshToken };
   }
   return {
-    nextUrl: Object.assign(new URL(url), { pathname }),
-    url,
     cookies: {
       get: (name) => cookies[name],
     },
+    nextUrl: Object.assign(new URL(url), { pathname }),
+    url,
   };
 }
 
@@ -273,8 +273,8 @@ describe('proxy — permissões de tela', () => {
 describe('proxy — escopo de setor em /monitor', () => {
   it('atendente vê o monitor do PRÓPRIO setor', () => {
     const user = freshUser({
-      sector: 'farmacia',
       permissions: ['tela.monitor'],
+      sector: 'farmacia',
     });
     const res = proxy(makeRequest('/monitor/farmacia', user));
     expect(locationHeader(res)).toBeNull();
@@ -282,8 +282,8 @@ describe('proxy — escopo de setor em /monitor', () => {
 
   it('atendente NÃO vê o monitor de OUTRO setor', () => {
     const user = freshUser({
-      sector: 'farmacia',
       permissions: ['tela.home', 'tela.monitor'],
+      sector: 'farmacia',
     });
     const res = proxy(makeRequest('/monitor/recepcao', user));
     expect(locationHeader(res)).toMatch(/\/home$/);
@@ -291,8 +291,8 @@ describe('proxy — escopo de setor em /monitor', () => {
 
   it('setores.todos.ver libera qualquer monitor', () => {
     const user = freshUser({
-      sector: 'farmacia',
       permissions: ['tela.monitor', SECTORS_VIEW_ALL],
+      sector: 'farmacia',
     });
     const res = proxy(makeRequest('/monitor/recepcao', user));
     expect(locationHeader(res)).toBeNull();

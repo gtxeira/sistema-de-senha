@@ -34,8 +34,8 @@ describe('/api/users — integration', () => {
   describe('GET', () => {
     it('retorna lista de usuários', async () => {
       const user = await seedTestUser({
-        username: `test.get.user.${Date.now()}`,
         full_name: 'GET Test User',
+        username: `test.get.user.${Date.now()}`,
       });
       createdUsernames.push(user.username);
 
@@ -65,11 +65,11 @@ describe('/api/users — integration', () => {
       const username = `test.post.user.${Date.now()}`;
       const { POST } = await importRoute();
       const req = routeRequest('http://localhost/api/users', {
-        username,
-        password: '123456',
         full_name: 'Post Test User',
+        password: '123456',
         role: 'attendant',
         sector_id: 'farmacia',
+        username,
       });
       const res = await POST(req);
       const body = await readJson<UserSaveBody>(res);
@@ -93,9 +93,9 @@ describe('/api/users — integration', () => {
     it('retorna 400 com username inválido', async () => {
       const { POST } = await importRoute();
       const req = routeRequest('http://localhost/api/users', {
-        username: '!invalido!',
-        password: '123456',
         full_name: 'Test',
+        password: '123456',
+        username: '!invalido!',
       });
       const res = await POST(req);
 
@@ -107,9 +107,9 @@ describe('/api/users — integration', () => {
     it('retorna 400 sem senha', async () => {
       const { POST } = await importRoute();
       const req = routeRequest('http://localhost/api/users', {
-        username: `test.nopw.user.${Date.now()}`,
-        password: '',
         full_name: 'Test',
+        password: '',
+        username: `test.nopw.user.${Date.now()}`,
       });
       const res = await POST(req);
 
@@ -119,9 +119,9 @@ describe('/api/users — integration', () => {
     it('retorna 400 sem full_name', async () => {
       const { POST } = await importRoute();
       const req = routeRequest('http://localhost/api/users', {
-        username: `test.noname.user.${Date.now()}`,
-        password: '123456',
         full_name: '',
+        password: '123456',
+        username: `test.noname.user.${Date.now()}`,
       });
       const res = await POST(req);
 
@@ -130,14 +130,14 @@ describe('/api/users — integration', () => {
 
     it('retorna 409 com username duplicado', async () => {
       const username = `test.dup.user.${Date.now()}`;
-      await seedTestUser({ username, full_name: 'Original' });
+      await seedTestUser({ full_name: 'Original', username });
       createdUsernames.push(username);
 
       const { POST } = await importRoute();
       const req = routeRequest('http://localhost/api/users', {
-        username,
-        password: '123456',
         full_name: 'Duplicado',
+        password: '123456',
+        username,
       });
       const res = await POST(req);
 
@@ -150,9 +150,9 @@ describe('/api/users — integration', () => {
       const username = `test.defaults.user.${Date.now()}`;
       const { POST } = await importRoute();
       const req = routeRequest('http://localhost/api/users', {
-        username,
-        password: '123456',
         full_name: 'Defaults User',
+        password: '123456',
+        username,
       });
       const res = await POST(req);
       const body = await readJson<UserSaveBody>(res);
@@ -169,9 +169,9 @@ describe('/api/users — integration', () => {
       const username = `  ${base}  `;
       const { POST } = await importRoute();
       const req = routeRequest('http://localhost/api/users', {
-        username,
-        password: '123456',
         full_name: 'Trim User',
+        password: '123456',
+        username,
       });
       const res = await POST(req);
       const body = await readJson<UserSaveBody>(res);
@@ -205,7 +205,7 @@ describe('/api/users — integration', () => {
 
     it('remove usuário e não aparece mais na listagem', async () => {
       const username = `test.del.user.${Date.now()}`;
-      const user = await seedTestUser({ username, full_name: 'To Delete' });
+      const user = await seedTestUser({ full_name: 'To Delete', username });
       createdUsernames.push(username);
 
       const { DELETE } = await importRoute();
@@ -231,9 +231,9 @@ describe('/api/users — integration', () => {
       const { POST } = await importRoute();
       const postRes = await POST(
         routeRequest('http://localhost/api/users', {
-          username,
-          password: '123456',
           full_name: 'Flow User',
+          password: '123456',
+          username,
         }),
       );
       const postData = await readJson<UserSaveBody>(postRes);

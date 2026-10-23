@@ -13,9 +13,9 @@ export function routeRequest(url: string, body?: unknown): Request {
     body === undefined
       ? {}
       : {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
           body: JSON.stringify(body),
+          headers: { 'content-type': 'application/json' },
+          method: 'POST',
         };
   return new Request(url, init);
 }

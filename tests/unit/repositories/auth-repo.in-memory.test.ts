@@ -6,11 +6,11 @@ authRepoContract(() => {
 
   // Seed a default user for most tests
   repo.seedUser({
-    username: 'default.user',
-    password: 'default123',
     full_name: 'Default User',
+    password: 'default123',
     role: 'attendant',
     sector_id: 'farmacia',
+    username: 'default.user',
   });
 
   return {

@@ -78,10 +78,10 @@ function req(
   extra: { readonly body?: unknown; readonly formData?: FormData } = {},
 ) {
   return {
-    url,
-    json: () => Promise.resolve(extra.body ?? {}),
     formData: () => Promise.resolve(extra.formData ?? new FormData()),
+    json: () => Promise.resolve(extra.body ?? {}),
     signal: { addEventListener: vi.fn() },
+    url,
   };
 }
 
@@ -106,18 +106,18 @@ async function routeHandler(
 function session(overrides: SessionOverrides = {}): Session {
   const now = Date.now();
   return {
+    expires: new Date(now + 600000).toISOString(),
     user: {
       id: 'u1',
       name: 'Teste',
+      authAt: now,
       email: 'teste@local',
-      sector: 'farmacia',
       guiche: 'none',
       permissions: [],
-      authAt: now,
       permsAt: now,
+      sector: 'farmacia',
       ...overrides,
     },
-    expires: new Date(now + 600000).toISOString(),
   };
 }
 
@@ -147,84 +147,84 @@ describe('Autorização das rotas de API', () => {
     readonly permission: Permission | null;
   }> = [
     {
+      method: 'GET',
       path: '@/app/api/queue/events/route.ts',
-      method: 'GET',
       permission: null,
     },
     {
+      method: 'GET',
       path: '@/app/api/queue/recent/route.ts',
-      method: 'GET',
       permission: null,
     },
     {
-      path: '@/app/api/queue/call/route.ts',
       method: 'POST',
+      path: '@/app/api/queue/call/route.ts',
       permission: QUEUE_CALL,
     },
     {
-      path: '@/app/api/queue/recall/route.ts',
       method: 'POST',
+      path: '@/app/api/queue/recall/route.ts',
       permission: QUEUE_RECALL,
     },
     {
-      path: '@/app/api/queue/reset/route.ts',
       method: 'POST',
+      path: '@/app/api/queue/reset/route.ts',
       permission: QUEUE_RESET,
     },
     {
-      path: '@/app/api/queue/sync/route.ts',
       method: 'POST',
+      path: '@/app/api/queue/sync/route.ts',
       permission: QUEUE_SYNC,
     },
-    { path: '@/app/api/news/route.ts', method: 'GET', permission: null },
+    { method: 'GET', path: '@/app/api/news/route.ts', permission: null },
     {
-      path: '@/app/api/news/route.ts',
       method: 'POST',
+      path: '@/app/api/news/route.ts',
       permission: NEWS_CREATE,
     },
     {
-      path: '@/app/api/news/route.ts',
       method: 'DELETE',
+      path: '@/app/api/news/route.ts',
       permission: NEWS_DELETE,
     },
-    { path: '@/app/api/users/route.ts', method: 'GET', permission: USERS_VIEW },
+    { method: 'GET', path: '@/app/api/users/route.ts', permission: USERS_VIEW },
     {
-      path: '@/app/api/users/route.ts',
       method: 'POST',
+      path: '@/app/api/users/route.ts',
       permission: USERS_CREATE,
     },
     {
-      path: '@/app/api/users/route.ts',
       method: 'PATCH',
+      path: '@/app/api/users/route.ts',
       permission: USERS_EDIT,
     },
     {
-      path: '@/app/api/users/route.ts',
       method: 'DELETE',
+      path: '@/app/api/users/route.ts',
       permission: USERS_DELETE,
     },
-    { path: '@/app/api/roles/route.ts', method: 'GET', permission: USERS_VIEW },
+    { method: 'GET', path: '@/app/api/roles/route.ts', permission: USERS_VIEW },
     {
-      path: '@/app/api/roles/route.ts',
       method: 'POST',
+      path: '@/app/api/roles/route.ts',
       permission: ROLES_MANAGE,
     },
     {
-      path: '@/app/api/roles/route.ts',
       method: 'PATCH',
+      path: '@/app/api/roles/route.ts',
       permission: ROLES_MANAGE,
     },
     {
-      path: '@/app/api/roles/route.ts',
       method: 'DELETE',
+      path: '@/app/api/roles/route.ts',
       permission: ROLES_MANAGE,
     },
-    { path: '@/app/api/stats/route.ts', method: 'GET', permission: null },
+    { method: 'GET', path: '@/app/api/stats/route.ts', permission: null },
   ];
 
   const url = 'http://localhost/api/queue/recent?sector=farmacia&limit=1';
 
-  for (const { path, method, permission } of MATRIX) {
+  for (const { method, path, permission } of MATRIX) {
     const name = `${path.replace('@/app', '')} ${method}`;
 
     describe(name, () => {
@@ -288,8 +288,8 @@ describe('Frescor da sessão (auth_at / perms_at)', () => {
     const GET = await routeHandler('@/app/api/queue/recent/route.ts', 'GET');
     authMock.mockResolvedValue(
       session({
-        permissions: FULL,
         authAt: Date.now() - 13 * 60 * 60 * 1000,
+        permissions: FULL,
         // perms_at novo, mas auth_at vencido manda primeiro
         permsAt: Date.now(),
       }),
@@ -337,7 +337,7 @@ describe('Escopo de setor', () => {
   it('atendente opera a fila do PRÓPRIO setor', async () => {
     const POST = await routeHandler('@/app/api/queue/recall/route.ts', 'POST');
     authMock.mockResolvedValue(
-      session({ sector: 'farmacia', permissions: ATTENDANT }),
+      session({ permissions: ATTENDANT, sector: 'farmacia' }),
     );
 
     const res = await POST(
@@ -353,7 +353,7 @@ describe('Escopo de setor', () => {
   it('atendente NÃO opera a fila de OUTRO setor (403)', async () => {
     const POST = await routeHandler('@/app/api/queue/recall/route.ts', 'POST');
     authMock.mockResolvedValue(
-      session({ sector: 'farmacia', permissions: ATTENDANT }),
+      session({ permissions: ATTENDANT, sector: 'farmacia' }),
     );
 
     const res = await POST(
@@ -369,7 +369,7 @@ describe('Escopo de setor', () => {
   it('sem setor asignado e sem escopo, tudo é negado (403)', async () => {
     const POST = await routeHandler('@/app/api/queue/call/route.ts', 'POST');
     authMock.mockResolvedValue(
-      session({ sector: null, permissions: ATTENDANT }),
+      session({ permissions: ATTENDANT, sector: null }),
     );
 
     const res = await POST(
@@ -383,8 +383,8 @@ describe('Escopo de setor', () => {
     const POST = await routeHandler('@/app/api/queue/reset/route.ts', 'POST');
     authMock.mockResolvedValue(
       session({
-        sector: null,
         permissions: [...ATTENDANT, QUEUE_RESET, SECTORS_MANAGE_ALL],
+        sector: null,
       }),
     );
 
@@ -399,7 +399,7 @@ describe('Escopo de setor', () => {
   it('reset de TODOS os setores exige escopo de escrita em todos', async () => {
     const POST = await routeHandler('@/app/api/queue/reset/route.ts', 'POST');
     authMock.mockResolvedValue(
-      session({ sector: 'farmacia', permissions: [...ATTENDANT, QUEUE_RESET] }),
+      session({ permissions: [...ATTENDANT, QUEUE_RESET], sector: 'farmacia' }),
     );
 
     const res = await POST(
@@ -412,7 +412,7 @@ describe('Escopo de setor', () => {
   it('leitura de fila de outro setor exige setores.todos.ver', async () => {
     const GET = await routeHandler('@/app/api/queue/recent/route.ts', 'GET');
     authMock.mockResolvedValue(
-      session({ sector: 'farmacia', permissions: ATTENDANT }),
+      session({ permissions: ATTENDANT, sector: 'farmacia' }),
     );
 
     const res = await GET(
@@ -426,13 +426,13 @@ describe('Escopo de setor', () => {
     const GET = await routeHandler('@/app/api/stats/route.ts', 'GET');
 
     authMock.mockResolvedValue(
-      session({ sector: 'farmacia', permissions: ATTENDANT }),
+      session({ permissions: ATTENDANT, sector: 'farmacia' }),
     );
     const negado = await GET(req('http://localhost/api/stats?days=7'));
     expect(negado.status).toBe(403);
 
     authMock.mockResolvedValue(
-      session({ sector: null, permissions: [...ATTENDANT, SECTORS_VIEW_ALL] }),
+      session({ permissions: [...ATTENDANT, SECTORS_VIEW_ALL], sector: null }),
     );
     const permitido = await GET(req('http://localhost/api/stats?days=7'));
     expect(permitido.status).not.toBe(401);
@@ -442,7 +442,7 @@ describe('Escopo de setor', () => {
   it('usuário com escopo lê e opera qualquer setor', async () => {
     const GET = await routeHandler('@/app/api/queue/recent/route.ts', 'GET');
     authMock.mockResolvedValue(
-      session({ sector: null, permissions: [...ATTENDANT, SECTORS_VIEW_ALL] }),
+      session({ permissions: [...ATTENDANT, SECTORS_VIEW_ALL], sector: null }),
     );
 
     const res = await GET(
@@ -489,7 +489,7 @@ describe('Gestão de cargos e permissões (RBAC)', () => {
 
     const created = await POST(
       req('http://localhost/api/roles', {
-        body: { key, name: 'Cargo Teste', permissions: ['tela.painel'] },
+        body: { name: 'Cargo Teste', key, permissions: ['tela.painel'] },
       }),
     );
     expect(created.status).toBe(200);
@@ -536,8 +536,8 @@ describe('Gestão de cargos e permissões (RBAC)', () => {
     const res = await POST(
       req('http://localhost/api/roles', {
         body: {
-          key: `x.${Date.now()}`,
           name: 'X',
+          key: `x.${Date.now()}`,
           permissions: ['permissao.fake'],
         },
       }),
@@ -549,9 +549,9 @@ describe('Gestão de cargos e permissões (RBAC)', () => {
   it('PATCH /api/users aplica overrides de permissão (grant/deny)', async () => {
     const PATCH = await routeHandler('@/app/api/users/route.ts', 'PATCH');
     const target = await seedTestUser({
-      username: `test.rbac.${Date.now()}`,
       full_name: 'Alvo RBAC',
       role: 'attendant',
+      username: `test.rbac.${Date.now()}`,
     });
     targetUserId = target.id;
 
@@ -561,8 +561,8 @@ describe('Gestão de cargos e permissões (RBAC)', () => {
           id: target.id,
           full_name: 'Alvo RBAC Editado',
           permissions: [
-            { permission: 'filas.resetar', granted: true },
-            { permission: 'filas.chamar', granted: false },
+            { granted: true, permission: 'filas.resetar' },
+            { granted: false, permission: 'filas.chamar' },
           ],
         },
       }),
@@ -572,8 +572,8 @@ describe('Gestão de cargos e permissões (RBAC)', () => {
     const body = await readJson<UserSaveBody>(res);
     expect(body.user.permissions).toEqual(
       expect.arrayContaining([
-        { permission: 'filas.resetar', granted: true },
-        { permission: 'filas.chamar', granted: false },
+        { granted: true, permission: 'filas.resetar' },
+        { granted: false, permission: 'filas.chamar' },
       ]),
     );
   });
@@ -581,9 +581,9 @@ describe('Gestão de cargos e permissões (RBAC)', () => {
   it('não é possível alterar o próprio cargo/situação (400)', async () => {
     const PATCH = await routeHandler('@/app/api/users/route.ts', 'PATCH');
     const me = await seedTestUser({
-      username: `test.self.${Date.now()}`,
       full_name: 'Eu Mesmo',
       role: 'admin',
+      username: `test.self.${Date.now()}`,
     });
     targetUserId = me.id;
 

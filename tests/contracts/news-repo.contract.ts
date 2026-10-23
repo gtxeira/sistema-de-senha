@@ -42,8 +42,8 @@ export function newsRepoContract(
           title: 'Notícia Teste',
           image: makeImage({
             name: 'foto.jpg',
-            type: 'image/jpeg',
             size: 2048,
+            type: 'image/jpeg',
           }),
         });
 
@@ -130,8 +130,8 @@ export function newsRepoContract(
  */
 function makeImage({
   name = 'test.jpg',
-  type = 'image/jpeg',
   size = 1024,
+  type = 'image/jpeg',
 }: {
   readonly name?: string;
   readonly size?: number;

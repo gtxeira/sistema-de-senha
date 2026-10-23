@@ -23,8 +23,8 @@ describe('/api/queue/sync — integration', () => {
     it('retorna 400 sem setor', async () => {
       const { POST } = await importRoute();
       const req = routeRequest('http://localhost/api/queue/sync', {
-        type: 'normal',
         nextNumber: 10,
+        type: 'normal',
       });
       const res = await POST(req);
 
@@ -34,9 +34,9 @@ describe('/api/queue/sync — integration', () => {
     it('retorna 400 com setor inválido', async () => {
       const { POST } = await importRoute();
       const req = routeRequest('http://localhost/api/queue/sync', {
+        nextNumber: 10,
         sector: 'invalido',
         type: 'normal',
-        nextNumber: 10,
       });
       const res = await POST(req);
 
@@ -46,9 +46,9 @@ describe('/api/queue/sync — integration', () => {
     it('retorna 400 com número < 0', async () => {
       const { POST } = await importRoute();
       const req = routeRequest('http://localhost/api/queue/sync', {
+        nextNumber: -1,
         sector: 'farmacia',
         type: 'normal',
-        nextNumber: -1,
       });
       const res = await POST(req);
 
@@ -58,9 +58,9 @@ describe('/api/queue/sync — integration', () => {
     it('retorna 400 com número > 999', async () => {
       const { POST } = await importRoute();
       const req = routeRequest('http://localhost/api/queue/sync', {
+        nextNumber: 1000,
         sector: 'farmacia',
         type: 'normal',
-        nextNumber: 1000,
       });
       const res = await POST(req);
 
@@ -81,9 +81,9 @@ describe('/api/queue/sync — integration', () => {
     it('sincroniza com sucesso (farmacia, normal)', async () => {
       const { POST } = await importRoute();
       const req = routeRequest('http://localhost/api/queue/sync', {
+        nextNumber: 45,
         sector: 'farmacia',
         type: 'normal',
-        nextNumber: 45,
       });
       const res = await POST(req);
       const body = await readJson<QueueSyncBody>(res);
@@ -99,9 +99,9 @@ describe('/api/queue/sync — integration', () => {
     it('sincroniza com sucesso (recepcao, preferencial)', async () => {
       const { POST } = await importRoute();
       const req = routeRequest('http://localhost/api/queue/sync', {
+        nextNumber: 100,
         sector: 'recepcao',
         type: 'preferencial',
-        nextNumber: 100,
       });
       const res = await POST(req);
       const body = await readJson<QueueSyncBody>(res);
@@ -117,15 +117,15 @@ describe('/api/queue/sync — integration', () => {
     it('persiste o número no banco de dados', async () => {
       const { POST } = await importRoute();
       const req = routeRequest('http://localhost/api/queue/sync', {
+        nextNumber: 45,
         sector: 'farmacia',
         type: 'normal',
-        nextNumber: 45,
       });
       await POST(req);
 
       const seq = await prisma.queue_sequences.findUnique({
         where: {
-          sector_id_call_type: { sector_id: 'farmacia', call_type: 'normal' },
+          sector_id_call_type: { call_type: 'normal', sector_id: 'farmacia' },
         },
       });
       expect(seq?.current_number).toBe(44);
@@ -134,9 +134,9 @@ describe('/api/queue/sync — integration', () => {
     it('permite chamar senha após sincronização', async () => {
       const { POST: syncPost } = await importRoute();
       const syncReq = routeRequest('http://localhost/api/queue/sync', {
+        nextNumber: 45,
         sector: 'farmacia',
         type: 'normal',
-        nextNumber: 45,
       });
       await syncPost(syncReq);
 

@@ -46,20 +46,20 @@ describe('/api/queue/recent — integration', () => {
     it('retorna chamadas recentes do setor', async () => {
       const repo = await importQueueRepo();
       await repo.saveCall({
-        sector: 'farmacia',
+        attendantId: null,
+        callType: 'normal',
         number: 1,
         numberStr: 'N001',
+        sector: 'farmacia',
         sequenceType: 'normal',
-        callType: 'normal',
-        attendantId: null,
       });
       await repo.saveCall({
-        sector: 'farmacia',
+        attendantId: null,
+        callType: 'normal',
         number: 2,
         numberStr: 'N002',
+        sector: 'farmacia',
         sequenceType: 'normal',
-        callType: 'normal',
-        attendantId: null,
       });
 
       const { GET } = await importRoute();
@@ -82,12 +82,12 @@ describe('/api/queue/recent — integration', () => {
       const repo = await importQueueRepo();
       for (let i = 1; i <= 5; i++) {
         await repo.saveCall({
-          sector: 'farmacia',
+          attendantId: null,
+          callType: 'normal',
           number: i,
           numberStr: `N${String(i).padStart(3, '0')}`,
+          sector: 'farmacia',
           sequenceType: 'normal',
-          callType: 'normal',
-          attendantId: null,
         });
       }
 
@@ -117,20 +117,20 @@ describe('/api/queue/recent — integration', () => {
     it('retorna apenas chamadas do setor solicitado', async () => {
       const repo = await importQueueRepo();
       await repo.saveCall({
-        sector: 'farmacia',
+        attendantId: null,
+        callType: 'normal',
         number: 1,
         numberStr: 'N001',
+        sector: 'farmacia',
         sequenceType: 'normal',
-        callType: 'normal',
-        attendantId: null,
       });
       await repo.saveCall({
-        sector: 'recepcao',
+        attendantId: null,
+        callType: 'normal',
         number: 1,
         numberStr: 'N001',
+        sector: 'recepcao',
         sequenceType: 'normal',
-        callType: 'normal',
-        attendantId: null,
       });
 
       const { GET } = await importRoute();
@@ -204,12 +204,12 @@ describe('/api/queue/recent — integration', () => {
     it('não devolve as chamadas anteriores ao reset', async () => {
       const repo = await importQueueRepo();
       await repo.saveCall({
-        sector: 'farmacia',
+        attendantId: null,
+        callType: 'normal',
         number: 1,
         numberStr: 'N001',
+        sector: 'farmacia',
         sequenceType: 'normal',
-        callType: 'normal',
-        attendantId: null,
       });
 
       await repo.resetSector('farmacia');
@@ -229,21 +229,21 @@ describe('/api/queue/recent — integration', () => {
     it('devolve as chamadas feitas depois do reset', async () => {
       const repo = await importQueueRepo();
       await repo.saveCall({
-        sector: 'farmacia',
+        attendantId: null,
+        callType: 'normal',
         number: 1,
         numberStr: 'N001',
+        sector: 'farmacia',
         sequenceType: 'normal',
-        callType: 'normal',
-        attendantId: null,
       });
       await repo.resetSector('farmacia');
       await repo.saveCall({
-        sector: 'farmacia',
+        attendantId: null,
+        callType: 'normal',
         number: 1,
         numberStr: 'N001',
+        sector: 'farmacia',
         sequenceType: 'normal',
-        callType: 'normal',
-        attendantId: null,
       });
 
       const { GET } = await importRoute();
@@ -274,10 +274,10 @@ describe('/api/queue/recent — integration', () => {
         user: {
           id: 'u1',
           name: 'Atendente',
-          sector: 'farmacia',
-          permissions: [],
           authAt: now,
+          permissions: [],
           permsAt: now,
+          sector: 'farmacia',
         },
       });
 

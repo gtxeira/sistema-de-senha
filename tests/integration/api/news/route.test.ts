@@ -50,8 +50,8 @@ function isUrl(str?: string) {
 
 function makeImage({
   name = 'test.jpg',
-  type = 'image/jpeg',
   size = 1024,
+  type = 'image/jpeg',
 }: { name?: string; size?: number; type?: string; } = {}) {
   const data = new Uint8Array(size);
   return new File([data], name, { type });
@@ -163,8 +163,8 @@ describe('/api/news — integration', () => {
       const { POST } = await importRoute();
       const res = await POST(
         new Request('http://localhost/api/news', {
-          method: 'POST',
           body: form,
+          method: 'POST',
         }),
       );
 
@@ -180,8 +180,8 @@ describe('/api/news — integration', () => {
       const { POST } = await importRoute();
       const res = await POST(
         new Request('http://localhost/api/news', {
-          method: 'POST',
           body: form,
+          method: 'POST',
         }),
       );
 
@@ -201,8 +201,8 @@ describe('/api/news — integration', () => {
       const { POST } = await importRoute();
       const res = await POST(
         new Request('http://localhost/api/news', {
-          method: 'POST',
           body: form,
+          method: 'POST',
         }),
       );
 
@@ -219,8 +219,8 @@ describe('/api/news — integration', () => {
       const { POST } = await importRoute();
       const res = await POST(
         new Request('http://localhost/api/news', {
-          method: 'POST',
           body: form,
+          method: 'POST',
         }),
       );
 
@@ -253,8 +253,8 @@ describe('/api/news — integration', () => {
       const { POST } = await importRoute();
       const res = await POST(
         new Request('http://localhost/api/news', {
-          method: 'POST',
           body: form,
+          method: 'POST',
         }),
       );
 
@@ -278,8 +278,8 @@ describe('/api/news — integration', () => {
       const { POST } = await importRoute();
       const res = await POST(
         new Request('http://localhost/api/news', {
-          method: 'POST',
           body: form,
+          method: 'POST',
         }),
       );
 
@@ -375,8 +375,8 @@ describe('/api/news — integration', () => {
       const { POST } = await importRoute();
       const postRes = await POST(
         new Request('http://localhost/api/news', {
-          method: 'POST',
           body: form,
+          method: 'POST',
         }),
       );
       expect(postRes.status).toBe(200);

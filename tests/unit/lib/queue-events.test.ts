@@ -96,14 +96,14 @@ let fetchStub: ReturnType<typeof stubFetch> | undefined;
 /** Enfileira respostas de /api/queue/recent, uma por chamada. */
 function stubFetch({
   calls = [],
-  resetAt = null,
   fail = false,
+  resetAt = null,
 }: StubOptions = {}) {
   const queue = [...calls];
   const mock = vi.fn(async (_url: unknown): Promise<StubResponse> => {
     if (fail) return { ok: false, status: 500 };
     const next = queue.shift() ?? { calls: [], resetAt };
-    return { ok: true, json: async () => next };
+    return { json: async () => next, ok: true };
   });
   fetchStub = mock;
   return mock;
@@ -122,10 +122,10 @@ function seedQueue(sector: SectorId, number: number): void {
   const state = getInitialState();
   state[sector] = {
     ...state[sector],
-    normalCurrent: number,
     history: [
       { number, type: 'normal', createdAt: '2026-10-22T17:30:00.000Z' },
     ],
+    normalCurrent: number,
   };
   saveQueueState(state);
 }
@@ -229,7 +229,6 @@ describe('queue-events (singleton)', () => {
       const unsub = subscribeQueueSector('farmacia');
 
       FakeEventSource.latest().emit({
-        type: SSE_EVENT_TYPES.CALL,
         call: {
           id: 'x',
           number: 7,
@@ -237,6 +236,7 @@ describe('queue-events (singleton)', () => {
           createdAt: '2026-10-22T17:30:00.000Z',
         },
         resetAt: null,
+        type: SSE_EVENT_TYPES.CALL,
       });
 
       expect(getQueueEventsSnapshot().lastCall.farmacia?.number).toBe(7);
@@ -248,7 +248,6 @@ describe('queue-events (singleton)', () => {
       const unsub = subscribeQueueSector('farmacia');
 
       FakeEventSource.latest().emit({
-        type: SSE_EVENT_TYPES.RECALL,
         call: {
           id: 'x',
           number: 7,
@@ -256,6 +255,7 @@ describe('queue-events (singleton)', () => {
           createdAt: '2026-10-22T17:30:00.000Z',
         },
         resetAt: null,
+        type: SSE_EVENT_TYPES.RECALL,
       });
 
       expect(getQueueEventsSnapshot().lastCall.farmacia?.isRecall).toBe(true);
@@ -269,7 +269,6 @@ describe('queue-events (singleton)', () => {
       const unsubSnap = subscribeQueueEvents(listener);
 
       FakeEventSource.latest().emit({
-        type: SSE_EVENT_TYPES.CALL,
         call: {
           id: 'x',
           number: 7,
@@ -277,6 +276,7 @@ describe('queue-events (singleton)', () => {
           createdAt: '2026-10-22T17:30:00.000Z',
         },
         resetAt: null,
+        type: SSE_EVENT_TYPES.CALL,
       });
 
       expect(listener).toHaveBeenCalled();
@@ -296,8 +296,8 @@ describe('queue-events (singleton)', () => {
 
     it('initialSync preenche o retrato e deixa lastCall null', async () => {
       globalScope.fetch = vi.fn(async () => ({
-        ok: true,
         json: async () => ({ calls: queueCalls(), resetAt: null }),
+        ok: true,
       }));
       const unsub = subscribeQueueSector('farmacia');
       await vi.advanceTimersByTimeAsync(0);
@@ -317,7 +317,6 @@ describe('queue-events (singleton)', () => {
       await vi.advanceTimersByTimeAsync(0);
 
       FakeEventSource.latest().emit({
-        type: SSE_EVENT_TYPES.CALL,
         call: {
           id: 'c1',
           number: 40,
@@ -325,11 +324,11 @@ describe('queue-events (singleton)', () => {
           createdAt: '2026-10-22T17:30:00.000Z',
         },
         resetAt: null,
+        type: SSE_EVENT_TYPES.CALL,
       });
       expect(getQueueEventsSnapshot().calls.farmacia).toHaveLength(1);
 
       FakeEventSource.latest().emit({
-        type: SSE_EVENT_TYPES.RECALL,
         call: {
           id: 'c1',
           number: 40,
@@ -337,6 +336,7 @@ describe('queue-events (singleton)', () => {
           createdAt: '2026-10-22T17:30:00.000Z',
         },
         resetAt: null,
+        type: SSE_EVENT_TYPES.RECALL,
       });
 
       expect(getQueueEventsSnapshot().lastCall.farmacia?.isRecall).toBe(true);
@@ -351,8 +351,8 @@ describe('queue-events (singleton)', () => {
   describe('retrato (calls) via polling', () => {
     it('initialSync busca HISTORY_LIMITS.painel (100) para caber no histórico do painel', async () => {
       const fetchMock = vi.fn(async (_url: unknown) => ({
-        ok: true,
         json: async () => ({ calls: [], resetAt: null }),
+        ok: true,
       }));
       globalScope.fetch = fetchMock;
 
@@ -376,14 +376,14 @@ describe('queue-events (singleton)', () => {
         if (!servedPortrait) {
           servedPortrait = true;
           return {
-            ok: true,
             json: async () => ({ calls: full, resetAt: null }),
+            ok: true,
           };
         }
         // O polling pede só 5 linhas.
         return {
-          ok: true,
           json: async () => ({ calls: full.slice(0, 5), resetAt: null }),
+          ok: true,
         };
       });
 
@@ -422,8 +422,8 @@ describe('queue-events (singleton)', () => {
         call += 1;
         if (call === 1) return { ok: false }; // o sync inicial falhou
         return {
-          ok: true,
           json: async () => ({ calls: queueCalls(), resetAt: null }),
+          ok: true,
         };
       });
 
@@ -446,7 +446,6 @@ describe('queue-events (singleton)', () => {
       globalScope.fetch = vi.fn(async (url: unknown) => {
         const sector = String(url).match(/sector=(\w+)/)?.[1];
         return {
-          ok: true,
           json: async () => ({
             calls: [
               {
@@ -458,6 +457,7 @@ describe('queue-events (singleton)', () => {
             ],
             resetAt: null,
           }),
+          ok: true,
         };
       });
 
@@ -502,7 +502,6 @@ describe('queue-events (singleton)', () => {
 
       // O servidor foi resetado em outro dispositivo.
       FakeEventSource.latest().emit({
-        type: SSE_EVENT_TYPES.CALL,
         call: {
           id: 'novo',
           number: 1,
@@ -510,6 +509,7 @@ describe('queue-events (singleton)', () => {
           createdAt: '2026-10-22T18:00:00.000Z',
         },
         resetAt: '2026-09-30T10:00:00.000Z',
+        type: SSE_EVENT_TYPES.CALL,
       });
 
       const state = readQueueState().farmacia;
@@ -533,7 +533,6 @@ describe('queue-events (singleton)', () => {
 
       // Reset + chamada no mesmo instante: a fila antiga não pode sobreviver.
       FakeEventSource.latest().emit({
-        type: SSE_EVENT_TYPES.CALL,
         call: {
           id: 'novo',
           number: 3,
@@ -541,6 +540,7 @@ describe('queue-events (singleton)', () => {
           createdAt: '2026-10-22T18:00:00.000Z',
         },
         resetAt: '2026-09-30T10:00:00.000Z',
+        type: SSE_EVENT_TYPES.CALL,
       });
 
       expect(readQueueState().farmacia.normalCurrent).toBeNull();
@@ -557,8 +557,8 @@ describe('queue-events (singleton)', () => {
       await vi.advanceTimersByTimeAsync(0);
 
       FakeEventSource.latest().emit({
-        type: SSE_EVENT_TYPES.RESET,
         resetAt: '2026-09-30T11:00:00.000Z',
+        type: SSE_EVENT_TYPES.RESET,
       });
 
       expect(readQueueState().farmacia.normalCurrent).toBeNull();
@@ -577,7 +577,6 @@ describe('queue-events (singleton)', () => {
 
       // Adota o marcador.
       FakeEventSource.latest().emit({
-        type: SSE_EVENT_TYPES.CALL,
         call: {
           id: 'a',
           number: 1,
@@ -585,12 +584,12 @@ describe('queue-events (singleton)', () => {
           createdAt: '2026-10-22T18:00:00.000Z',
         },
         resetAt: '2026-09-30T10:00:00.000Z',
+        type: SSE_EVENT_TYPES.CALL,
       });
       seedQueue('farmacia', 99);
 
       // Mesma chamada, mesmo marcador: nada a invalidar.
       FakeEventSource.latest().emit({
-        type: SSE_EVENT_TYPES.CALL,
         call: {
           id: 'b',
           number: 2,
@@ -598,6 +597,7 @@ describe('queue-events (singleton)', () => {
           createdAt: '2026-10-22T18:01:00.000Z',
         },
         resetAt: '2026-09-30T10:00:00.000Z',
+        type: SSE_EVENT_TYPES.CALL,
       });
 
       expect(readQueueState().farmacia.normalCurrent).toBe(99);
@@ -611,8 +611,8 @@ describe('queue-events (singleton)', () => {
           // 1ª chamada: sync inicial, sem reset. 2ª em diante: já resetado.
           const resetAt = state <= 1 ? null : '2026-09-30T12:00:00.000Z';
           return {
-            ok: true,
             json: async () => ({ calls: [], resetAt }),
+            ok: true,
           };
         }
         return { ok: false };
@@ -661,7 +661,6 @@ describe('queue-events (singleton)', () => {
       await vi.advanceTimersByTimeAsync(0);
 
       FakeEventSource.latest().emit({
-        type: SSE_EVENT_TYPES.CALL,
         call: {
           id: 'n',
           number: 1,
@@ -669,6 +668,7 @@ describe('queue-events (singleton)', () => {
           createdAt: '2026-10-22T18:00:00.000Z',
         },
         resetAt: '2026-09-30T10:00:00.000Z',
+        type: SSE_EVENT_TYPES.CALL,
       });
 
       const state = readQueueState();
@@ -708,8 +708,8 @@ describe('queue-events (singleton)', () => {
           history: [
             {
               number: lastCall.number,
-              type: callType,
               time: formatClock(lastCall.createdAt),
+              type: callType,
               createdAt: lastCall.createdAt,
             },
             ...latest.history,
@@ -726,11 +726,11 @@ describe('queue-events (singleton)', () => {
       globalScope.fetch = vi.fn(async (url: unknown) => {
         if (!String(url).includes('/api/queue/recent')) return { ok: false };
         return {
-          ok: true,
           json: async () =>
             phase === 1
               ? { calls: queueCalls('farmacia', 1), resetAt: null }
               : { calls: [], resetAt: RESET_AT },
+          ok: true,
         };
       });
 
@@ -738,7 +738,6 @@ describe('queue-events (singleton)', () => {
       const unsubFirst = subscribeQueueSector('farmacia');
       await vi.advanceTimersByTimeAsync(0);
       FakeEventSource.latest().emit({
-        type: SSE_EVENT_TYPES.CALL,
         call: {
           id: 'c40',
           number: 40,
@@ -746,6 +745,7 @@ describe('queue-events (singleton)', () => {
           createdAt: '2026-10-22T17:30:00.000Z',
         },
         resetAt: null,
+        type: SSE_EVENT_TYPES.CALL,
       });
       applyLiveCall('farmacia', lastEventOf('farmacia'));
       expect(readQueueState().farmacia.normalCurrent).toBe(40);
@@ -781,7 +781,6 @@ describe('queue-events (singleton)', () => {
       await vi.advanceTimersByTimeAsync(0);
 
       FakeEventSource.latest().emit({
-        type: SSE_EVENT_TYPES.CALL,
         call: {
           id: 'c1',
           number: 40,
@@ -789,13 +788,14 @@ describe('queue-events (singleton)', () => {
           createdAt: '2026-10-22T17:30:00.000Z',
         },
         resetAt: null,
+        type: SSE_EVENT_TYPES.CALL,
       });
       expect(lastEventOf('farmacia')).toBeTruthy();
       expect(portraitOf('farmacia')).toHaveLength(1);
 
       FakeEventSource.latest().emit({
-        type: SSE_EVENT_TYPES.RESET,
         resetAt: '2026-09-30T10:00:00.000Z',
+        type: SSE_EVENT_TYPES.RESET,
       });
 
       // Sensível a `applyResetMarker` não limpar o snapshot: o consumidor lê
@@ -812,7 +812,6 @@ describe('queue-events (singleton)', () => {
       await vi.advanceTimersByTimeAsync(0);
 
       FakeEventSource.latest().emit({
-        type: SSE_EVENT_TYPES.CALL,
         call: {
           id: 'c1',
           number: 40,
@@ -820,6 +819,7 @@ describe('queue-events (singleton)', () => {
           createdAt: '2026-10-22T17:30:00.000Z',
         },
         resetAt: null,
+        type: SSE_EVENT_TYPES.CALL,
       });
       expect(lastEventOf('farmacia')).toBeTruthy();
       expect(portraitOf('farmacia')).toHaveLength(1);
