@@ -56,10 +56,10 @@ const monitorServerSnapshot: QueueState = Object.fromEntries(
   Object.keys(SECTORS).map((key) => [
     key,
     {
-      normalCurrent: NO_PASSWORD,
-      priorityCurrent: NO_PASSWORD,
       history: [],
       historyDate: '',
+      normalCurrent: NO_PASSWORD,
+      priorityCurrent: NO_PASSWORD,
     },
   ]),
 );
@@ -171,7 +171,7 @@ export default function MonitorPage({ params }: MonitorPageProps) {
   // Realtime events via SSE with polling fallback
   const { calls, lastCall } = useQueueEvents(sector);
 
-  const { timeString, dateString } = useServerClock();
+  const { dateString, timeString } = useServerClock();
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [calling, setCalling] = useState(false);
 
@@ -223,8 +223,8 @@ export default function MonitorPage({ params }: MonitorPageProps) {
     const newEntry = {
       id: lastCall.id,
       number: lastCall.number,
-      type: callType,
       time: formatClock(lastCall.createdAt),
+      type: callType,
       createdAt: lastCall.createdAt,
     };
 

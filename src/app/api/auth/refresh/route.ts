@@ -37,8 +37,8 @@ export async function GET(request: Request) {
   }
 
   const minted = await mintSession(request, jar, outcome.userId, {
-    rotatedRaw: outcome.rotatedRaw,
     expiresAt: outcome.expiresAt,
+    rotatedRaw: outcome.rotatedRaw,
   });
   if (minted.error) {
     return NextResponse.redirect(new URL('/login', request.url));
@@ -60,8 +60,8 @@ export async function POST(request: Request) {
   }
 
   const minted = await mintSession(request, jar, outcome.userId, {
-    rotatedRaw: outcome.rotatedRaw,
     expiresAt: outcome.expiresAt,
+    rotatedRaw: outcome.rotatedRaw,
   });
   if (minted.error) return minted.error;
 
@@ -125,12 +125,12 @@ function failureResponse(reason: RefreshFailure): NextResponse {
     // Outro fluxo do mesmo cliente acabou de renovar: o vencedor já
     // gravou os cookies. O caller deve repetir a leitura de sessão.
     return NextResponse.json(
-      { error: 'Session already refreshed.', code: 'refresh_conflict' },
+      { code: 'refresh_conflict', error: 'Session already refreshed.' },
       { status: 401 },
     );
   }
   return NextResponse.json(
-    { error: 'Session expired.', code: 'session_expired' },
+    { code: 'session_expired', error: 'Session expired.' },
     { status: 401 },
   );
 }
@@ -147,14 +147,14 @@ async function mintSession(
   request: Request,
   jar: CookieJar,
   userId: string,
-  { rotatedRaw, expiresAt }: { expiresAt: Date; rotatedRaw: string; },
+  { expiresAt, rotatedRaw }: { expiresAt: Date; rotatedRaw: string; },
 ): Promise<MintOutcome> {
   const user = await prisma.users.findUnique({
-    where: { id: userId },
     include: {
-      role: { include: { permissions: true } },
       permissions: true,
+      role: { include: { permissions: true } },
     },
+    where: { id: userId },
   });
 
   if (!user || !user.active) {
@@ -164,7 +164,7 @@ async function mintSession(
     jar.delete(REFRESH_COOKIE_NAME);
     return {
       error: NextResponse.json(
-        { error: 'Session expired.', code: 'session_expired' },
+        { code: 'session_expired', error: 'Session expired.' },
         { status: 401 },
       ),
     };
@@ -178,14 +178,14 @@ async function mintSession(
 
   // Mesmo formato de claims produzido pelo callback `jwt` em src/auth.ts.
   const token = {
-    sub: user.id,
     name: user.full_name,
+    authAt: now,
     email: user.email,
-    sector: user.sector_id,
     guiche: user.guiche_id,
     permissions,
-    authAt: now,
     permsAt: now,
+    sector: user.sector_id,
+    sub: user.id,
   };
 
   // `encode()` deriva a chave do token de AUTH_SECRET: sem ele o jose
@@ -195,19 +195,19 @@ async function mintSession(
   if (!secret) throw new Error('AUTH_SECRET não configurado');
 
   const value = await encode({
-    token,
-    secret,
     maxAge: ACCESS_TOKEN_MAX_AGE,
     salt: SESSION_COOKIE_NAME,
+    secret,
+    token,
   });
 
   const secure = isSecureRequest(request);
   jar.set(SESSION_COOKIE_NAME, value, {
     httpOnly: true,
+    maxAge: ACCESS_TOKEN_MAX_AGE,
+    path: '/',
     sameSite: 'lax',
     secure,
-    path: '/',
-    maxAge: ACCESS_TOKEN_MAX_AGE,
   });
   if (rotatedRaw) {
     jar.set(
@@ -231,9 +231,9 @@ async function rotateOrCreate(
     const result = await rotateRefreshToken(prisma, raw);
     if (!result.ok) return { failure: result.reason };
     return {
-      userId: result.userId,
-      rotatedRaw: result.raw,
       expiresAt: result.expiresAt,
+      rotatedRaw: result.raw,
+      userId: result.userId,
     };
   }
 
@@ -246,9 +246,9 @@ async function rotateOrCreate(
   if (!session?.user) return { failure: 'unauthenticated' };
   const issued = await issueRefreshToken(prisma, session.user.id);
   return {
-    userId: session.user.id,
-    rotatedRaw: issued.raw,
     expiresAt: issued.expiresAt,
+    rotatedRaw: issued.raw,
+    userId: session.user.id,
   };
 }
 

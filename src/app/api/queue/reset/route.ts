@@ -19,7 +19,7 @@ import { QUEUE_RESET } from '@/shared/permissions';
 ───────────────────────────────────────────────── */
 export async function POST(request: Request) {
   try {
-    const { session, error } = await requirePermission(QUEUE_RESET);
+    const { error, session } = await requirePermission(QUEUE_RESET);
     if (error) return error;
 
     const { sector } = await readJson<ResetRequestBody>(request);
@@ -52,8 +52,8 @@ export async function POST(request: Request) {
     const result = await resetSectors(sectorsToReset);
 
     return NextResponse.json({
-      success: true,
       sectors: result.sectors,
+      success: true,
     });
   } catch (error) {
     const status = errorStatus(error, 0);

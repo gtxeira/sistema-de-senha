@@ -31,9 +31,9 @@ export default function LoginPage() {
 
     try {
       const result = await signIn('credentials', {
-        username: login,
         password,
         redirect: false,
+        username: login,
       });
 
       if (result?.error) {

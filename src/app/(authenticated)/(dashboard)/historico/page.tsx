@@ -176,7 +176,6 @@ export default function HistoricoPage() {
   // (a regra `rules-of-hooks` acusa), e publicar antes do gate faz as ações
   // do cabeçalho aparecerem no primeiro render do client.
   useSetDashboardLayoutInfo({
-    sectorInfo,
     headerActions: (
       <>
         {canViewAllSectors && (
@@ -192,6 +191,7 @@ export default function HistoricoPage() {
         )}
       </>
     ),
+    sectorInfo,
   });
 
   if (!isClient || !session) return null;
@@ -204,8 +204,8 @@ export default function HistoricoPage() {
   // mentir (só as 200 mais recentes) e o filtro de tipo contar errado.
   const calls = (stats?.calls ?? []).map((c) => ({
     ...c,
-    time: formatClock(c.createdAt),
     day: formatDay(c.createdAt),
+    time: formatClock(c.createdAt),
   }));
 
   // "Hoje" já é todo do dia BRT — a coluna de data seria ruído. `stats.days`

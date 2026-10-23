@@ -14,7 +14,7 @@ import { DEFAULT_RECENT_LIMIT, isSectorId } from '@/shared/constants';
  * Escopo: leitura exige setor próprio ou `setores.todos.ver`.
  */
 export async function GET(request: Request) {
-  const { session, error } = await requireSession();
+  const { error, session } = await requireSession();
   if (error) return error;
 
   const { searchParams } = new URL(request.url);
@@ -36,7 +36,7 @@ export async function GET(request: Request) {
     return Response.json(result);
   } catch {
     return Response.json(
-      { calls: [], resetAt: null, error: 'Não foi possível carregar a fila.' },
+      { calls: [], error: 'Não foi possível carregar a fila.', resetAt: null },
       { status: 500 },
     );
   }

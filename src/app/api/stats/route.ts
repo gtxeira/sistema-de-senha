@@ -17,7 +17,7 @@ import { hasPermission, SECTORS_VIEW_ALL } from '@/shared/permissions';
    sem `sector` (agregado de todos) → exige `setores.todos.ver`.
 ───────────────────────────────────────────────── */
 export async function GET(request: Request) {
-  const { session, error } = await requireSession();
+  const { error, session } = await requireSession();
   if (error) return error;
 
   const query = parseStatsQuery(new URL(request.url).searchParams);
@@ -27,7 +27,7 @@ export async function GET(request: Request) {
     if (scope.error) return scope.error;
   } else if (!hasPermission(session, SECTORS_VIEW_ALL)) {
     return NextResponse.json(
-      { error: 'Acesso ao setor negado.', code: 'sector_forbidden' },
+      { code: 'sector_forbidden', error: 'Acesso ao setor negado.' },
       { status: 403 },
     );
   }

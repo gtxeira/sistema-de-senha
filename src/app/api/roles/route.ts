@@ -80,7 +80,7 @@ export async function PATCH(request: Request) {
     }
 
     const role = await updateRole(body.id, body);
-    return NextResponse.json({ success: true, role });
+    return NextResponse.json({ role, success: true });
   } catch (error) {
     return NextResponse.json(
       { error: errorMessage(error, 'Erro ao atualizar cargo') },
@@ -96,7 +96,7 @@ export async function POST(request: Request) {
 
     const body = await readJson<CreateRoleRequest>(request);
     const role = await createRole(body);
-    return NextResponse.json({ success: true, role });
+    return NextResponse.json({ role, success: true });
   } catch (error) {
     return NextResponse.json(
       { error: errorMessage(error, 'Erro ao criar cargo') },

@@ -178,8 +178,8 @@ export default function PainelPage() {
         history: [
           {
             number: lastCall.number,
-            type: callType,
             time: formatClock(lastCall.createdAt),
+            type: callType,
             createdAt: lastCall.createdAt,
           },
           ...latest.history,
@@ -219,9 +219,9 @@ export default function PainelPage() {
     setNotice('Repetindo chamada...');
     try {
       await fetch(API_ROUTES.QUEUE_RECALL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sector: activeSector }),
+        headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
       });
       setNotice(
         `Chamando novamente: ${formatQueueNumber(lastItem.number, lastItem.type)}`,
@@ -266,7 +266,6 @@ export default function PainelPage() {
   // (a regra `rules-of-hooks` acusa), e publicar antes do gate faz as ações
   // do cabeçalho aparecerem no primeiro render do client.
   useSetDashboardLayoutInfo({
-    sectorInfo,
     headerActions: (
       <>
         {canViewAllSectors && (
@@ -277,6 +276,7 @@ export default function PainelPage() {
         )}
       </>
     ),
+    sectorInfo,
   });
 
   if (!isClient) return null;
@@ -407,7 +407,7 @@ export default function PainelPage() {
 
             <Link
               href="/historico"
-              className={buttonVariants({ variant: 'link', size: 'sm' })}
+              className={buttonVariants({ size: 'sm', variant: 'link' })}
             >
               Ver histórico completo →
             </Link>

@@ -216,9 +216,9 @@ export default function AdminPage() {
       // actually reset. Doing it the other way round left every client wiped
       // locally while the server still had the old queue, with no rollback.
       const res = await fetch('/api/queue/reset', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sector: sectorId }),
+        headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
       });
       const data = await readJson<ApiErrorBody>(res).catch<ApiErrorBody>(
         () => ({}),
@@ -234,9 +234,9 @@ export default function AdminPage() {
       sectorsToReset.forEach((s) => {
         next[s] = {
           ...normalizeQueue(currentState[s]),
+          history: [],
           normalCurrent: NO_PASSWORD,
           priorityCurrent: NO_PASSWORD,
-          history: [],
         };
       });
       saveQueueState(next);
@@ -265,8 +265,8 @@ export default function AdminPage() {
       {
         id: `draft-${Date.now()}`,
         title,
-        image,
         _file: pendingFileRef.current,
+        image,
       },
       ...draftNews,
     ]);
@@ -301,7 +301,7 @@ export default function AdminPage() {
         const fd = new FormData();
         fd.append('title', item.title);
         fd.append('image', item._file);
-        const res = await fetch('/api/news', { method: 'POST', body: fd });
+        const res = await fetch('/api/news', { body: fd, method: 'POST' });
         const data = await readJson<NewsCreateBody>(res);
         if (!res.ok) throw new Error(data.error);
         created.push(data.news);
@@ -395,7 +395,7 @@ export default function AdminPage() {
                           href={`/monitor/${item.id}`}
                           target="_blank"
                           className={cn(
-                            buttonVariants({ variant: 'outline', size: 'sm' }),
+                            buttonVariants({ size: 'sm', variant: 'outline' }),
                           )}
                         >
                           <Monitor data-icon="inline-start" /> Abrir Monitor
@@ -618,7 +618,7 @@ function subscribeNews(callback: () => void) {
   };
 }
 
-function SyncSection({ session, canSync }: SyncSectionProps) {
+function SyncSection({ canSync, session }: SyncSectionProps) {
   const [syncSector, setSyncSector] = useState(DEFAULT_SECTOR);
   // Vem do Select (valor cru da lib) e vai para `normalizeCallType`, que
   // aceita `string` — por isso `string` e não `CallType`.
@@ -643,13 +643,13 @@ function SyncSection({ session, canSync }: SyncSectionProps) {
       }
 
       const res = await fetch('/api/queue/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          nextNumber: num,
           sector: syncSector,
           type: syncType,
-          nextNumber: num,
         }),
+        headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
       });
       const data = await readJson<QueueSyncBody>(res);
 

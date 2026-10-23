@@ -15,7 +15,7 @@ import { QUEUE_RECALL } from '@/shared/permissions';
 ───────────────────────────────────────────────── */
 export async function POST(request: Request) {
   try {
-    const { session, error } = await requirePermission(QUEUE_RECALL);
+    const { error, session } = await requirePermission(QUEUE_RECALL);
     if (error) return error;
 
     const body = await readJson<RecallRequestBody>(request);

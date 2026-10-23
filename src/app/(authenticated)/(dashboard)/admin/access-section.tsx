@@ -105,15 +105,15 @@ const GRANT = 'grant';
 const DENY = 'deny';
 
 const EMPTY_USER_FORM = {
-  username: '',
-  password: '',
+  active: true,
   full_name: '',
+  password: '',
   role_id: '',
   sector_id: '',
-  active: true,
+  username: '',
 };
 
-const EMPTY_ROLE_FORM = { key: '', name: '', description: '', built_in: false };
+const EMPTY_ROLE_FORM = { name: '', built_in: false, description: '', key: '' };
 
 /* ── classes locais desta seção (as comuns vêm de ./admin-styles) ── */
 
@@ -163,18 +163,18 @@ const cardFieldValueStyle = 'mt-0.5 block text-[13px] text-[#23445b]';
 
 const ROLE_CONFIG: Record<string, { className: string; icon: LucideIcon; }> = {
   admin: {
-    icon: ShieldCheck,
     className: 'bg-[#fef3e6] text-[#c97a0e]',
+    icon: ShieldCheck,
   },
   attendant: {
-    icon: Headset,
     className: 'bg-[#e6f4fb] text-[#1678a0]', // ou sua variável badgeAttendantStyle
+    icon: Headset,
   },
 };
 
 const DEFAULT_ROLE_CONFIG = {
-  icon: UserCheck,
   className: 'bg-gray-100 text-gray-700',
+  icon: UserCheck,
 };
 
 /**
@@ -266,12 +266,12 @@ export function AccessSection() {
   function openEditUser(user: UserRecord) {
     setEditingUserId(user.id);
     setUserForm({
-      username: user.username || '',
-      password: '',
+      active: user.active !== false,
       full_name: user.full_name || '',
+      password: '',
       role_id: user.role_id || '',
       sector_id: user.sector_id || '',
-      active: user.active !== false,
+      username: user.username || '',
     });
     const map: Record<string, OverrideMode> = {};
     for (const row of user.permissions || []) {
@@ -295,37 +295,37 @@ export function AccessSection() {
       const permissionRows = Object.entries(overrides)
         .filter(([, mode]) => mode !== INHERIT)
         .map(([permission, mode]) => ({
-          permission,
           granted: mode === GRANT,
+          permission,
         }));
 
       const res = editingUserId
         ? await fetch('/api/users', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               id: editingUserId,
               full_name: userForm.full_name,
               // senha só entra quando preenchida (mantém a atual caso contrário)
               ...(userForm.password ? { password: userForm.password } : {}),
-              role_id: userForm.role_id,
-              sector_id: userForm.sector_id || null,
               active: userForm.active,
               permissions: permissionRows,
+              role_id: userForm.role_id,
+              sector_id: userForm.sector_id || null,
             }),
+            headers: { 'Content-Type': 'application/json' },
+            method: 'PATCH',
           })
         : await fetch('/api/users', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              username: userForm.username,
-              password: userForm.password,
+              active: userForm.active,
               full_name: userForm.full_name,
+              password: userForm.password,
+              permissions: permissionRows,
               role_id: userForm.role_id,
               sector_id: userForm.sector_id || null,
-              active: userForm.active,
-              permissions: permissionRows,
+              username: userForm.username,
             }),
+            headers: { 'Content-Type': 'application/json' },
+            method: 'POST',
           });
 
       const data = await readJson<UserSaveBody>(res);
@@ -379,10 +379,10 @@ export function AccessSection() {
   function openEditRole(role: RoleRecord) {
     setEditingRoleId(role.id);
     setRoleForm({
-      key: role.key,
       name: role.name,
-      description: role.description || '',
       built_in: role.built_in,
+      description: role.description || '',
+      key: role.key,
     });
     setRolePerms(new Set(role.permissions));
     setShowRoleForm(true);
@@ -415,14 +415,14 @@ export function AccessSection() {
       };
       const res = editingRoleId
         ? await fetch('/api/roles', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: editingRoleId, ...payload }),
+            headers: { 'Content-Type': 'application/json' },
+            method: 'PATCH',
           })
         : await fetch('/api/roles', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ key: roleForm.key, ...payload }),
+            headers: { 'Content-Type': 'application/json' },
+            method: 'POST',
           });
       const data = await readJson<RoleSaveBody>(res);
       if (!res.ok) throw new Error(data.error);
@@ -467,7 +467,7 @@ export function AccessSection() {
     selectedRole?.permissions ?? [],
     Object.entries(overrides)
       .filter(([, mode]) => mode !== INHERIT)
-      .map(([permission, mode]) => ({ permission, granted: mode === GRANT })),
+      .map(([permission, mode]) => ({ granted: mode === GRANT, permission })),
   );
 
   const roleUsersCount = (roleId: string) =>
@@ -640,7 +640,7 @@ export function AccessSection() {
                       onValueChange={(v) =>
                         setUserForm({ ...userForm, active: v === '1' })
                       }
-                      items={{ '1': 'Ativo', '0': 'Inativo' }}
+                      items={{ '0': 'Inativo', '1': 'Ativo' }}
                       disabled={userForm.username === 'admin'}
                     >
                       <SelectTrigger className="w-full">
@@ -841,7 +841,7 @@ export function AccessSection() {
                         <TableCell>{u.full_name}</TableCell>
                         <TableCell>
                           <RoleBadge
-                            role={{ key: u.role!, name: u.role_name! }}
+                            role={{ name: u.role_name!, key: u.role! }}
                           />
                         </TableCell>
                         <TableCell>
@@ -896,7 +896,7 @@ export function AccessSection() {
 
                       <div className="mt-2.5">
                         <RoleBadge
-                          role={{ key: u.role!, name: u.role_name! }}
+                          role={{ name: u.role_name!, key: u.role! }}
                         />
                       </div>
 
@@ -1248,12 +1248,12 @@ function isOverrideMode(value: string): value is OverrideMode {
  * Botões de ação de um cargo — cargo `built_in` é somente leitura.
  */
 function RoleActions({
-  role,
   canManageRoles,
-  loading,
-  onEdit,
-  onDelete,
   className,
+  loading,
+  onDelete,
+  onEdit,
+  role,
 }: {
   readonly canManageRoles: boolean;
   readonly loading: boolean;
@@ -1308,13 +1308,13 @@ function RoleBadge({ role }: { role: Pick<RoleRecord, 'key' | 'name'> }) {
  * mobile (o usuário `admin` nunca pode ser excluído).
  */
 function UserActions({
-  user,
-  canEdit,
   canDelete,
-  loading,
-  onEdit,
-  onDelete,
+  canEdit,
   className,
+  loading,
+  onDelete,
+  onEdit,
+  user,
 }: {
   readonly canDelete: boolean;
   readonly canEdit: boolean;

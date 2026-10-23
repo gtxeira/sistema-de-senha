@@ -30,7 +30,7 @@ import {
 ───────────────────────────────────────────────── */
 export async function DELETE(request: Request) {
   try {
-    const { session, error } = await requirePermission(USERS_DELETE);
+    const { error, session } = await requirePermission(USERS_DELETE);
     if (error) return error;
 
     const { searchParams } = new URL(request.url);
@@ -78,7 +78,7 @@ export async function GET() {
 ───────────────────────────────────────────────── */
 export async function PATCH(request: Request) {
   try {
-    const { session, error } = await requirePermission(USERS_EDIT);
+    const { error, session } = await requirePermission(USERS_EDIT);
     if (error) return error;
 
     const body = await readJson<UserPatchBody>(request);

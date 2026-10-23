@@ -24,45 +24,45 @@ export default function HomePage() {
   const navItems: NavItem[] = [
     hasPermission(session, SCREEN_ADMIN) && {
       id: 'admin',
-      href: '/admin' as Route,
       title: 'Administração',
+      colSpanFull: true,
       description: 'Filas, notícias e estatísticas',
+      href: '/admin' as Route,
       icon: <Settings2 size={30} />,
       iconBgClass: 'bg-[#fff7ed]',
       iconColorClass: 'text-[#ea580c]',
-      colSpanFull: true,
     },
     {
       id: 'painel',
-      href: '/painel' as Route,
       title: 'Painel de Atendimento',
+      colSpanFull: true,
       description: 'Controle as chamadas em tempo real',
+      href: '/painel' as Route,
       icon: <Headphones size={30} />,
       iconBgClass: 'bg-[#f5f3ff]',
       iconColorClass: 'text-[#7c3aed]',
-      colSpanFull: true,
     },
     {
       id: 'historico',
-      href: '/historico' as Route,
       title: 'Histórico',
+      colSpanFull: true,
       description: 'Consulte todas as chamadas de senhas realizadas',
+      href: '/historico' as Route,
       icon: <History size={30} />,
       iconBgClass: 'bg-[#f5f3ff]',
       iconColorClass: 'text-amber',
-      colSpanFull: true,
     },
     ...Object.values(SECTORS)
       .filter((s) => canAccessSector(session, s.id, 'read'))
       .map((s) => ({
         id: `monitor-${s.id}`,
-        href: `/monitor/${s.id}` as Route,
         title: 'Monitor',
+        colSpanFull: false,
         description: s.name,
+        href: `/monitor/${s.id}` as Route,
         icon: <Monitor size={30} />,
         iconBgClass: 'bg-primary-light',
         iconColorClass: 'text-primary',
-        colSpanFull: false,
       })),
   ].filter((item) => typeof item === 'object' && item !== null); // Remove os itens 'false' (ex: Admin sem permissão)
 

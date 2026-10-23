@@ -22,7 +22,7 @@ import {
  * valem para novas conexões.
  */
 export async function GET(request: Request) {
-  const { session, error } = await requireSession();
+  const { error, session } = await requireSession();
   if (error) return error;
 
   const { searchParams } = new URL(request.url);
@@ -43,8 +43,8 @@ export async function GET(request: Request) {
     eventManager.getSubscriberCount(sector) >= MAX_SSE_CONNECTIONS_PER_SECTOR
   ) {
     return new Response('Too many connections.', {
-      status: 429,
       headers: { 'Retry-After': '5' },
+      status: 429,
     });
   }
 
@@ -54,6 +54,13 @@ export async function GET(request: Request) {
   let keepaliveTimer: ReturnType<typeof setInterval> | undefined;
 
   const stream = new ReadableStream({
+    cancel() {
+      // Cleanup when client disconnects
+      clearInterval(keepaliveTimer);
+      unsubscribeCalls?.();
+      unsubscribeRecalls?.();
+      unsubscribeResets?.();
+    },
     start(controller) {
       // Send initial connection comment to establish the stream
       controller.enqueue(':connected\n\n');
@@ -74,9 +81,9 @@ export async function GET(request: Request) {
         (call, resetAt) => {
           try {
             const data = JSON.stringify({
-              type: SSE_EVENT_TYPES.CALL,
               call,
               resetAt,
+              type: SSE_EVENT_TYPES.CALL,
             });
             controller.enqueue(`data: ${data}\n\n`);
           } catch {
@@ -91,9 +98,9 @@ export async function GET(request: Request) {
         (call, resetAt) => {
           try {
             const data = JSON.stringify({
-              type: SSE_EVENT_TYPES.RECALL,
               call,
               resetAt,
+              type: SSE_EVENT_TYPES.RECALL,
             });
             controller.enqueue(`data: ${data}\n\n`);
           } catch {
@@ -106,21 +113,14 @@ export async function GET(request: Request) {
       unsubscribeResets = eventManager.subscribeToReset(sector, (resetAt) => {
         try {
           const data = JSON.stringify({
-            type: SSE_EVENT_TYPES.RESET,
             resetAt,
+            type: SSE_EVENT_TYPES.RESET,
           });
           controller.enqueue(`data: ${data}\n\n`);
         } catch {
           // Controller may be closed
         }
       });
-    },
-    cancel() {
-      // Cleanup when client disconnects
-      clearInterval(keepaliveTimer);
-      unsubscribeCalls?.();
-      unsubscribeRecalls?.();
-      unsubscribeResets?.();
     },
   });
 
@@ -134,9 +134,9 @@ export async function GET(request: Request) {
 
   return new Response(stream, {
     headers: {
-      'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache, no-transform',
       Connection: 'keep-alive',
+      'Content-Type': 'text/event-stream',
       'X-Accel-Buffering': 'no', // Disable nginx buffering
     },
   });

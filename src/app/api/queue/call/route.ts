@@ -18,7 +18,7 @@ import { QUEUE_CALL } from '@/shared/permissions';
 ───────────────────────────────────────────────── */
 export async function POST(request: Request) {
   try {
-    const { session, error } = await requirePermission(QUEUE_CALL);
+    const { error, session } = await requirePermission(QUEUE_CALL);
     if (error) return error;
 
     const body = await readJson<CallRequestBody>(request);
@@ -36,9 +36,9 @@ export async function POST(request: Request) {
     if (scope.error) return scope.error;
 
     const result = await callNext({
+      attendantId: session.user.id,
       sector,
       type,
-      attendantId: session.user.id,
     });
 
     return NextResponse.json({ success: true, ...result });

@@ -22,13 +22,13 @@ export interface NavCardProps {
 }
 
 export function NavCard({
-  href,
   title,
+  colSpanFull = false,
   description,
+  href,
   icon,
   iconBgClass,
   iconColorClass,
-  colSpanFull = false,
 }: NavCardProps) {
   return (
     <Link

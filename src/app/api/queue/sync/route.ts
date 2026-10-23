@@ -17,11 +17,11 @@ import { QUEUE_SYNC } from '@/shared/permissions';
 ───────────────────────────────────────────────── */
 export async function POST(request: Request) {
   try {
-    const { session, error } = await requirePermission(QUEUE_SYNC);
+    const { error, session } = await requirePermission(QUEUE_SYNC);
     if (error) return error;
 
     const body = await readJson<SyncRequestBody>(request);
-    const { sector, type, nextNumber } = body;
+    const { nextNumber, sector, type } = body;
 
     // Validate sector (o predicado também estreita para SectorId)
     if (!isSectorId(sector)) {
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     const scope = assertSectorAccess(session, sector, 'write');
     if (scope.error) return scope.error;
 
-    const result = await syncNext({ sector, type, nextNumber });
+    const result = await syncNext({ nextNumber, sector, type });
 
     return NextResponse.json({ success: true, ...result });
   } catch (error) {
