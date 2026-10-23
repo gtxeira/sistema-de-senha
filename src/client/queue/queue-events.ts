@@ -6,10 +6,10 @@ import {
   API_ROUTES,
   HISTORY_LIMITS,
   RESET_MARKER_KEY,
-} from "@/shared/constants";
-import type { CallType, SectorId } from "@/shared/constants";
-import { invalidateQueueState } from "./queue";
-import { parseJson, readJson } from "@/shared/json";
+} from '@/shared/constants';
+import type { CallType, SectorId } from '@/shared/constants';
+import { invalidateQueueState } from './queue';
+import { parseJson, readJson } from '@/shared/json';
 
 /**
  * Module-level owner of the realtime queue connections.
@@ -120,7 +120,7 @@ const seenResetMarker = new Set<string>();
 let markersLoaded = false;
 
 function isClient(): boolean {
-  return typeof window !== "undefined";
+  return typeof window !== 'undefined';
 }
 
 /* ── reset marker ─────────────────────────────────────────────── */
@@ -152,7 +152,9 @@ function persistMarker(sector: SectorId, resetAt: string | null): void {
   if (!isClient()) return;
   try {
     const raw = window.localStorage.getItem(RESET_MARKER_KEY);
-    const parsed: Record<string, unknown> = raw ? parseJson<Record<string, unknown>>(raw) : {};
+    const parsed: Record<string, unknown> = raw
+      ? parseJson<Record<string, unknown>>(raw)
+      : {};
     parsed[sector] = resetAt;
     window.localStorage.setItem(RESET_MARKER_KEY, JSON.stringify(parsed));
   } catch {
@@ -170,7 +172,10 @@ function persistMarker(sector: SectorId, resetAt: string | null): void {
  *
  * @returns true when the local replica was invalidated
  */
-function applyResetMarker(sector: SectorId, resetAt: string | null | undefined): boolean {
+function applyResetMarker(
+  sector: SectorId,
+  resetAt: string | null | undefined,
+): boolean {
   ensureMarkersLoaded();
 
   const next = resetAt ?? null;
@@ -223,7 +228,10 @@ function callKey(call: ClientQueueCall | null | undefined): string {
   return call?.id ?? `${call?.number}-${call?.type}`;
 }
 
-function sameCalls(a: readonly ClientQueueCall[], b: readonly ClientQueueCall[]): boolean {
+function sameCalls(
+  a: readonly ClientQueueCall[],
+  b: readonly ClientQueueCall[],
+): boolean {
   if (a.length !== b.length) return false;
   return a.every((call, i) => callKey(call) === callKey(b[i]));
 }
@@ -321,7 +329,8 @@ function startPolling(sector: SectorId, conn: ConnectionState): void {
     // the portrait we already hold does not contain that call. Without this,
     // the very first tick after a failed `initialSync` would resurrect the
     // newest pre-reset call as `lastCall`.
-    const isNew = latest != null && cached != null && cached[0]?.id !== latest.id;
+    const isNew =
+      latest != null && cached != null && cached[0]?.id !== latest.id;
 
     setCalls(sector, mergeCalls(data.calls ?? [], cached));
 
@@ -331,7 +340,9 @@ function startPolling(sector: SectorId, conn: ConnectionState): void {
     }
   };
 
-  conn.pollTimer = setInterval(() => { void tick(); }, POLLING_INTERVAL);
+  conn.pollTimer = setInterval(() => {
+    void tick();
+  }, POLLING_INTERVAL);
 }
 
 function stopPolling(conn: ConnectionState): void {
@@ -442,7 +453,10 @@ function connect(sector: SectorId, conn: ConnectionState): void {
 
 /* ── public subscription API ──────────────────────────────────── */
 
-async function initialSync(sector: SectorId, conn: ConnectionState): Promise<void> {
+async function initialSync(
+  sector: SectorId,
+  conn: ConnectionState,
+): Promise<void> {
   // The panel is the largest consumer (100 entries); monitors slice to their
   // own limit. One request satisfies both — cheaper than a per-subscriber GET.
   const data = await fetchRecent(sector, HISTORY_LIMITS.painel);

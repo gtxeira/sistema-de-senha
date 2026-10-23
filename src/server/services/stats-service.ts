@@ -1,16 +1,16 @@
-import "server-only";
+import 'server-only';
 
-import { read } from "@/server/repositories";
+import { read } from '@/server/repositories';
 import {
   CALL_TYPES,
   DEFAULT_DAYS,
   MAX_DAYS,
   MIN_DAYS,
-} from "@/shared/constants";
-import type { SequenceType } from "@/shared/constants";
-import { sanitizeNull } from "@/shared/sanitization";
-import { normalizePage, normalizePageSize } from "@/shared/validation";
-import type { QueueStats } from "@/shared/types/domain";
+} from '@/shared/constants';
+import type { SequenceType } from '@/shared/constants';
+import { sanitizeNull } from '@/shared/sanitization';
+import { normalizePage, normalizePageSize } from '@/shared/validation';
+import type { QueueStats } from '@/shared/types/domain';
 
 /**
  * Use cases de estatísticas/histórico.
@@ -32,14 +32,14 @@ export interface StatsQuery {
 export function parseStatsQuery(searchParams: URLSearchParams): StatsQuery {
   const days = Math.min(
     MAX_DAYS,
-    Math.max(MIN_DAYS, Number(searchParams.get("days")) || DEFAULT_DAYS),
+    Math.max(MIN_DAYS, Number(searchParams.get('days')) || DEFAULT_DAYS),
   );
-  const sector = sanitizeNull(searchParams.get("sector")) || null;
+  const sector = sanitizeNull(searchParams.get('sector')) || null;
 
   // Tipo inválido é IGNORADO (não vira 400): o filtro é opcional e a
   // tabela simplesmente mostra todos. `preferential` é a grafia antiga
   // da API e continua aceita.
-  const typeParam = sanitizeNull(searchParams.get("type"));
+  const typeParam = sanitizeNull(searchParams.get('type'));
   const type =
     typeParam === CALL_TYPES.PREFERENCIAL ||
     typeParam === CALL_TYPES.PREFERENTIAL
@@ -48,8 +48,8 @@ export function parseStatsQuery(searchParams: URLSearchParams): StatsQuery {
         ? CALL_TYPES.NORMAL
         : null;
 
-  const page = normalizePage(Number(searchParams.get("page")));
-  const pageSize = normalizePageSize(Number(searchParams.get("pageSize")));
+  const page = normalizePage(Number(searchParams.get('page')));
+  const pageSize = normalizePageSize(Number(searchParams.get('pageSize')));
 
   return { days, sector, type, page, pageSize };
 }

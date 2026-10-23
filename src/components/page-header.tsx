@@ -1,4 +1,4 @@
-import { cn } from "@/client/utils";
+import { cn } from '@/client/utils';
 
 export interface PageHeaderProps {
   /** Linha fina acima do título (ex.: "BEM-VINDO"). */
@@ -35,8 +35,8 @@ export function PageHeader({ eyebrow, title, subtitle }: PageHeaderProps) {
       {title && (
         <h1
           className={cn(
-            "mt-2 text-[24px] font-bold text-[#13324d] sm:text-[30px]",
-            subtitle && "mb-1.25",
+            'mt-2 text-[24px] font-bold text-[#13324d] sm:text-[30px]',
+            subtitle && 'mb-1.25',
           )}
         >
           {title}

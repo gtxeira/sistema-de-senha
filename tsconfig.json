@@ -3,11 +3,7 @@
     // ── Defaults recomendados pelo Next.js 16 ──
     // (next dist/lib/typescript/writeConfigurationDefaults.js)
     "target": "ES2017",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -21,9 +17,7 @@
     "jsx": "react-jsx",
     // ── Path alias (herdado do jsconfig.json) ──
     "paths": {
-      "@/*": [
-        "./src/*"
-      ]
+      "@/*": ["./src/*"]
     },
     "plugins": [
       {
@@ -39,7 +33,5 @@
     "**/*.ts",
     "**/*.tsx"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }

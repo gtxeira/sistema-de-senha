@@ -1,14 +1,14 @@
-import "server-only";
+import 'server-only';
 
-import { NextResponse } from "next/server";
-import type { Session } from "next-auth";
-import { auth } from "@/auth";
+import { NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
+import { auth } from '@/auth';
 import {
   canAccessSector,
   hasPermission,
   sessionFreshnessProblem,
-} from "@/shared/permissions";
-import type { Permission, PermissionCarrier } from "@/shared/permissions";
+} from '@/shared/permissions';
+import type { Permission, PermissionCarrier } from '@/shared/permissions';
 
 /**
  * Authorization helpers for route handlers.
@@ -43,7 +43,11 @@ export interface SectorAccessResult {
   readonly error?: NextResponse;
 }
 
-function errorResponse(status: number, message: string, code: string): NextResponse {
+function errorResponse(
+  status: number,
+  message: string,
+  code: string,
+): NextResponse {
   return NextResponse.json({ error: message, code }, { status });
 }
 
@@ -54,16 +58,20 @@ export async function requireSession(): Promise<AuthResult> {
   const session = await auth();
 
   if (!session?.user) {
-    return { error: errorResponse(401, "Unauthorized.", "unauthenticated") };
+    return { error: errorResponse(401, 'Unauthorized.', 'unauthenticated') };
   }
 
   const problem = sessionFreshnessProblem(session.user);
-  if (problem === "expired") {
-    return { error: errorResponse(401, "Session expired.", "session_expired") };
+  if (problem === 'expired') {
+    return { error: errorResponse(401, 'Session expired.', 'session_expired') };
   }
-  if (problem === "stale") {
+  if (problem === 'stale') {
     return {
-      error: errorResponse(401, "Session refresh required.", "refresh_required"),
+      error: errorResponse(
+        401,
+        'Session refresh required.',
+        'refresh_required',
+      ),
     };
   }
 
@@ -74,12 +82,14 @@ export async function requireSession(): Promise<AuthResult> {
  * Require a fresh session with a specific permission
  * (registro de chaves em `src/shared/permissions.ts`).
  */
-export async function requirePermission(permission: Permission): Promise<AuthResult> {
+export async function requirePermission(
+  permission: Permission,
+): Promise<AuthResult> {
   const { session, error } = await requireSession();
   if (error) return { error };
 
   if (!hasPermission(session, permission)) {
-    return { error: errorResponse(403, "Forbidden.", "forbidden") };
+    return { error: errorResponse(403, 'Forbidden.', 'forbidden') };
   }
 
   return { session };
@@ -96,10 +106,10 @@ export async function requirePermission(permission: Permission): Promise<AuthRes
 export function assertSectorAccess(
   session: PermissionCarrier | null | undefined,
   sector: string,
-  mode: "read" | "write" = "read",
+  mode: 'read' | 'write' = 'read',
 ): SectorAccessResult {
   if (canAccessSector(session, sector, mode)) return {};
   return {
-    error: errorResponse(403, "Acesso ao setor negado.", "sector_forbidden"),
+    error: errorResponse(403, 'Acesso ao setor negado.', 'sector_forbidden'),
   };
 }

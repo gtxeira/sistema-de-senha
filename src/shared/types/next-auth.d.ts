@@ -1,4 +1,4 @@
-import type { Permission } from "@/shared/permissions";
+import type { Permission } from '@/shared/permissions';
 
 /**
  * Claims de sessão do Auth.js.
@@ -12,7 +12,7 @@ import type { Permission } from "@/shared/permissions";
  * re-exporta `Session`/`User` via `export type { … } from "@auth/core/types"`,
  * e augmentar um re-export não altera a interface original.
  */
-declare module "@auth/core/types" {
+declare module '@auth/core/types' {
   interface User {
     /** Id do usuário — espelha o claim `sub` do JWT. */
     id: string;
@@ -51,7 +51,7 @@ declare module "@auth/core/types" {
  * callback `session` os espelha de volta no `User` — o token é o veículo, o
  * `User` continua sendo a forma canônica.
  */
-declare module "@auth/core/jwt" {
+declare module '@auth/core/jwt' {
   interface JWT {
     /** Setor asignado (`null` = nenhum). */
     sector: string | null;

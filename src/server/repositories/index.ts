@@ -1,4 +1,4 @@
-import "server-only";
+import 'server-only';
 
 /**
  * Repositórios de dados — implementações Postgres.
@@ -8,12 +8,12 @@ import "server-only";
  * implementação (as em-memória usadas nos testes de contrato rodam sem que o
  * restante da aplicação perceba a troca).
  */
-import { PostgresAuthRepository } from "./auth-repo.postgres";
-import { PostgresNewsRepository } from "./news-repo.postgres";
-import { PostgresQueueRepository } from "./queue-repo.postgres";
-import { PostgresReadRepository } from "./read-repo.postgres";
-import { PostgresRolesRepository } from "./roles-repo.postgres";
-import { PostgresUsersRepository } from "./users-repo.postgres";
+import { PostgresAuthRepository } from './auth-repo.postgres';
+import { PostgresNewsRepository } from './news-repo.postgres';
+import { PostgresQueueRepository } from './queue-repo.postgres';
+import { PostgresReadRepository } from './read-repo.postgres';
+import { PostgresRolesRepository } from './roles-repo.postgres';
+import { PostgresUsersRepository } from './users-repo.postgres';
 
 import type {
   AuthRepository,
@@ -22,7 +22,7 @@ import type {
   ReadRepository,
   RolesRepository,
   UsersRepository,
-} from "./types";
+} from './types';
 
 export interface DataLayer {
   readonly queue: QueueRepository;

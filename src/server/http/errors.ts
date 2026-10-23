@@ -1,4 +1,4 @@
-import "server-only";
+import 'server-only';
 
 /**
  * Erro com status HTTP para a rota traduzir.
@@ -15,7 +15,7 @@ export class RouteError extends Error {
 
   constructor(status: number, message: string) {
     super(message);
-    this.name = "RouteError";
+    this.name = 'RouteError';
     this.status = status;
   }
 }

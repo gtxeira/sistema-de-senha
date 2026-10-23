@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
-import { recallLast } from "@/server/services/queue-service";
-import { errorMessage, errorStatus } from "@/shared/errors";
-import { assertSectorAccess, requirePermission } from "@/server/http/api-auth";
-import { QUEUE_RECALL } from "@/shared/permissions";
-import { readJson } from "@/shared/json";
-import type { RecallRequestBody } from "@/shared/types/api";
-import { isSectorId } from "@/shared/constants";
+import { NextResponse } from 'next/server';
+import { recallLast } from '@/server/services/queue-service';
+import { errorMessage, errorStatus } from '@/shared/errors';
+import { assertSectorAccess, requirePermission } from '@/server/http/api-auth';
+import { QUEUE_RECALL } from '@/shared/permissions';
+import { readJson } from '@/shared/json';
+import type { RecallRequestBody } from '@/shared/types/api';
+import { isSectorId } from '@/shared/constants';
 
 /* ─────────────────────────────────────────────────
    POST — repete a última senha chamada de um setor
@@ -21,12 +21,12 @@ export async function POST(request: Request) {
 
     if (!isSectorId(sector)) {
       return NextResponse.json(
-        { error: "Setor não informado." },
-        { status: 400 }
+        { error: 'Setor não informado.' },
+        { status: 400 },
       );
     }
 
-    const scope = assertSectorAccess(session, sector, "write");
+    const scope = assertSectorAccess(session, sector, 'write');
     if (scope.error) return scope.error;
 
     const result = await recallLast(sector);
@@ -34,8 +34,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, ...result });
   } catch (err) {
     return NextResponse.json(
-      { error: errorMessage(err, "Erro ao repetir senha") },
-      { status: errorStatus(err, 500) }
+      { error: errorMessage(err, 'Erro ao repetir senha') },
+      { status: errorStatus(err, 500) },
     );
   }
 }

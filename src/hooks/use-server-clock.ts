@@ -1,14 +1,20 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState, useCallback, useSyncExternalStore } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  useSyncExternalStore,
+} from 'react';
 import {
   CLOCK_INTERVAL,
   SERVER_TIME_SYNC_INTERVAL,
   API_ROUTES,
-} from "@/shared/constants";
-import { formatClock, formatClockSeconds, formatLongDate } from "@/shared/time";
-import { readJson } from "@/shared/json";
-import type { TimeBody } from "@/shared/types/api";
+} from '@/shared/constants';
+import { formatClock, formatClockSeconds, formatLongDate } from '@/shared/time';
+import { readJson } from '@/shared/json';
+import type { TimeBody } from '@/shared/types/api';
 
 /* ─────────────────────────────────────────────────
    useServerClock — relógio sincronizado com o servidor
@@ -45,8 +51,8 @@ function formatTimeShort(date: Date): string {
 }
 
 async function fetchServerTime(): Promise<number> {
-  const res = await fetch(API_ROUTES.TIME, { cache: "no-store" });
-  if (!res.ok) throw new Error("Failed to fetch server time");
+  const res = await fetch(API_ROUTES.TIME, { cache: 'no-store' });
+  if (!res.ok) throw new Error('Failed to fetch server time');
   const data = await readJson<TimeBody>(res);
   return new Date(data.serverTime).getTime();
 }
@@ -136,9 +142,9 @@ export function useServerClock(): ServerClock {
     // Vazio até montar (ver `useHasMounted`): o HTML do servidor e o
     // primeiro render do client precisam ser idênticos, e o horário do
     // servidor não é determinístico.
-    timeString: mounted ? formatTime(now) : "",
-    dateString: mounted ? formatDate(now) : "",
-    timeShort: mounted ? formatTimeShort(now) : "",
+    timeString: mounted ? formatTime(now) : '',
+    dateString: mounted ? formatDate(now) : '',
+    timeShort: mounted ? formatTimeShort(now) : '',
     formatTime: formatTimeShort,
   };
 }

@@ -1,7 +1,7 @@
-import crypto from "node:crypto";
-import type { AuthRepository } from "@/server/repositories/types";
-import { RouteError } from "@/server/http/errors";
-import type { AuthSeedUserInput } from "../../contracts/auth-repo.contract";
+import crypto from 'node:crypto';
+import type { AuthRepository } from '@/server/repositories/types';
+import { RouteError } from '@/server/http/errors';
+import type { AuthSeedUserInput } from '../../contracts/auth-repo.contract';
 
 /** Registro guardado no Map — só `email` é lido, o resto é o seed original. */
 interface StoredUser {
@@ -34,7 +34,7 @@ export class InMemoryAuthRepository implements AuthRepository {
       email,
       password: data.password,
       full_name: data.full_name,
-      role: data.role || "attendant",
+      role: data.role || 'attendant',
       sector_id: data.sector_id || null,
       active: true,
     });
@@ -44,7 +44,7 @@ export class InMemoryAuthRepository implements AuthRepository {
   async resolveLoginEmail(username: string): Promise<string> {
     const user = this.#users.get(username.toLowerCase());
     if (!user) {
-      throw new RouteError(404, "Usuário não encontrado");
+      throw new RouteError(404, 'Usuário não encontrado');
     }
     return user.email;
   }

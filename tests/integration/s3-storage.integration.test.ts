@@ -1,12 +1,17 @@
 // @vitest-environment node
-import { afterAll, describe, expect, it } from "vitest";
-import { deleteFromS3, extractKeyFromUrl, getPublicUrl, uploadToS3 } from "@/server/storage/s3-client";
-import { checkIsRunningInDocker } from "../../scripts/check-is-running-in-docker";
+import { afterAll, describe, expect, it } from 'vitest';
+import {
+  deleteFromS3,
+  extractKeyFromUrl,
+  getPublicUrl,
+  uploadToS3,
+} from '@/server/storage/s3-client';
+import { checkIsRunningInDocker } from '../../scripts/check-is-running-in-docker';
 
-const TEST_PREFIX = "integration-test/";
+const TEST_PREFIX = 'integration-test/';
 let createdKeys: string[] = [];
 
-function makeBuffer(content = "test-binary-data", size = 256) {
+function makeBuffer(content = 'test-binary-data', size = 256) {
   return Buffer.alloc(size, content);
 }
 
@@ -20,11 +25,11 @@ async function fetchPublicUrl(url: string, init: RequestInit = {}) {
 
   // Reescreve o hostname para o serviço do container Docker
   if (checkIsRunningInDocker()) {
-    publicUrl.hostname = "garage";
+    publicUrl.hostname = 'garage';
   }
 
   const headers = new Headers(init.headers || {});
-  headers.set("Host", hostHeader);
+  headers.set('Host', hostHeader);
 
   return fetch(publicUrl.toString(), {
     ...init,
@@ -42,17 +47,17 @@ afterAll(async () => {
   createdKeys = [];
 });
 
-describe("S3 storage — integration", () => {
-  describe("upload", () => {
-    it("faz upload e objeto fica acessível via URL pública", async () => {
+describe('S3 storage — integration', () => {
+  describe('upload', () => {
+    it('faz upload e objeto fica acessível via URL pública', async () => {
       const key = `${TEST_PREFIX}upload-test-${Date.now()}.bin`;
       createdKeys.push(key);
 
       const buffer = makeBuffer();
-      await uploadToS3(key, buffer, "application/octet-stream");
+      await uploadToS3(key, buffer, 'application/octet-stream');
 
       const url = getPublicUrl(key);
-      const res = await fetchPublicUrl(url, { method: "GET" });
+      const res = await fetchPublicUrl(url, { method: 'GET' });
 
       expect(res.ok).toBe(true);
 
@@ -60,27 +65,27 @@ describe("S3 storage — integration", () => {
       expect(body.byteLength).toBe(buffer.length);
     });
 
-    it("preserva o Content-Type correto", async () => {
+    it('preserva o Content-Type correto', async () => {
       const key = `${TEST_PREFIX}content-type-${Date.now()}.png`;
       createdKeys.push(key);
 
       const buffer = makeBuffer();
-      await uploadToS3(key, buffer, "image/png");
+      await uploadToS3(key, buffer, 'image/png');
 
       const url = getPublicUrl(key);
-      const res = await fetchPublicUrl(url, { method: "HEAD" });
+      const res = await fetchPublicUrl(url, { method: 'HEAD' });
       expect(res.ok).toBe(true);
-      expect(res.headers.get("content-type")).toMatch(/image\/png/);
+      expect(res.headers.get('content-type')).toMatch(/image\/png/);
     });
 
-    it("gera chaves únicas para uploads diferentes", async () => {
+    it('gera chaves únicas para uploads diferentes', async () => {
       const ts = Date.now();
       const key1 = `${TEST_PREFIX}unique-1-${ts}.bin`;
       const key2 = `${TEST_PREFIX}unique-2-${ts}.bin`;
       createdKeys.push(key1, key2);
 
-      await uploadToS3(key1, makeBuffer("a"), "application/octet-stream");
-      await uploadToS3(key2, makeBuffer("b"), "application/octet-stream");
+      await uploadToS3(key1, makeBuffer('a'), 'application/octet-stream');
+      await uploadToS3(key2, makeBuffer('b'), 'application/octet-stream');
 
       const url1 = getPublicUrl(key1);
       const url2 = getPublicUrl(key2);
@@ -95,90 +100,92 @@ describe("S3 storage — integration", () => {
     });
   });
 
-  describe("delete", () => {
-    it("remove objeto e URL retorna 404", async () => {
+  describe('delete', () => {
+    it('remove objeto e URL retorna 404', async () => {
       const key = `${TEST_PREFIX}delete-test-${Date.now()}.bin`;
       const buffer = makeBuffer();
-      await uploadToS3(key, buffer, "application/octet-stream");
+      await uploadToS3(key, buffer, 'application/octet-stream');
 
       const urlBefore = getPublicUrl(key);
-      const resBefore = await fetchPublicUrl(urlBefore, { method: "HEAD" });
+      const resBefore = await fetchPublicUrl(urlBefore, { method: 'HEAD' });
       expect(resBefore.ok).toBe(true);
 
       await deleteFromS3(key);
 
-      const resAfter = await fetchPublicUrl(urlBefore, { method: "HEAD" });
+      const resAfter = await fetchPublicUrl(urlBefore, { method: 'HEAD' });
       expect(resAfter.ok).toBe(false);
     });
 
-    it("delete é best-effort (não lança erro para key inexistente)", async () => {
+    it('delete é best-effort (não lança erro para key inexistente)', async () => {
       await expect(
-        deleteFromS3(`${TEST_PREFIX}nonexistent-${Date.now()}.bin`)
+        deleteFromS3(`${TEST_PREFIX}nonexistent-${Date.now()}.bin`),
       ).resolves.toBeUndefined();
     });
   });
 
-  describe("URL helpers", () => {
-    it("getPublicUrl retorna URL correta", () => {
-      const key = "photo.jpg";
+  describe('URL helpers', () => {
+    it('getPublicUrl retorna URL correta', () => {
+      const key = 'photo.jpg';
       const url = getPublicUrl(key);
-      expect(url).toMatch(new RegExp(`${process.env.S3_PUBLIC_URL}/photo\\.jpg$`));
+      expect(url).toMatch(
+        new RegExp(`${process.env.S3_PUBLIC_URL}/photo\\.jpg$`),
+      );
     });
 
-    it("extractKeyFromUrl extrai key de URL completa", () => {
-      const key = "2024-test-photo.jpg";
+    it('extractKeyFromUrl extrai key de URL completa', () => {
+      const key = '2024-test-photo.jpg';
       const url = getPublicUrl(key);
       const extracted = extractKeyFromUrl(url);
       expect(extracted).toBe(key);
     });
 
-    it("extractKeyFromUrl retorna null para URL externa", () => {
-      const extracted = extractKeyFromUrl("https://example.com/img.jpg");
+    it('extractKeyFromUrl retorna null para URL externa', () => {
+      const extracted = extractKeyFromUrl('https://example.com/img.jpg');
       expect(extracted).toBeNull();
     });
 
-    it("extractKeyFromUrl retorna null para input inválido", () => {
+    it('extractKeyFromUrl retorna null para input inválido', () => {
       expect(extractKeyFromUrl(null)).toBeNull();
       expect(extractKeyFromUrl(undefined)).toBeNull();
-      expect(extractKeyFromUrl("")).toBeNull();
+      expect(extractKeyFromUrl('')).toBeNull();
     });
   });
 
-  describe("content types", () => {
-    it("armazena JPEG corretamente", async () => {
+  describe('content types', () => {
+    it('armazena JPEG corretamente', async () => {
       const key = `${TEST_PREFIX}jpeg-${Date.now()}.jpg`;
       createdKeys.push(key);
 
-      await uploadToS3(key, makeBuffer(), "image/jpeg");
+      await uploadToS3(key, makeBuffer(), 'image/jpeg');
 
       const url = getPublicUrl(key);
-      const res = await fetchPublicUrl(url, { method: "HEAD" });
+      const res = await fetchPublicUrl(url, { method: 'HEAD' });
       expect(res.ok).toBe(true);
-      expect(res.headers.get("content-type")).toMatch(/image\/jpeg/);
+      expect(res.headers.get('content-type')).toMatch(/image\/jpeg/);
     });
 
-    it("armazena PNG corretamente", async () => {
+    it('armazena PNG corretamente', async () => {
       const key = `${TEST_PREFIX}png-${Date.now()}.png`;
       createdKeys.push(key);
 
-      await uploadToS3(key, makeBuffer(), "image/png");
+      await uploadToS3(key, makeBuffer(), 'image/png');
 
       const url = getPublicUrl(key);
-      const res = await fetchPublicUrl(url, { method: "HEAD" });
+      const res = await fetchPublicUrl(url, { method: 'HEAD' });
       expect(res.ok).toBe(true);
-      expect(res.headers.get("content-type")).toMatch(/image\/png/);
+      expect(res.headers.get('content-type')).toMatch(/image\/png/);
     });
 
-    it("armazena WebP corretamente", async () => {
+    it('armazena WebP corretamente', async () => {
       const key = `${TEST_PREFIX}webp-${Date.now()}.webp`;
       createdKeys.push(key);
 
-      await uploadToS3(key, makeBuffer(), "image/webp");
+      await uploadToS3(key, makeBuffer(), 'image/webp');
 
       const url = getPublicUrl(key);
-      const res = await fetchPublicUrl(url, { method: "HEAD" });
+      const res = await fetchPublicUrl(url, { method: 'HEAD' });
       expect(res.ok).toBe(true);
-      expect(res.headers.get("content-type")).toMatch(/image\/webp/);
+      expect(res.headers.get('content-type')).toMatch(/image\/webp/);
     });
   });
 });

@@ -9,10 +9,10 @@
  */
 
 /** Nome do sistema — sufixo de todos os títulos de aba. */
-export const APP_NAME = "Sistema de Atendimento por Senhas";
+export const APP_NAME = 'Sistema de Atendimento por Senhas';
 
 /** Separador entre o nome da tela e o nome do sistema. */
-export const APP_TITLE_SEPARATOR = " | ";
+export const APP_TITLE_SEPARATOR = ' | ';
 
 /**
  * Template do título, usado pelo layout raiz.
@@ -31,12 +31,12 @@ export const APP_TITLE_TEMPLATE = `%s${APP_TITLE_SEPARATOR}${APP_NAME}`;
  * registros serem lidos lado a lado.
  */
 export const PAGE_TITLES = {
-  "/login": "Login",
-  "/home": "Home",
-  "/painel": "Painel de Atendimento",
-  "/historico": "Histórico",
-  "/admin": "Administração",
-  "/monitor/[sector]": "Monitor",
+  '/login': 'Login',
+  '/home': 'Home',
+  '/painel': 'Painel de Atendimento',
+  '/historico': 'Histórico',
+  '/admin': 'Administração',
+  '/monitor/[sector]': 'Monitor',
 } as const satisfies Record<string, string>;
 
 /** Rota que tem título no registro. */

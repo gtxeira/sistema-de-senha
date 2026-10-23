@@ -1,12 +1,12 @@
-import { eventManager } from "@/server/realtime/event-manager";
-import type { Unsubscribe } from "@/server/realtime/event-manager";
-import { assertSectorAccess, requireSession } from "@/server/http/api-auth";
+import { eventManager } from '@/server/realtime/event-manager';
+import type { Unsubscribe } from '@/server/realtime/event-manager';
+import { assertSectorAccess, requireSession } from '@/server/http/api-auth';
 import {
   KEEPALIVE_INTERVAL,
   MAX_SSE_CONNECTIONS_PER_SECTOR,
   SSE_EVENT_TYPES,
   isSectorId,
-} from "@/shared/constants";
+} from '@/shared/constants';
 
 /**
  * GET /api/queue/events?sector=farmacia
@@ -25,15 +25,15 @@ export async function GET(request: Request) {
   if (error) return error;
 
   const { searchParams } = new URL(request.url);
-  const sector = searchParams.get("sector");
+  const sector = searchParams.get('sector');
 
   if (!isSectorId(sector)) {
-    return new Response("Invalid sector.", {
+    return new Response('Invalid sector.', {
       status: 400,
     });
   }
 
-  const scope = assertSectorAccess(session, sector, "read");
+  const scope = assertSectorAccess(session, sector, 'read');
   if (scope.error) return scope.error;
 
   // Reject before opening a stream so an over-limit caller never holds a file
@@ -41,9 +41,9 @@ export async function GET(request: Request) {
   if (
     eventManager.getSubscriberCount(sector) >= MAX_SSE_CONNECTIONS_PER_SECTOR
   ) {
-    return new Response("Too many connections.", {
+    return new Response('Too many connections.', {
       status: 429,
-      headers: { "Retry-After": "5" },
+      headers: { 'Retry-After': '5' },
     });
   }
 
@@ -55,12 +55,12 @@ export async function GET(request: Request) {
   const stream = new ReadableStream({
     start(controller) {
       // Send initial connection comment to establish the stream
-      controller.enqueue(":connected\n\n");
+      controller.enqueue(':connected\n\n');
 
       // Keepalive comments to prevent proxy/browser timeouts
       keepaliveTimer = setInterval(() => {
         try {
-          controller.enqueue(":ping\n\n");
+          controller.enqueue(':ping\n\n');
         } catch {
           // Controller may be closed
           clearInterval(keepaliveTimer);
@@ -124,7 +124,7 @@ export async function GET(request: Request) {
   });
 
   // Handle client disconnect via abort signal
-  request.signal.addEventListener("abort", () => {
+  request.signal.addEventListener('abort', () => {
     clearInterval(keepaliveTimer);
     unsubscribeCalls?.();
     unsubscribeRecalls?.();
@@ -133,10 +133,10 @@ export async function GET(request: Request) {
 
   return new Response(stream, {
     headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache, no-transform",
-      Connection: "keep-alive",
-      "X-Accel-Buffering": "no", // Disable nginx buffering
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache, no-transform',
+      Connection: 'keep-alive',
+      'X-Accel-Buffering': 'no', // Disable nginx buffering
     },
   });
 }

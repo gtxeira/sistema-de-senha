@@ -1,6 +1,6 @@
-import { getRecent } from "@/server/services/queue-service";
-import { assertSectorAccess, requireSession } from "@/server/http/api-auth";
-import { DEFAULT_RECENT_LIMIT, isSectorId } from "@/shared/constants";
+import { getRecent } from '@/server/services/queue-service';
+import { assertSectorAccess, requireSession } from '@/server/http/api-auth';
+import { DEFAULT_RECENT_LIMIT, isSectorId } from '@/shared/constants';
 
 /**
  * GET /api/queue/recent?sector=farmacia&limit=30
@@ -18,17 +18,17 @@ export async function GET(request: Request) {
   if (error) return error;
 
   const { searchParams } = new URL(request.url);
-  const sector = searchParams.get("sector");
-  const limit = parseInt(searchParams.get("limit") || String(DEFAULT_RECENT_LIMIT), 10);
+  const sector = searchParams.get('sector');
+  const limit = parseInt(
+    searchParams.get('limit') || String(DEFAULT_RECENT_LIMIT),
+    10,
+  );
 
   if (!isSectorId(sector)) {
-    return Response.json(
-      { error: "Invalid sector." },
-      { status: 400 },
-    );
+    return Response.json({ error: 'Invalid sector.' }, { status: 400 });
   }
 
-  const scope = assertSectorAccess(session, sector, "read");
+  const scope = assertSectorAccess(session, sector, 'read');
   if (scope.error) return scope.error;
 
   try {
@@ -36,7 +36,7 @@ export async function GET(request: Request) {
     return Response.json(result);
   } catch {
     return Response.json(
-      { calls: [], resetAt: null, error: "Não foi possível carregar a fila." },
+      { calls: [], resetAt: null, error: 'Não foi possível carregar a fila.' },
       { status: 500 },
     );
   }

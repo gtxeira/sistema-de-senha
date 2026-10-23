@@ -1,15 +1,15 @@
-import "server-only";
+import 'server-only';
 
-import { prisma } from "@/server/db/prisma-client";
-import type { Prisma } from "@/server/generated/prisma/client";
-import { normalizeCallType } from "@/shared/queue-format";
+import { prisma } from '@/server/db/prisma-client';
+import type { Prisma } from '@/server/generated/prisma/client';
+import { normalizeCallType } from '@/shared/queue-format';
 import {
   DEFAULT_RECENT_LIMIT,
   MAX_QUEUE_NUMBER,
   MIN_QUEUE_NUMBER,
-} from "@/shared/constants";
-import type { SequenceType } from "@/shared/constants";
-import type { QueueCallInput, QueueRepository, RecentCall } from "./types";
+} from '@/shared/constants';
+import type { SequenceType } from '@/shared/constants';
+import type { QueueCallInput, QueueRepository, RecentCall } from './types';
 
 export class PostgresQueueRepository implements QueueRepository {
   /**
@@ -68,7 +68,9 @@ export class PostgresQueueRepository implements QueueRepository {
   }
 
   /** Save a queue call */
-  async saveCall(call: QueueCallInput): Promise<{ id: string; createdAt: string }> {
+  async saveCall(
+    call: QueueCallInput,
+  ): Promise<{ id: string; createdAt: string }> {
     const { sector, number, numberStr, sequenceType, attendantId } = call;
 
     // Validate attendantId format (UUID v1-v8)
@@ -152,8 +154,14 @@ export class PostgresQueueRepository implements QueueRepository {
     const { sequenceType } = normalizeCallType(type);
     const num = Number(nextNumber);
 
-    if (!Number.isInteger(num) || num < MIN_QUEUE_NUMBER || num > MAX_QUEUE_NUMBER) {
-      throw new Error(`Número inválido ("${num}"). Use um valor entre ${MIN_QUEUE_NUMBER} e ${MAX_QUEUE_NUMBER}.`);
+    if (
+      !Number.isInteger(num) ||
+      num < MIN_QUEUE_NUMBER ||
+      num > MAX_QUEUE_NUMBER
+    ) {
+      throw new Error(
+        `Número inválido ("${num}"). Use um valor entre ${MIN_QUEUE_NUMBER} e ${MAX_QUEUE_NUMBER}.`,
+      );
     }
 
     // Store nextNumber - 1 because nextNumber() increments before returning
@@ -196,7 +204,7 @@ export class PostgresQueueRepository implements QueueRepository {
       const calls = await prisma.queue_calls.findMany({
         where,
         orderBy: {
-          created_at: "desc",
+          created_at: 'desc',
         },
         take: limit,
         select: {
@@ -212,7 +220,7 @@ export class PostgresQueueRepository implements QueueRepository {
         number: call.number_int,
         // O enum do banco só admite 'normal'|'preferencial'; a grafia
         // 'preferential' existe só na API e nunca chega a esta coluna.
-        type: call.type === "preferencial" ? "preferencial" : "normal",
+        type: call.type === 'preferencial' ? 'preferencial' : 'normal',
         // O INSTANTE, não "HH:mm": quem exibe formata em BRT, e o
         // cliente precisa do dia para fazer a virada do histórico.
         createdAt: new Date(call.created_at || Date.now()).toISOString(),

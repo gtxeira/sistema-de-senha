@@ -1,6 +1,6 @@
-import { describe, beforeEach, afterEach } from "vitest";
-import { prisma } from "@/server/db/prisma-client";
-import { queueRepoContract } from "../../contracts/queue-repo.contract";
+import { describe, beforeEach, afterEach } from 'vitest';
+import { prisma } from '@/server/db/prisma-client';
+import { queueRepoContract } from '../../contracts/queue-repo.contract';
 
 // Check if Postgres is available
 const isPostgresReady = Boolean(process.env.DATABASE_URL);
@@ -16,7 +16,7 @@ async function cleanupQueueTestData() {
   await prisma.sectors.updateMany({ data: { reset_at: null } });
 }
 
-describeIfPostgres("QueueRepository — Postgres integration", () => {
+describeIfPostgres('QueueRepository — Postgres integration', () => {
   beforeEach(async () => {
     await cleanupQueueTestData();
   });
@@ -26,9 +26,8 @@ describeIfPostgres("QueueRepository — Postgres integration", () => {
   });
 
   queueRepoContract(async () => {
-    const { PostgresQueueRepository } = await import(
-      "@/server/repositories/queue-repo.postgres"
-    );
+    const { PostgresQueueRepository } =
+      await import('@/server/repositories/queue-repo.postgres');
     return new PostgresQueueRepository();
   });
 });

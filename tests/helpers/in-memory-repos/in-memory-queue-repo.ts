@@ -1,9 +1,9 @@
-import type { SequenceType } from "@/shared/constants";
+import type { SequenceType } from '@/shared/constants';
 import type {
   QueueCallInput,
   QueueRepository,
   RecentCall,
-} from "@/server/repositories/types";
+} from '@/server/repositories/types';
 
 /** Linha persistida: o input da chamada + id gerado e timestamp monotônico. */
 interface StoredCall extends QueueCallInput {
@@ -36,7 +36,9 @@ export class InMemoryQueueRepository implements QueueRepository {
     type: SequenceType,
   ): Promise<{ number: number; wraparound: boolean }> {
     const key = `${sector}:${type}`;
-    const current = this.#sequences.has(key) ? (this.#sequences.get(key) ?? -1) : -1;
+    const current = this.#sequences.has(key)
+      ? (this.#sequences.get(key) ?? -1)
+      : -1;
 
     const next = current + 1;
     const wraparound = next > 999;
@@ -90,7 +92,7 @@ export class InMemoryQueueRepository implements QueueRepository {
       .map((c) => ({
         id: c.id,
         number: c.number,
-        type: c.sequenceType === "preferencial" ? "preferencial" : "normal",
+        type: c.sequenceType === 'preferencial' ? 'preferencial' : 'normal',
         // O INSTANTE, não "HH:mm": quem exibe formata em BRT, e o
         // cliente precisa do dia para fazer a virada do histórico.
         createdAt: c.created_at.toISOString(),
@@ -104,7 +106,7 @@ export class InMemoryQueueRepository implements QueueRepository {
   ): Promise<void> {
     const num = Number(nextNumber);
     if (!Number.isInteger(num) || num < 0 || num > 999) {
-      throw new Error("Número inválido. Use um valor entre 0 e 999.");
+      throw new Error('Número inválido. Use um valor entre 0 e 999.');
     }
     // Store nextNumber - 1 because nextNumber() increments before returning
     const key = `${sector}:${type}`;

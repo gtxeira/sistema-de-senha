@@ -1,4 +1,4 @@
-import { EMAIL_DOMAIN, DEFAULT_GUICHE } from "./constants";
+import { EMAIL_DOMAIN, DEFAULT_GUICHE } from './constants';
 
 /**
  * Formatação pura de dados de usuário — compartilhada entre a UI (avatar) e
@@ -10,7 +10,7 @@ export function initials(fullName: string): string {
   return fullName
     .split(/\s+/)
     .map((part) => part[0])
-    .join("")
+    .join('')
     .slice(0, 2)
     .toUpperCase();
 }

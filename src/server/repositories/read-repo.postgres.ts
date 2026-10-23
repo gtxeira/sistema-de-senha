@@ -1,17 +1,22 @@
-import "server-only";
+import 'server-only';
 
-import { prisma } from "@/server/db/prisma-client";
-import type { Prisma } from "@/server/generated/prisma/client";
+import { prisma } from '@/server/db/prisma-client';
+import type { Prisma } from '@/server/generated/prisma/client';
 import {
   MIN_DAYS,
   MAX_DAYS,
   DEFAULT_DAYS,
   CALL_TYPES,
   PAGE_SIZES,
-} from "@/shared/constants";
-import { dayWindow, startOfDay } from "@/shared/time";
-import { normalizePage, normalizePageSize } from "@/shared/validation";
-import type { HistoryCall, QueueStats, ReadRepository, StatsOptions } from "./types";
+} from '@/shared/constants';
+import { dayWindow, startOfDay } from '@/shared/time';
+import { normalizePage, normalizePageSize } from '@/shared/validation';
+import type {
+  HistoryCall,
+  QueueStats,
+  ReadRepository,
+  StatsOptions,
+} from './types';
 
 /** Linha como o `findMany` de `getRecentCalls` devolve. */
 type RecentRow = Prisma.queue_callsGetPayload<{
@@ -52,9 +57,10 @@ function formatCallRecord(call: RecentRow): HistoryCall {
     number: call.number_int,
     // O enum do banco só admite 'normal'|'preferencial'; a grafia
     // 'preferential' existe só na API e nunca chega a esta coluna.
-    type: call.type === CALL_TYPES.PREFERENCIAL
-      ? CALL_TYPES.PREFERENCIAL
-      : CALL_TYPES.NORMAL,
+    type:
+      call.type === CALL_TYPES.PREFERENCIAL
+        ? CALL_TYPES.PREFERENCIAL
+        : CALL_TYPES.NORMAL,
     // O INSTANTE, não "HH:mm": um horário sem data não diz de que dia
     // a chamada foi — e é o dia que decide se ela entra em "Hoje".
     createdAt: new Date(call.created_at || Date.now()).toISOString(),
@@ -102,7 +108,9 @@ export class PostgresReadRepository implements ReadRepository {
       // `pageWhere` acrescenta o filtro de tipo (usada pela TABELA). O
       // resumo ignora o filtro de tipo de propósito — "Total no período" e
       // "Atendimentos hoje" não mudam ao filtrar a tabela por preferencial.
-      const windowWhere: Prisma.queue_callsWhereInput = { created_at: createdAt };
+      const windowWhere: Prisma.queue_callsWhereInput = {
+        created_at: createdAt,
+      };
       if (sector) {
         windowWhere.sector_id = sector;
       }
@@ -114,7 +122,8 @@ export class PostgresReadRepository implements ReadRepository {
       // "Hoje" recortado DENTRO da janela: o piso é o maior dos dois. Se a
       // janela começa depois da meia-noite (um `since` explícito no futuro,
       // por exemplo), `today` não pode contar chamadas fora dela.
-      const todayFrom = todayStart.getTime() > since.getTime() ? todayStart : since;
+      const todayFrom =
+        todayStart.getTime() > since.getTime() ? todayStart : since;
       const todayWhereClause: Prisma.queue_callsWhereInput = {
         ...windowWhere,
         created_at: until
@@ -137,7 +146,7 @@ export class PostgresReadRepository implements ReadRepository {
         prisma.queue_calls.count({ where: windowWhere }),
         prisma.queue_calls.count({ where: todayWhereClause }),
         prisma.queue_calls.groupBy({
-          by: ["type"],
+          by: ['type'],
           where: windowWhere,
           _count: true,
         }),
@@ -146,7 +155,8 @@ export class PostgresReadRepository implements ReadRepository {
       // O enum do banco só admite 'normal'|'preferencial' — então o total
       // de preferenciais vem do próprio agrupamento, sem uma query extra.
       const prefCount =
-        typeGroups.find((entry) => entry.type === CALL_TYPES.PREFERENCIAL)?._count ?? 0;
+        typeGroups.find((entry) => entry.type === CALL_TYPES.PREFERENCIAL)
+          ?._count ?? 0;
       const normalCount = total - prefCount;
 
       // `pagination.total` é o total FILTRADO (janela + setor + tipo). Com
@@ -168,7 +178,7 @@ export class PostgresReadRepository implements ReadRepository {
       // única a paginação repetiria ou pularia registros.
       const calls = await prisma.queue_calls.findMany({
         where: pageWhere,
-        orderBy: [{ created_at: "desc" }, { id: "desc" }],
+        orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
         skip: (page - 1) * pageSize,
         take: pageSize,
         select: {
@@ -189,7 +199,9 @@ export class PostgresReadRepository implements ReadRepository {
           Math.max(
             MIN_DAYS,
             until
-              ? Math.ceil((until.getTime() - since.getTime()) / (24 * 60 * 60 * 1000))
+              ? Math.ceil(
+                  (until.getTime() - since.getTime()) / (24 * 60 * 60 * 1000),
+                )
               : days,
           ),
         ),
@@ -209,7 +221,10 @@ export class PostgresReadRepository implements ReadRepository {
       };
     } catch {
       // On error, return empty structure instead of throwing
-      const days = Math.min(MAX_DAYS, Math.max(MIN_DAYS, Number(options.days) || DEFAULT_DAYS));
+      const days = Math.min(
+        MAX_DAYS,
+        Math.max(MIN_DAYS, Number(options.days) || DEFAULT_DAYS),
+      );
       const page = normalizePage(options.page);
       return emptyResponse(days, page, normalizePageSize(options.pageSize));
     }

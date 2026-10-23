@@ -1,8 +1,20 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { seedTestNews, cleanupTestNews, cleanupAllNews } from "../../postgres-setup";
-import { objectExistsInS3, extractKeyFromUrl, deleteFromS3 } from "@/server/storage/s3-client";
-import { readJson } from "@/shared/json";
-import type { NewsCreateBody, NewsListBody, SuccessBody } from "@/shared/types/api";
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import {
+  seedTestNews,
+  cleanupTestNews,
+  cleanupAllNews,
+} from '../../postgres-setup';
+import {
+  objectExistsInS3,
+  extractKeyFromUrl,
+  deleteFromS3,
+} from '@/server/storage/s3-client';
+import { readJson } from '@/shared/json';
+import type {
+  NewsCreateBody,
+  NewsListBody,
+  SuccessBody,
+} from '@/shared/types/api';
 
 const S3_PUBLIC_URL = process.env.S3_PUBLIC_URL;
 
@@ -10,17 +22,17 @@ let createdIds: number[] = [];
 let createdKeys: Array<string | null> = [];
 
 async function importRoute() {
-  return import("@/app/api/news/route");
+  return import('@/app/api/news/route');
 }
 
 async function importNewsRepo() {
-  const mod = await import("@/server/repositories");
+  const mod = await import('@/server/repositories');
   return mod.news;
 }
 
 function makeImage({
-  name = "test.jpg",
-  type = "image/jpeg",
+  name = 'test.jpg',
+  type = 'image/jpeg',
   size = 1024,
 }: { name?: string; type?: string; size?: number } = {}) {
   const data = new Uint8Array(size);
@@ -43,7 +55,7 @@ function isUrl(str?: string) {
   return str !== undefined && URL.canParse(str);
 }
 
-describe("/api/news — integration", () => {
+describe('/api/news — integration', () => {
   beforeEach(() => {
     createdIds = [];
     createdKeys = [];
@@ -55,12 +67,12 @@ describe("/api/news — integration", () => {
     createdIds = [];
   });
 
-  describe("GET", () => {
-    it("retorna lista de notícias ativas", async () => {
+  describe('GET', () => {
+    it('retorna lista de notícias ativas', async () => {
       const repo = await importNewsRepo();
       const result = await repo.create({
-        title: "Notícia GET Teste",
-        image: makeImage({ name: "get-test.jpg" }),
+        title: 'Notícia GET Teste',
+        image: makeImage({ name: 'get-test.jpg' }),
       });
       createdIds.push(Number(result.news.id));
       createdKeys.push(extractKeyFromUrl(result.news.image));
@@ -72,19 +84,21 @@ describe("/api/news — integration", () => {
       expect(res.status).toBe(200);
       expect(Array.isArray(body.news)).toBe(true);
 
-      const found = body.news.find((n: { id: string }) => n.id === result.news.id);
+      const found = body.news.find(
+        (n: { id: string }) => n.id === result.news.id,
+      );
 
       expect(found).toBeDefined();
-      expect(found?.title).toBe("Notícia GET Teste");
+      expect(found?.title).toBe('Notícia GET Teste');
       expect(isUrl(found?.image)).toBe(true);
       expect(found?.image).toMatch(`${String(S3_PUBLIC_URL)}/`);
     });
 
-    it("não retorna notícias inativas", async () => {
+    it('não retorna notícias inativas', async () => {
       const repo = await importNewsRepo();
       const result = await repo.create({
-        title: "Inativa Teste",
-        image: makeImage({ name: "inativa-test.jpg" }),
+        title: 'Inativa Teste',
+        image: makeImage({ name: 'inativa-test.jpg' }),
       });
       createdIds.push(Number(result.news.id));
       createdKeys.push(extractKeyFromUrl(result.news.image));
@@ -96,11 +110,13 @@ describe("/api/news — integration", () => {
       const body = await readJson<NewsListBody>(res);
 
       expect(res.status).toBe(200);
-      const found = body.news.find((n: { id: string }) => n.id === result.news.id);
+      const found = body.news.find(
+        (n: { id: string }) => n.id === result.news.id,
+      );
       expect(found).toBeUndefined();
     });
 
-    it("retorna no máximo 10 notícias", async () => {
+    it('retorna no máximo 10 notícias', async () => {
       await cleanupAllNews();
       for (let i = 0; i < 12; i++) {
         const { id } = await seedTestNews({ title: `Max News ${i}` });
@@ -115,15 +131,15 @@ describe("/api/news — integration", () => {
       expect(body.news).toHaveLength(10);
     });
 
-    it("retorna notícias ordenadas por created_at desc", async () => {
+    it('retorna notícias ordenadas por created_at desc', async () => {
       await cleanupAllNews();
       const older = await seedTestNews({
-        title: "Mais antiga",
-        created_at: new Date("2020-01-01"),
+        title: 'Mais antiga',
+        created_at: new Date('2020-01-01'),
       });
       const newer = await seedTestNews({
-        title: "Mais recente",
-        created_at: new Date("2030-01-01"),
+        title: 'Mais recente',
+        created_at: new Date('2030-01-01'),
       });
       createdIds.push(older.id, newer.id);
 
@@ -132,48 +148,60 @@ describe("/api/news — integration", () => {
       const body = await readJson<NewsListBody>(res);
 
       expect(res.status).toBe(200);
-      expect(body.news[0].title).toBe("Mais recente");
-      expect(body.news[1].title).toBe("Mais antiga");
+      expect(body.news[0].title).toBe('Mais recente');
+      expect(body.news[1].title).toBe('Mais antiga');
     });
   });
 
-  describe("POST", () => {
-    it("retorna 400 sem título", async () => {
+  describe('POST', () => {
+    it('retorna 400 sem título', async () => {
       const form = new FormData();
-      form.append("image", makeImage());
+      form.append('image', makeImage());
 
       const { POST } = await importRoute();
       const res = await POST(
-        new Request("http://localhost/api/news", { method: "POST", body: form })
+        new Request('http://localhost/api/news', {
+          method: 'POST',
+          body: form,
+        }),
       );
 
       expect(res.status).toBe(400);
       const body = await readJson<NewsCreateBody>(res);
-      expect(body.error).toBe("Título e imagem são obrigatórios");
+      expect(body.error).toBe('Título e imagem são obrigatórios');
     });
 
-    it("retorna 400 sem imagem", async () => {
+    it('retorna 400 sem imagem', async () => {
       const form = new FormData();
-      form.append("title", "Teste");
+      form.append('title', 'Teste');
 
       const { POST } = await importRoute();
       const res = await POST(
-        new Request("http://localhost/api/news", { method: "POST", body: form })
+        new Request('http://localhost/api/news', {
+          method: 'POST',
+          body: form,
+        }),
       );
 
       expect(res.status).toBe(400);
       const body = await readJson<NewsCreateBody>(res);
-      expect(body.error).toBe("Título e imagem são obrigatórios");
+      expect(body.error).toBe('Título e imagem são obrigatórios');
     });
 
-    it("retorna 400 para formato de arquivo inválido", async () => {
+    it('retorna 400 para formato de arquivo inválido', async () => {
       const form = new FormData();
-      form.append("title", "Teste");
-      form.append("image", new File(["x"], "doc.pdf", { type: "application/pdf" }));
+      form.append('title', 'Teste');
+      form.append(
+        'image',
+        new File(['x'], 'doc.pdf', { type: 'application/pdf' }),
+      );
 
       const { POST } = await importRoute();
       const res = await POST(
-        new Request("http://localhost/api/news", { method: "POST", body: form })
+        new Request('http://localhost/api/news', {
+          method: 'POST',
+          body: form,
+        }),
       );
 
       expect(res.status).toBe(400);
@@ -181,22 +209,29 @@ describe("/api/news — integration", () => {
       expect(body.error).toMatch(/Formato inválido/i);
     });
 
-    it("cria notícia, salva no banco e retorna dados", async () => {
+    it('cria notícia, salva no banco e retorna dados', async () => {
       const form = new FormData();
-      form.append("title", "Minha Notícias");
-      form.append("image", makeImage({ name: "foto.jpg", type: "image/jpeg" }));
+      form.append('title', 'Minha Notícias');
+      form.append('image', makeImage({ name: 'foto.jpg', type: 'image/jpeg' }));
 
       const { POST } = await importRoute();
       const res = await POST(
-        new Request("http://localhost/api/news", { method: "POST", body: form })
+        new Request('http://localhost/api/news', {
+          method: 'POST',
+          body: form,
+        }),
       );
 
       expect(res.status).toBe(200);
       const body = await readJson<NewsCreateBody>(res);
       expect(body.success).toBe(true);
-      expect(body.news.title).toBe("Minha Notícias");
+      expect(body.news.title).toBe('Minha Notícias');
       expect(body.news.id).toBeDefined();
-      expect(body.news.image).toMatch(new RegExp(`^${String(S3_PUBLIC_URL).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/`));
+      expect(body.news.image).toMatch(
+        new RegExp(
+          `^${String(S3_PUBLIC_URL).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/`,
+        ),
+      );
 
       createdIds.push(Number(body.news.id));
       createdKeys.push(extractKeyFromUrl(body.news.image));
@@ -205,17 +240,20 @@ describe("/api/news — integration", () => {
       const list = await repo.listActive();
       const found = list.find((n) => n.id === body.news.id);
       expect(found).toBeDefined();
-      expect(found?.title).toBe("Minha Notícias");
+      expect(found?.title).toBe('Minha Notícias');
     });
 
-    it("salva a imagem no S3", async () => {
+    it('salva a imagem no S3', async () => {
       const form = new FormData();
-      form.append("title", "Com Imagem");
-      form.append("image", makeImage({ name: "foto.png", type: "image/png" }));
+      form.append('title', 'Com Imagem');
+      form.append('image', makeImage({ name: 'foto.png', type: 'image/png' }));
 
       const { POST } = await importRoute();
       const res = await POST(
-        new Request("http://localhost/api/news", { method: "POST", body: form })
+        new Request('http://localhost/api/news', {
+          method: 'POST',
+          body: form,
+        }),
       );
 
       expect(res.status).toBe(200);
@@ -230,52 +268,55 @@ describe("/api/news — integration", () => {
       expect(await objectExistsInS3(String(key))).toBe(true);
     });
 
-    it("faz trim no título", async () => {
+    it('faz trim no título', async () => {
       const form = new FormData();
-      form.append("title", "  Com Espaços  ");
-      form.append("image", makeImage());
+      form.append('title', '  Com Espaços  ');
+      form.append('image', makeImage());
 
       const { POST } = await importRoute();
       const res = await POST(
-        new Request("http://localhost/api/news", { method: "POST", body: form })
+        new Request('http://localhost/api/news', {
+          method: 'POST',
+          body: form,
+        }),
       );
 
       expect(res.status).toBe(200);
       const body = await readJson<NewsCreateBody>(res);
-      expect(body.news.title).toBe("Com Espaços");
+      expect(body.news.title).toBe('Com Espaços');
 
       createdIds.push(Number(body.news.id));
       createdKeys.push(extractKeyFromUrl(body.news.image));
     });
   });
 
-  describe("DELETE", () => {
-    it("retorna 400 sem id", async () => {
+  describe('DELETE', () => {
+    it('retorna 400 sem id', async () => {
       const { DELETE } = await importRoute();
-      const res = await DELETE(new Request("http://localhost/api/news"));
+      const res = await DELETE(new Request('http://localhost/api/news'));
 
       expect(res.status).toBe(400);
     });
 
-    it("retorna 400 com id inválido", async () => {
+    it('retorna 400 com id inválido', async () => {
       const { DELETE } = await importRoute();
-      const res = await DELETE(new Request("http://localhost/api/news?id=abc"));
+      const res = await DELETE(new Request('http://localhost/api/news?id=abc'));
 
       expect(res.status).toBe(400);
     });
 
-    it("faz soft delete e retorna success", async () => {
+    it('faz soft delete e retorna success', async () => {
       const repo = await importNewsRepo();
       const result = await repo.create({
-        title: "Para Deletar",
-        image: makeImage({ name: "to-delete.jpg" }),
+        title: 'Para Deletar',
+        image: makeImage({ name: 'to-delete.jpg' }),
       });
       createdIds.push(Number(result.news.id));
       createdKeys.push(extractKeyFromUrl(result.news.image));
 
       const { DELETE } = await importRoute();
       const res = await DELETE(
-        new Request(`http://localhost/api/news?id=${result.news.id}`)
+        new Request(`http://localhost/api/news?id=${result.news.id}`),
       );
 
       expect(res.status).toBe(200);
@@ -287,12 +328,12 @@ describe("/api/news — integration", () => {
       expect(found).toBeUndefined();
     });
 
-    it("remove a imagem do S3 ao deletar", async () => {
+    it('remove a imagem do S3 ao deletar', async () => {
       const repo = await importNewsRepo();
 
       const result = await repo.create({
-        title: "Com Imagem",
-        image: makeImage({ name: "to-delete-img.jpg" }),
+        title: 'Com Imagem',
+        image: makeImage({ name: 'to-delete-img.jpg' }),
       });
 
       createdIds.push(Number(result.news.id));
@@ -301,16 +342,18 @@ describe("/api/news — integration", () => {
 
       const { DELETE } = await importRoute();
       const res = await DELETE(
-        new Request(`http://localhost/api/news?id=${result.news.id}`)
+        new Request(`http://localhost/api/news?id=${result.news.id}`),
       );
 
       expect(res.status).toBe(200);
       expect(await objectExistsInS3(String(key))).toBe(false);
     });
 
-    it("retorna 404 quando notícia não existe", async () => {
+    it('retorna 404 quando notícia não existe', async () => {
       const { DELETE } = await importRoute();
-      const res = await DELETE(new Request("http://localhost/api/news?id=999999"));
+      const res = await DELETE(
+        new Request('http://localhost/api/news?id=999999'),
+      );
 
       expect(res.status).toBe(404);
       const body = await readJson<SuccessBody>(res);
@@ -318,15 +361,21 @@ describe("/api/news — integration", () => {
     });
   });
 
-  describe("fluxo completo", () => {
-    it("cria, lista e deleta notícia", async () => {
+  describe('fluxo completo', () => {
+    it('cria, lista e deleta notícia', async () => {
       const form = new FormData();
-      form.append("title", "Fluxo Completo");
-      form.append("image", makeImage({ name: "fluxo.jpg", type: "image/jpeg" }));
+      form.append('title', 'Fluxo Completo');
+      form.append(
+        'image',
+        makeImage({ name: 'fluxo.jpg', type: 'image/jpeg' }),
+      );
 
       const { POST } = await importRoute();
       const postRes = await POST(
-        new Request("http://localhost/api/news", { method: "POST", body: form })
+        new Request('http://localhost/api/news', {
+          method: 'POST',
+          body: form,
+        }),
       );
       expect(postRes.status).toBe(200);
       const postData = await readJson<NewsCreateBody>(postRes);
@@ -339,17 +388,19 @@ describe("/api/news — integration", () => {
       const getData = await readJson<NewsListBody>(getRes);
       const found = getData.news.find((n: { id: string }) => n.id === newsId);
       expect(found).toBeDefined();
-      expect(found?.title).toBe("Fluxo Completo");
+      expect(found?.title).toBe('Fluxo Completo');
 
       const { DELETE } = await importRoute();
       const delRes = await DELETE(
-        new Request(`http://localhost/api/news?id=${newsId}`)
+        new Request(`http://localhost/api/news?id=${newsId}`),
       );
       expect(delRes.status).toBe(200);
 
       const getRes2 = await GET();
       const getData2 = await readJson<NewsListBody>(getRes2);
-      const notFound = getData2.news.find((n: { id: string }) => n.id === newsId);
+      const notFound = getData2.news.find(
+        (n: { id: string }) => n.id === newsId,
+      );
       expect(notFound).toBeUndefined();
 
       const repo = await importNewsRepo();

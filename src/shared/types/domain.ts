@@ -1,5 +1,5 @@
-import type { PermissionOverride } from "@/shared/permissions";
-import type { SequenceType } from "@/shared/constants";
+import type { PermissionOverride } from '@/shared/permissions';
+import type { SequenceType } from '@/shared/constants';
 
 /**
  * Tipos de domínio compartilhados entre a API e a UI.

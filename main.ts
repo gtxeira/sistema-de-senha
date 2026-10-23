@@ -1,8 +1,8 @@
-import path from "node:path";
-import { app, BrowserWindow, globalShortcut } from "electron";
+import path from 'node:path';
+import { app, BrowserWindow, globalShortcut } from 'electron';
 
 /** O Electron é um kiosk em cima da aplicação publicada. */
-const APP_URL = "https://sistemadesenha-1w3x.vercel.app/login";
+const APP_URL = 'https://sistemadesenha-1w3x.vercel.app/login';
 
 let win: BrowserWindow | null = null;
 
@@ -13,9 +13,9 @@ function createWindow(): void {
   const browserWindow = new BrowserWindow({
     width: 1280,
     height: 800,
-    title: "Sistema de Atendimento",
+    title: 'Sistema de Atendimento',
     autoHideMenuBar: true,
-    icon: path.join(app.getAppPath(), "src", "app", "icon.ico"),
+    icon: path.join(app.getAppPath(), 'src', 'app', 'icon.ico'),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -26,7 +26,7 @@ function createWindow(): void {
 
   void browserWindow.loadURL(APP_URL);
 
-  browserWindow.webContents.on("did-finish-load", () => {
+  browserWindow.webContents.on('did-finish-load', () => {
     browserWindow.webContents.setAudioMuted(false);
   });
 }
@@ -40,9 +40,9 @@ function registerGlobalShortcuts(): void {
     readonly keys: readonly string[];
     readonly triggerKey: string;
   }> = [
-    { keys: ["Right"], triggerKey: "ArrowRight" }, // Próxima normal
-    { keys: ["Left"], triggerKey: "ArrowLeft" }, // Preferencial
-    { keys: ["Up"], triggerKey: "ArrowUp" }, // Repetir
+    { keys: ['Right'], triggerKey: 'ArrowRight' }, // Próxima normal
+    { keys: ['Left'], triggerKey: 'ArrowLeft' }, // Preferencial
+    { keys: ['Up'], triggerKey: 'ArrowUp' }, // Repetir
   ];
 
   for (const { keys, triggerKey } of shortcuts) {
@@ -68,15 +68,15 @@ void app.whenReady().then(() => {
   createWindow();
   registerGlobalShortcuts();
 
-  app.on("activate", () => {
+  app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
 
-app.on("will-quit", () => {
+app.on('will-quit', () => {
   globalShortcut.unregisterAll();
 });
 
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") app.quit();
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') app.quit();
 });

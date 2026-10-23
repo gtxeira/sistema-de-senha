@@ -1,9 +1,9 @@
-import "server-only";
+import 'server-only';
 
-import { users } from "@/server/repositories";
-import { routeError } from "@/server/http/errors";
-import type { CreateUserInput, UserRecord } from "@/shared/types/domain";
-import type { UserPatchBody } from "@/shared/types/api";
+import { users } from '@/server/repositories';
+import { routeError } from '@/server/http/errors';
+import type { CreateUserInput, UserRecord } from '@/shared/types/domain';
+import type { UserPatchBody } from '@/shared/types/api';
 
 /**
  * Use cases de usuários.
@@ -42,7 +42,7 @@ export async function updateUser(
       body.role_id !== undefined ||
       body.role !== undefined)
   ) {
-    throw routeError(400, "Você não pode alterar o próprio cargo ou situação.");
+    throw routeError(400, 'Você não pode alterar o próprio cargo ou situação.');
   }
 
   const { permissions, ...data } = body;
@@ -55,7 +55,7 @@ export async function updateUser(
 
   const user = (await users.list()).find((candidate) => candidate.id === id);
   if (!user) {
-    throw routeError(404, "Usuário não encontrado");
+    throw routeError(404, 'Usuário não encontrado');
   }
 
   return { success: true, user };
@@ -66,7 +66,7 @@ export async function deleteUser(
   actorId: string,
 ): Promise<{ success: true }> {
   if (id === actorId) {
-    throw routeError(400, "Você não pode excluir o próprio usuário.");
+    throw routeError(400, 'Você não pode excluir o próprio usuário.');
   }
 
   await users.remove(id);

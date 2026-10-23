@@ -1,4 +1,4 @@
-import "server-only";
+import 'server-only';
 
 /**
  * Refresh tokens da sessão (server-only — importar apenas em Route Handlers).
@@ -18,12 +18,12 @@ import "server-only";
  * real satisfaz a interface por estrutura, e o fake dos testes unitários
  * também, sem cast.
  */
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes } from 'node:crypto';
 import {
   REFRESH_COOKIE_NAME,
   REFRESH_REUSE_GRACE,
   REFRESH_TOKEN_MAX_AGE,
-} from "@/shared/constants";
+} from '@/shared/constants';
 
 export { REFRESH_COOKIE_NAME };
 
@@ -61,18 +61,18 @@ export interface RefreshTokenStore {
 /* ─── Valores puros ─────────────────────────────────────────────────────────── */
 
 export function hashRefreshToken(raw: string): string {
-  return createHash("sha256").update(String(raw)).digest("hex");
+  return createHash('sha256').update(String(raw)).digest('hex');
 }
 
 export function generateRefreshToken(): string {
-  return randomBytes(32).toString("base64url");
+  return randomBytes(32).toString('base64url');
 }
 
 export interface RefreshCookieOptions {
   readonly httpOnly: true;
-  readonly sameSite: "lax";
+  readonly sameSite: 'lax';
   readonly secure: boolean;
-  readonly path: "/";
+  readonly path: '/';
   readonly maxAge: number;
 }
 
@@ -88,19 +88,21 @@ export function refreshCookieOptions(
 ): RefreshCookieOptions {
   return {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: 'lax',
     secure: !!secure,
-    path: "/",
+    path: '/',
     maxAge: Math.max(0, Math.floor((expiresAt.getTime() - Date.now()) / 1000)),
   };
 }
 
-export function clearRefreshCookieOptions(secure: boolean): ClearRefreshCookieOptions {
+export function clearRefreshCookieOptions(
+  secure: boolean,
+): ClearRefreshCookieOptions {
   return {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: 'lax',
     secure: !!secure,
-    path: "/",
+    path: '/',
     maxAge: 0,
     expires: new Date(0),
   };
@@ -129,11 +131,16 @@ export async function issueRefreshToken(
   return { raw, expiresAt, familyId };
 }
 
-export type RotateFailure = "unknown" | "expired" | "revoked" | "conflict";
+export type RotateFailure = 'unknown' | 'expired' | 'revoked' | 'conflict';
 
 /** União discriminada por `ok`: `result.raw` só existe no ramo de sucesso. */
 export type RotateResult =
-  | { readonly ok: true; readonly raw: string; readonly userId: string; readonly expiresAt: Date }
+  | {
+      readonly ok: true;
+      readonly raw: string;
+      readonly userId: string;
+      readonly expiresAt: Date;
+    }
   | { readonly ok: false; readonly reason: RotateFailure };
 
 /**
@@ -147,7 +154,7 @@ export async function rotateRefreshToken(
     where: { token_hash: hashRefreshToken(raw) },
   });
 
-  if (!row) return { ok: false, reason: "unknown" };
+  if (!row) return { ok: false, reason: 'unknown' };
 
   if (row.used_at) {
     const ageMs = Date.now() - row.used_at.getTime();
@@ -155,18 +162,18 @@ export async function rotateRefreshToken(
       // Dois fluxos do mesmo cliente rotacionaram quase ao mesmo tempo:
       // o vencedor já emitiu os cookies. Não revoga (o "atacante" aqui é
       // o próprio cliente), apenas sinaliza para o perdedor repetir.
-      return { ok: false, reason: "conflict" };
+      return { ok: false, reason: 'conflict' };
     }
     // Reuso fora da graça: possível roubo do token. Revoga a família.
     await prisma.refresh_tokens.deleteMany({
       where: { family_id: row.family_id },
     });
-    return { ok: false, reason: "revoked" };
+    return { ok: false, reason: 'revoked' };
   }
 
   if (row.expires_at.getTime() <= Date.now()) {
     await prisma.refresh_tokens.deleteMany({ where: { id: row.id } });
-    return { ok: false, reason: "expired" };
+    return { ok: false, reason: 'expired' };
   }
 
   const nextRaw = generateRefreshToken();
@@ -186,7 +193,12 @@ export async function rotateRefreshToken(
     }),
   ]);
 
-  return { ok: true, raw: nextRaw, userId: row.user_id, expiresAt: row.expires_at };
+  return {
+    ok: true,
+    raw: nextRaw,
+    userId: row.user_id,
+    expiresAt: row.expires_at,
+  };
 }
 
 /**

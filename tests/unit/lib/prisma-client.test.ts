@@ -1,19 +1,19 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // O client gerado (prisma-client) importa o runtime real do Prisma; o adapter
 // também é substituído para o teste não depender de um DATABASE_URL válido.
-vi.mock("@/server/generated/prisma/client", () => ({
+vi.mock('@/server/generated/prisma/client', () => ({
   PrismaClient: vi.fn(),
 }));
 
-vi.mock("@prisma/adapter-pg", () => ({
+vi.mock('@prisma/adapter-pg', () => ({
   // função comum (não arrow): o código real instancia com `new`
   PrismaPg: vi.fn(function PrismaPg() {
     return { __adapter: true };
   }),
 }));
 
-import { PrismaClient } from "@/server/generated/prisma/client";
+import { PrismaClient } from '@/server/generated/prisma/client';
 
 /** Espelha o alias que `src/server/db/prisma-client.ts` usa para gravar em globalThis. */
 const globalForPrisma = globalThis as typeof globalThis & {
@@ -29,12 +29,12 @@ beforeEach(() => {
 });
 
 async function importClient() {
-  const mod = await import("@/server/db/prisma-client");
+  const mod = await import('@/server/db/prisma-client');
   return mod.prisma;
 }
 
-describe("prisma-client", () => {
-  it("cria uma instância do PrismaClient", async () => {
+describe('prisma-client', () => {
+  it('cria uma instância do PrismaClient', async () => {
     const prisma = await importClient();
 
     expect(PrismaClientMock).toHaveBeenCalledTimes(1);
@@ -43,7 +43,7 @@ describe("prisma-client", () => {
     expect(PrismaClientMock.mock.instances[0]).toBe(prisma);
   });
 
-  it("reutiliza a mesma instância via globalThis fora de produção", async () => {
+  it('reutiliza a mesma instância via globalThis fora de produção', async () => {
     const prisma = await importClient();
 
     expect(globalForPrisma.prisma).toBe(prisma);

@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 import {
   Check,
   Minus,
@@ -12,25 +12,25 @@ import {
   Headset,
   LucideIcon,
   ChevronDown,
-  Eye
-} from "lucide-react";
+  Eye,
+} from 'lucide-react';
 import {
   SECTORS,
   USERNAME_REGEX,
   USERNAME_REGEX_LABEL,
   getSector,
-} from "@/shared/constants";
-import { errorMessage } from "@/shared/errors";
-import { readJson } from "@/shared/json";
-import { toast } from "sonner";
+} from '@/shared/constants';
+import { errorMessage } from '@/shared/errors';
+import { readJson } from '@/shared/json';
+import { toast } from 'sonner';
 import type {
   RolesListBody,
   RoleSaveBody,
   SuccessBody,
   UsersListBody,
   UserSaveBody,
-} from "@/shared/types/api";
-import type { RoleRecord, UserRecord } from "@/shared/types/domain";
+} from '@/shared/types/api';
+import type { RoleRecord, UserRecord } from '@/shared/types/domain';
 import {
   ALL_PERMISSIONS,
   PERMISSION_GROUPS,
@@ -40,8 +40,8 @@ import {
   USERS_EDIT,
   USERS_VIEW,
   computeEffectivePermissions,
-} from "@/shared/permissions";
-import { useCan } from "@/stores/use-session-store";
+} from '@/shared/permissions';
+import { useCan } from '@/stores/use-session-store';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -51,17 +51,17 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -70,7 +70,7 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -78,83 +78,85 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Textarea } from "@/components/ui/textarea";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { FilterGroup } from "@/components/filter-group";
+} from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { FilterGroup } from '@/components/filter-group';
 import {
   sectionEyebrowStyle,
   sectionHeadingStyle,
   sectionStyle,
   sectionTitleStyle,
-} from "@/app/(authenticated)/(dashboard)/admin/admin-styles";
-import { cn } from "@/client/utils";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PasswordInput } from "@/components/ui/password-input";
+} from '@/app/(authenticated)/(dashboard)/admin/admin-styles';
+import { cn } from '@/client/utils';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PasswordInput } from '@/components/ui/password-input';
 
-const INHERIT = "inherit";
-const GRANT = "grant";
-const DENY = "deny";
+const INHERIT = 'inherit';
+const GRANT = 'grant';
+const DENY = 'deny';
 
 const EMPTY_USER_FORM = {
-  username: "",
-  password: "",
-  full_name: "",
-  role_id: "",
-  sector_id: "",
+  username: '',
+  password: '',
+  full_name: '',
+  role_id: '',
+  sector_id: '',
   active: true,
 };
 
-const EMPTY_ROLE_FORM = { key: "", name: "", description: "", built_in: false };
+const EMPTY_ROLE_FORM = { key: '', name: '', description: '', built_in: false };
 
 /* ── classes locais desta seção (as comuns vêm de ./admin-styles) ── */
 
 /* Formulários: agora dentro de Dialog — o card `.userForm` (fundo, borda e
    margens) some com o diálogo; campos e matriz mantêm o visual exato. */
 const formRowStyle =
-  "mb-4 grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-4";
+  'mb-4 grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-4';
 const permMatrixStyle =
-  "mb-[18px] rounded-[10px] border border-[#dde9ed] bg-[#f9fcfe] p-[18px]";
+  'mb-[18px] rounded-[10px] border border-[#dde9ed] bg-[#f9fcfe] p-[18px]';
 const permMatrixTitleStyle =
-  "flex flex-wrap items-center justify-between gap-2 text-[12px] font-bold uppercase tracking-[0.5px] text-[#416477]";
-const permGroupStyle = "mb-4";
+  'flex flex-wrap items-center justify-between gap-2 text-[12px] font-bold uppercase tracking-[0.5px] text-[#416477]';
+const permGroupStyle = 'mb-4';
 const permGroupTitleStyle =
-  "mb-2 text-[11px] font-extrabold uppercase tracking-[0.8px] text-[#7a9aad]";
+  'mb-2 text-[11px] font-extrabold uppercase tracking-[0.8px] text-[#7a9aad]';
 /* No mobile a permissão e o seletor Herdar/Conceder/Negar empilham: lado a
    lado o trio de botões não cabia na largura do diálogo e o "Negar"
    ficava cortado. */
 const permRowStyle =
-  "flex flex-col items-stretch justify-between gap-2 border-b border-dashed border-[#eaf1f4] py-2.5 last:border-b-0 sm:flex-row sm:items-center sm:gap-3 sm:py-1.5";
+  'flex flex-col items-stretch justify-between gap-2 border-b border-dashed border-[#eaf1f4] py-2.5 last:border-b-0 sm:flex-row sm:items-center sm:gap-3 sm:py-1.5';
 const permOnStyle =
-  "inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#1c7c4a]";
+  'inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#1c7c4a]';
 const permOffStyle =
-  "inline-flex items-center gap-1.5 text-[13px] text-[#9ab0bd]";
+  'inline-flex items-center gap-1.5 text-[13px] text-[#9ab0bd]';
 const permCheckStyle =
-  "flex cursor-pointer items-center gap-2 py-1 text-[13px] text-[#416477]";
-const formActionsStyle = "flex gap-2.5 justify-end";
+  'flex cursor-pointer items-center gap-2 py-1 text-[13px] text-[#416477]';
+const formActionsStyle = 'flex gap-2.5 justify-end';
 
 /* Tabelas e estados de lista. */
-const usersTableStyle = "mt-3 w-full max-w-full";
-const loadingMsgStyle = "mt-5 text-[13px] text-[#7a9aad]";
-const emptyMsgStyle = "p-6 text-center text-[13px] text-[#7a9aad]";
+const usersTableStyle = 'mt-3 w-full max-w-full';
+const loadingMsgStyle = 'mt-5 text-[13px] text-[#7a9aad]';
+const emptyMsgStyle = 'p-6 text-center text-[13px] text-[#7a9aad]';
 const roleDescriptionStyle =
-  "mt-[3px] text-[12px] font-normal tracking-normal text-[#7a9aad]";
+  'mt-[3px] text-[12px] font-normal tracking-normal text-[#7a9aad]';
 
 /* Cartões (mobile): a lista vira cartões empilhados abaixo de `xl`,
    porque a tabela de 7 colunas não cabe na largura útil da tela com a
    sidebar aberta e o scroll horizontal escondia os botões de ação. */
-const cardListStyle = "mt-3 flex flex-col gap-3 xl:hidden";
-const listCardStyle =
-  "rounded-[10px] border border-[#dde9ed] bg-white p-3.5";
-const cardActionsStyle =
-  "mt-3 flex gap-2 border-t border-[#eaf1f4] pt-3";
+const cardListStyle = 'mt-3 flex flex-col gap-3 xl:hidden';
+const listCardStyle = 'rounded-[10px] border border-[#dde9ed] bg-white p-3.5';
+const cardActionsStyle = 'mt-3 flex gap-2 border-t border-[#eaf1f4] pt-3';
 
 /** Rótulo → valor dentro do cartão mobile. */
-const cardFieldStyle = "min-w-0 flex-1";
+const cardFieldStyle = 'min-w-0 flex-1';
 const cardFieldLabelStyle =
-  "block text-[10px] font-extrabold uppercase tracking-[1px] text-[#7895a3]";
-const cardFieldValueStyle = "mt-0.5 block text-[13px] text-[#23445b]";
+  'block text-[10px] font-extrabold uppercase tracking-[1px] text-[#7895a3]';
+const cardFieldValueStyle = 'mt-0.5 block text-[13px] text-[#23445b]';
 
 const ROLE_CONFIG: Record<string, { icon: LucideIcon; className: string }> = {
   admin: {
@@ -165,12 +167,12 @@ const ROLE_CONFIG: Record<string, { icon: LucideIcon; className: string }> = {
     icon: Headset,
     className: 'bg-[#e6f4fb] text-[#1678a0]', // ou sua variável badgeAttendantStyle
   },
-}
+};
 
 const DEFAULT_ROLE_CONFIG = {
   icon: UserCheck,
   className: 'bg-gray-100 text-gray-700',
-}
+};
 
 /** Estado de um override por usuário: herdado do cargo, concedido ou negado. */
 type OverrideMode = typeof INHERIT | typeof GRANT | typeof DENY;
@@ -201,7 +203,7 @@ export function AccessSection() {
   const canDelete = useCan(USERS_DELETE);
   const canManageRoles = useCan(ROLES_MANAGE);
 
-  const [tab, setTab] = useState("usuarios");
+  const [tab, setTab] = useState('usuarios');
   const [roles, setRoles] = useState<RoleRecord[]>([]);
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [loading, setLoading] = useState(false);
@@ -222,8 +224,12 @@ export function AccessSection() {
   const [rolePerms, setRolePerms] = useState<Set<string>>(() => new Set());
 
   /* ── confirmações de exclusão (antes `window.confirm`) ── */
-  const [deleteUserTarget, setDeleteUserTarget] = useState<UserRecord | null>(null);
-  const [deleteRoleTarget, setDeleteRoleTarget] = useState<RoleRecord | null>(null);
+  const [deleteUserTarget, setDeleteUserTarget] = useState<UserRecord | null>(
+    null,
+  );
+  const [deleteRoleTarget, setDeleteRoleTarget] = useState<RoleRecord | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!canView) return;
@@ -234,12 +240,12 @@ export function AccessSection() {
   async function loadUsers() {
     setLoading(true);
     try {
-      const res = await fetch("/api/users");
+      const res = await fetch('/api/users');
       const data = await readJson<UsersListBody>(res);
       if (!res.ok) throw new Error(data.error);
       setUsers(data.users || []);
     } catch (err) {
-      toast.error(errorMessage(err, "Erro ao carregar usuários"));
+      toast.error(errorMessage(err, 'Erro ao carregar usuários'));
     } finally {
       setLoading(false);
     }
@@ -247,21 +253,21 @@ export function AccessSection() {
 
   async function loadRoles() {
     try {
-      const res = await fetch("/api/roles");
+      const res = await fetch('/api/roles');
       const data = await readJson<RolesListBody>(res);
       if (!res.ok) throw new Error(data.error);
       setRoles(data.roles || []);
     } catch (err) {
-      toast.error(errorMessage(err, "Erro ao carregar cargos"));
+      toast.error(errorMessage(err, 'Erro ao carregar cargos'));
     }
   }
 
   /* ─────────── Usuários: abrir formulários ─────────── */
 
   function openCreateUser() {
-    const attendant = roles.find((r) => r.key === "attendant");
+    const attendant = roles.find((r) => r.key === 'attendant');
     setEditingUserId(null);
-    setUserForm({ ...EMPTY_USER_FORM, role_id: attendant?.id || "" });
+    setUserForm({ ...EMPTY_USER_FORM, role_id: attendant?.id || '' });
     setOverrides({});
     setShowUserForm(true);
   }
@@ -269,11 +275,11 @@ export function AccessSection() {
   function openEditUser(user: UserRecord) {
     setEditingUserId(user.id);
     setUserForm({
-      username: user.username || "",
-      password: "",
-      full_name: user.full_name || "",
-      role_id: user.role_id || "",
-      sector_id: user.sector_id || "",
+      username: user.username || '',
+      password: '',
+      full_name: user.full_name || '',
+      role_id: user.role_id || '',
+      sector_id: user.sector_id || '',
       active: user.active !== false,
     });
     const map: Record<string, OverrideMode> = {};
@@ -303,9 +309,9 @@ export function AccessSection() {
         }));
 
       const res = editingUserId
-        ? await fetch("/api/users", {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
+        ? await fetch('/api/users', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               id: editingUserId,
               full_name: userForm.full_name,
@@ -317,9 +323,9 @@ export function AccessSection() {
               permissions: permissionRows,
             }),
           })
-        : await fetch("/api/users", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+        : await fetch('/api/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               username: userForm.username,
               password: userForm.password,
@@ -335,12 +341,14 @@ export function AccessSection() {
       if (!res.ok) throw new Error(data.error);
 
       toast.success(
-        editingUserId ? "Usuário atualizado com sucesso." : `Usuário ${userForm.full_name} criado com sucesso!`,
+        editingUserId
+          ? 'Usuário atualizado com sucesso.'
+          : `Usuário ${userForm.full_name} criado com sucesso!`,
       );
       closeUserForm();
       await loadUsers();
     } catch (err) {
-      toast.error(errorMessage(err, "Erro ao salvar usuário"));
+      toast.error(errorMessage(err, 'Erro ao salvar usuário'));
     } finally {
       setLoading(false);
     }
@@ -354,13 +362,15 @@ export function AccessSection() {
     setDeleteUserTarget(null);
     setLoading(true);
     try {
-      const res = await fetch(`/api/users?id=${target.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/users?id=${target.id}`, {
+        method: 'DELETE',
+      });
       const data = await readJson<SuccessBody>(res);
       if (!res.ok) throw new Error(data.error);
       toast.success(`Usuário ${target.full_name} excluído com sucesso.`);
       await loadUsers();
     } catch (err) {
-      toast.error(errorMessage(err, "Erro ao excluir usuário"));
+      toast.error(errorMessage(err, 'Erro ao excluir usuário'));
     } finally {
       setLoading(false);
     }
@@ -380,7 +390,7 @@ export function AccessSection() {
     setRoleForm({
       key: role.key,
       name: role.name,
-      description: role.description || "",
+      description: role.description || '',
       built_in: role.built_in,
     });
     setRolePerms(new Set(role.permissions));
@@ -413,25 +423,25 @@ export function AccessSection() {
         permissions: [...rolePerms],
       };
       const res = editingRoleId
-        ? await fetch("/api/roles", {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
+        ? await fetch('/api/roles', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: editingRoleId, ...payload }),
           })
-        : await fetch("/api/roles", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+        : await fetch('/api/roles', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ key: roleForm.key, ...payload }),
           });
       const data = await readJson<RoleSaveBody>(res);
       if (!res.ok) throw new Error(data.error);
 
-      toast.success(editingRoleId ? "Cargo atualizado." : "Cargo criado.");
+      toast.success(editingRoleId ? 'Cargo atualizado.' : 'Cargo criado.');
       closeRoleForm();
       await loadRoles();
       await loadUsers();
     } catch (err) {
-      toast.error(errorMessage(err, "Erro ao salvar cargo"));
+      toast.error(errorMessage(err, 'Erro ao salvar cargo'));
     } finally {
       setLoading(false);
     }
@@ -444,14 +454,16 @@ export function AccessSection() {
     setDeleteRoleTarget(null);
     setLoading(true);
     try {
-      const res = await fetch(`/api/roles?id=${target.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/roles?id=${target.id}`, {
+        method: 'DELETE',
+      });
       const data = await readJson<SuccessBody>(res);
       if (!res.ok) throw new Error(data.error);
-      toast.success("Cargo excluído.");
+      toast.success('Cargo excluído.');
       await loadRoles();
       await loadUsers();
     } catch (err) {
-      toast.error(errorMessage(err, "Erro ao excluir cargo"));
+      toast.error(errorMessage(err, 'Erro ao excluir cargo'));
     } finally {
       setLoading(false);
     }
@@ -478,7 +490,9 @@ export function AccessSection() {
         <div className={sectionTitleStyle}>
           <div>
             <p className={sectionEyebrowStyle}>ACESSO</p>
-            <h2 className={`font-bold ${sectionHeadingStyle}`}>Usuários e permissões</h2>
+            <h2 className={`font-bold ${sectionHeadingStyle}`}>
+              Usuários e permissões
+            </h2>
           </div>
           <TabsList className="w-full sm:w-auto">
             <TabsTrigger value="usuarios" className="flex-1 sm:flex-none">
@@ -490,11 +504,11 @@ export function AccessSection() {
           </TabsList>
         </div>
 
-      {/* ══════════ ABA USUÁRIOS ══════════ */}
-      <TabsContent value="usuarios">
+        {/* ══════════ ABA USUÁRIOS ══════════ */}
+        <TabsContent value="usuarios">
           <div className={`${sectionTitleStyle} mt-[14px]`}>
             <div className="content-end">
-              <h3 className="font-medium text-sm">Usuários cadastrados</h3>
+              <h3 className="text-sm font-medium">Usuários cadastrados</h3>
             </div>
             {canCreate && !showUserForm && (
               <Button onClick={openCreateUser}>
@@ -512,20 +526,25 @@ export function AccessSection() {
             <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
               <DialogHeader>
                 <DialogTitle>
-                  {editingUserId ? "Editar usuário" : "Novo usuário"}
+                  {editingUserId ? 'Editar usuário' : 'Novo usuário'}
                 </DialogTitle>
               </DialogHeader>
               {/* `min-w-0` impede que a matriz de permissões (larga demais
                   para o diálogo estreito) estoure a coluna do grid do
                   DialogContent — sem isso o diálogo ganhava scroll
                   horizontal no mobile. */}
-              <form onSubmit={(e) => void handleUserSubmit(e)} className="min-w-0">
+              <form
+                onSubmit={(e) => void handleUserSubmit(e)}
+                className="min-w-0"
+              >
                 <div className={formRowStyle}>
                   <FilterGroup label="Usuário">
                     <Input
                       type="text"
                       value={userForm.username}
-                      onChange={(e) => setUserForm({ ...userForm, username: e.target.value })}
+                      onChange={(e) =>
+                        setUserForm({ ...userForm, username: e.target.value })
+                      }
                       placeholder="nome.sobrenome"
                       pattern={USERNAME_REGEX.source}
                       title={USERNAME_REGEX_LABEL}
@@ -533,10 +552,18 @@ export function AccessSection() {
                       required={!editingUserId}
                     />
                   </FilterGroup>
-                  <FilterGroup label={editingUserId ? "Senha (deixe em branco para manter)" : "Senha"}>
+                  <FilterGroup
+                    label={
+                      editingUserId
+                        ? 'Senha (deixe em branco para manter)'
+                        : 'Senha'
+                    }
+                  >
                     <PasswordInput
                       value={userForm.password}
-                      onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+                      onChange={(e) =>
+                        setUserForm({ ...userForm, password: e.target.value })
+                      }
                       placeholder="••••••••"
                       required={!editingUserId}
                     />
@@ -548,18 +575,24 @@ export function AccessSection() {
                     <Input
                       type="text"
                       value={userForm.full_name}
-                      onChange={(e) => setUserForm({ ...userForm, full_name: e.target.value })}
+                      onChange={(e) =>
+                        setUserForm({ ...userForm, full_name: e.target.value })
+                      }
                       placeholder="Nome Sobrenome"
-                      disabled={userForm.username === "admin"}
+                      disabled={userForm.username === 'admin'}
                       required
                     />
                   </FilterGroup>
                   <FilterGroup label="Cargo">
                     <Select
                       value={userForm.role_id || null}
-                      onValueChange={(v) => setUserForm({ ...userForm, role_id: v ?? "" })}
-                      items={Object.fromEntries(roles.map((r) => [r.id, r.name]))}
-                      disabled={userForm.username === "admin"}
+                      onValueChange={(v) =>
+                        setUserForm({ ...userForm, role_id: v ?? '' })
+                      }
+                      items={Object.fromEntries(
+                        roles.map((r) => [r.id, r.name]),
+                      )}
+                      disabled={userForm.username === 'admin'}
                       required
                     >
                       <SelectTrigger className="w-full">
@@ -581,12 +614,16 @@ export function AccessSection() {
                   <FilterGroup label="Setor (opcional)">
                     <Select
                       value={userForm.sector_id || null}
-                      onValueChange={(v) => setUserForm({ ...userForm, sector_id: v ?? "" })}
+                      onValueChange={(v) =>
+                        setUserForm({ ...userForm, sector_id: v ?? '' })
+                      }
                       items={{
                         null: 'Nenhum',
-                        ...Object.fromEntries(Object.values(SECTORS).map((s) => [s.id, s.name]))
+                        ...Object.fromEntries(
+                          Object.values(SECTORS).map((s) => [s.id, s.name]),
+                        ),
                       }}
-                      disabled={userForm.username === "admin"}
+                      disabled={userForm.username === 'admin'}
                     >
                       <SelectTrigger className="w-full">
                         <SelectValue />
@@ -595,9 +632,7 @@ export function AccessSection() {
                         <SelectGroup>
                           <SelectLabel>Setores</SelectLabel>
 
-                          <SelectItem value={null}>
-                            Nenhum
-                          </SelectItem>
+                          <SelectItem value={null}>Nenhum</SelectItem>
 
                           {Object.values(SECTORS).map((s) => (
                             <SelectItem key={s.id} value={s.id}>
@@ -610,10 +645,12 @@ export function AccessSection() {
                   </FilterGroup>
                   <FilterGroup label="Situação">
                     <Select
-                      value={userForm.active ? "1" : "0"}
-                      onValueChange={(v) => setUserForm({ ...userForm, active: v === "1" })}
-                      items={{ "1": "Ativo", "0": "Inativo" }}
-                      disabled={userForm.username === "admin"}
+                      value={userForm.active ? '1' : '0'}
+                      onValueChange={(v) =>
+                        setUserForm({ ...userForm, active: v === '1' })
+                      }
+                      items={{ '1': 'Ativo', '0': 'Inativo' }}
+                      disabled={userForm.username === 'admin'}
                     >
                       <SelectTrigger className="w-full">
                         <SelectValue />
@@ -630,11 +667,12 @@ export function AccessSection() {
                 </div>
 
                 <Collapsible className={permMatrixStyle}>
-                  <CollapsibleTrigger className="group flex w-full cursor-pointer items-center justify-between rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  <CollapsibleTrigger className="group flex w-full cursor-pointer items-center justify-between rounded-md transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
                     <p className={permMatrixTitleStyle}>
                       Permissões individuais — valem além do cargo
                       <Badge variant="outline" className="ml-2 shrink-0">
-                        {effectivePerms.length}/{ALL_PERMISSIONS.length} efetivas
+                        {effectivePerms.length}/{ALL_PERMISSIONS.length}{' '}
+                        efetivas
                       </Badge>
                     </p>
 
@@ -645,20 +683,30 @@ export function AccessSection() {
                   </CollapsibleTrigger>
 
                   <CollapsibleContent className="pt-3">
-                    <Tabs defaultValue={PERMISSION_GROUPS[0]?.key} className="w-full">
+                    <Tabs
+                      defaultValue={PERMISSION_GROUPS[0]?.key}
+                      className="w-full"
+                    >
                       {/* Barra de Seleção das Abas — no mobile os três
                           grupos quebram em duas linhas (rolar uma lista de
                           abas escondida não é descobrível). */}
                       <TabsList className="flex h-auto! w-full flex-wrap justify-start rounded-md! sm:grid sm:h-8! sm:grid-cols-3">
                         {PERMISSION_GROUPS.map((group) => {
                           const activeInGroup = group.items.filter((item) =>
-                            effectivePerms.includes(item.permission)
+                            effectivePerms.includes(item.permission),
                           ).length;
 
                           return (
-                            <TabsTrigger key={group.key} value={group.key} className="flex-none gap-2 rounded-md! text-xs sm:flex-1">
+                            <TabsTrigger
+                              key={group.key}
+                              value={group.key}
+                              className="flex-none gap-2 rounded-md! text-xs sm:flex-1"
+                            >
                               {group.label}
-                              <Badge variant="secondary" className="shrink-0 px-1.5 py-0.5 text-[10px] font-semibold">
+                              <Badge
+                                variant="secondary"
+                                className="shrink-0 px-1.5 py-0.5 text-[10px] font-semibold"
+                              >
                                 {activeInGroup}/{group.items.length}
                               </Badge>
                             </TabsTrigger>
@@ -668,17 +716,34 @@ export function AccessSection() {
 
                       {/* Conteúdo de Cada Aba */}
                       {PERMISSION_GROUPS.map((group) => (
-                        <TabsContent key={group.key} value={group.key} className="mt-3 space-y-2">
+                        <TabsContent
+                          key={group.key}
+                          value={group.key}
+                          className="mt-3 space-y-2"
+                        >
                           {group.items.map((item) => {
                             const mode = overrides[item.permission] ?? INHERIT;
-                            const effective = effectivePerms.includes(item.permission);
+                            const effective = effectivePerms.includes(
+                              item.permission,
+                            );
 
                             return (
-                              <div key={item.permission} className={permRowStyle}>
-                              <span className={effective ? permOnStyle : permOffStyle}>
-                                {effective ? <Check size={13} /> : <Minus size={13} />}
-                                {item.label}
-                              </span>
+                              <div
+                                key={item.permission}
+                                className={permRowStyle}
+                              >
+                                <span
+                                  className={
+                                    effective ? permOnStyle : permOffStyle
+                                  }
+                                >
+                                  {effective ? (
+                                    <Check size={13} />
+                                  ) : (
+                                    <Minus size={13} />
+                                  )}
+                                  {item.label}
+                                </span>
 
                                 <ToggleGroup
                                   variant="outline"
@@ -686,7 +751,10 @@ export function AccessSection() {
                                   value={[mode]}
                                   onValueChange={(values) => {
                                     const next = values[0];
-                                    if (next !== undefined && isOverrideMode(next)) {
+                                    if (
+                                      next !== undefined &&
+                                      isOverrideMode(next)
+                                    ) {
                                       setOverrides({
                                         ...overrides,
                                         [item.permission]: next,
@@ -694,17 +762,26 @@ export function AccessSection() {
                                     }
                                   }}
                                   className={cn(
-                                    "w-full sm:w-fit sm:min-w-47.5",
-                                    userForm.username === 'admin' && 'hidden'
+                                    'w-full sm:w-fit sm:min-w-47.5',
+                                    userForm.username === 'admin' && 'hidden',
                                   )}
                                 >
-                                  <ToggleGroupItem value={INHERIT} className="flex-1 text-xs data-pressed:brightness-95 hover:brightness-95 sm:flex-none">
+                                  <ToggleGroupItem
+                                    value={INHERIT}
+                                    className="flex-1 text-xs hover:brightness-95 data-pressed:brightness-95 sm:flex-none"
+                                  >
                                     Herdar
                                   </ToggleGroupItem>
-                                  <ToggleGroupItem value={GRANT} className="flex-1 text-xs data-pressed:brightness-95 hover:brightness-95 sm:flex-none">
+                                  <ToggleGroupItem
+                                    value={GRANT}
+                                    className="flex-1 text-xs hover:brightness-95 data-pressed:brightness-95 sm:flex-none"
+                                  >
                                     Conceder
                                   </ToggleGroupItem>
-                                  <ToggleGroupItem value={DENY} className="flex-1 text-xs data-pressed:brightness-95 hover:brightness-95 sm:flex-none">
+                                  <ToggleGroupItem
+                                    value={DENY}
+                                    className="flex-1 text-xs hover:brightness-95 data-pressed:brightness-95 sm:flex-none"
+                                  >
                                     Negar
                                   </ToggleGroupItem>
                                 </ToggleGroup>
@@ -719,9 +796,17 @@ export function AccessSection() {
 
                 <div className={formActionsStyle}>
                   <Button type="submit" disabled={loading}>
-                    {loading ? "Salvando…" : editingUserId ? "Salvar alterações" : "Criar usuário"}
+                    {loading
+                      ? 'Salvando…'
+                      : editingUserId
+                        ? 'Salvar alterações'
+                        : 'Criar usuário'}
                   </Button>
-                  <Button type="button" variant="outline" onClick={closeUserForm}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={closeUserForm}
+                  >
                     Cancelar
                   </Button>
                 </div>
@@ -761,15 +846,21 @@ export function AccessSection() {
                   <TableBody>
                     {users.map((u) => (
                       <TableRow key={u.id}>
-                        <TableCell>{u.username || "—"}</TableCell>
+                        <TableCell>{u.username || '—'}</TableCell>
                         <TableCell>{u.full_name}</TableCell>
                         <TableCell>
-                          <RoleBadge role={ { key: u.role!, name: u.role_name! } } />
+                          <RoleBadge
+                            role={{ key: u.role!, name: u.role_name! }}
+                          />
                         </TableCell>
-                        <TableCell>{u.sector_id ? getSector(u.sector_id)?.name || u.sector_id : "—"}</TableCell>
                         <TableCell>
-                          <Badge variant={u.active ? "outline" : "secondary"}>
-                            {u.active ? "Ativo" : "Inativo"}
+                          {u.sector_id
+                            ? getSector(u.sector_id)?.name || u.sector_id
+                            : '—'}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={u.active ? 'outline' : 'secondary'}>
+                            {u.active ? 'Ativo' : 'Inativo'}
                           </Badge>
                         </TableCell>
                         <TableCell className="whitespace-normal">
@@ -800,20 +891,22 @@ export function AccessSection() {
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <p className="truncate text-[14px] font-bold text-[#13324d]">
-                            {u.username || "—"}
+                            {u.username || '—'}
                           </p>
                           <p className="truncate text-[12px] text-[#7590a0]">
                             {u.full_name}
                           </p>
                         </div>
 
-                        <Badge variant={u.active ? "outline" : "secondary"}>
-                          {u.active ? "Ativo" : "Inativo"}
+                        <Badge variant={u.active ? 'outline' : 'secondary'}>
+                          {u.active ? 'Ativo' : 'Inativo'}
                         </Badge>
                       </div>
 
                       <div className="mt-2.5">
-                        <RoleBadge role={ { key: u.role!, name: u.role_name! } } />
+                        <RoleBadge
+                          role={{ key: u.role!, name: u.role_name! }}
+                        />
                       </div>
 
                       <div className="mt-3 flex gap-3">
@@ -822,12 +915,14 @@ export function AccessSection() {
                           <span className={cardFieldValueStyle}>
                             {u.sector_id
                               ? getSector(u.sector_id)?.name || u.sector_id
-                              : "—"}
+                              : '—'}
                           </span>
                         </div>
 
                         <div className={cardFieldStyle}>
-                          <span className={cardFieldLabelStyle}>Permissões extras</span>
+                          <span className={cardFieldLabelStyle}>
+                            Permissões extras
+                          </span>
                           <span className={cardFieldValueStyle}>
                             <UserPermissionSummary user={u} />
                           </span>
@@ -849,13 +944,13 @@ export function AccessSection() {
               </>
             )}
           </div>
-      </TabsContent>
+        </TabsContent>
 
-      {/* ══════════ ABA CARGOS ══════════ */}
-      <TabsContent value="cargos">
+        {/* ══════════ ABA CARGOS ══════════ */}
+        <TabsContent value="cargos">
           <div className={`${sectionTitleStyle} mt-[14px]`}>
             <div className="content-end">
-              <h3 className="font-medium text-sm">Cargos</h3>
+              <h3 className="text-sm font-medium">Cargos</h3>
             </div>
             {canManageRoles && !showRoleForm && (
               <Button onClick={openCreateRole}>
@@ -873,17 +968,22 @@ export function AccessSection() {
             <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
               <DialogHeader>
                 <DialogTitle>
-                  {editingRoleId ? "Editar cargo" : "Novo cargo"}
+                  {editingRoleId ? 'Editar cargo' : 'Novo cargo'}
                 </DialogTitle>
               </DialogHeader>
-              <form onSubmit={(e) => void handleRoleSubmit(e)} className="min-w-0">
+              <form
+                onSubmit={(e) => void handleRoleSubmit(e)}
+                className="min-w-0"
+              >
                 <div className={formRowStyle}>
                   {!editingRoleId && (
                     <FilterGroup label="Chave">
                       <Input
                         type="text"
                         value={roleForm.key}
-                        onChange={(e) => setRoleForm({ ...roleForm, key: e.target.value })}
+                        onChange={(e) =>
+                          setRoleForm({ ...roleForm, key: e.target.value })
+                        }
                         placeholder="coordenador"
                         pattern="[a-z][a-z0-9-]*"
                         title="Minúsculas, sem espaços (ex.: coordenador)"
@@ -895,7 +995,9 @@ export function AccessSection() {
                     <Input
                       type="text"
                       value={roleForm.name}
-                      onChange={(e) => setRoleForm({ ...roleForm, name: e.target.value })}
+                      onChange={(e) =>
+                        setRoleForm({ ...roleForm, name: e.target.value })
+                      }
                       placeholder="Coordenador"
                       disabled={roleForm.built_in}
                       required
@@ -904,7 +1006,12 @@ export function AccessSection() {
                   <FilterGroup label="Descrição">
                     <Textarea
                       value={roleForm.description}
-                      onChange={(e) => setRoleForm({ ...roleForm, description: e.target.value })}
+                      onChange={(e) =>
+                        setRoleForm({
+                          ...roleForm,
+                          description: e.target.value,
+                        })
+                      }
                       placeholder="O que este cargo faz"
                       className="min-h-8"
                     />
@@ -927,13 +1034,21 @@ export function AccessSection() {
                           className={permCheckStyle}
                           onClick={(e) => {
                             e.preventDefault();
-                            if ((e.target as Element).closest('[data-slot="checkbox"]')) return;
-                            if (canManageRoles && !roleForm.built_in) toggleRolePermission(item.permission);
+                            if (
+                              (e.target as Element).closest(
+                                '[data-slot="checkbox"]',
+                              )
+                            )
+                              return;
+                            if (canManageRoles && !roleForm.built_in)
+                              toggleRolePermission(item.permission);
                           }}
                         >
                           <Checkbox
                             checked={rolePerms.has(item.permission)}
-                            onCheckedChange={() => toggleRolePermission(item.permission)}
+                            onCheckedChange={() =>
+                              toggleRolePermission(item.permission)
+                            }
                             disabled={!canManageRoles || roleForm.built_in}
                           />
                           {item.label}
@@ -946,9 +1061,17 @@ export function AccessSection() {
                 {canManageRoles && (
                   <div className={formActionsStyle}>
                     <Button type="submit" disabled={loading}>
-                      {loading ? "Salvando…" : editingRoleId ? "Salvar cargo" : "Criar cargo"}
+                      {loading
+                        ? 'Salvando…'
+                        : editingRoleId
+                          ? 'Salvar cargo'
+                          : 'Criar cargo'}
                     </Button>
-                    <Button type="button" variant="outline" onClick={closeRoleForm}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={closeRoleForm}
+                    >
                       Fechar
                     </Button>
                   </div>
@@ -958,7 +1081,9 @@ export function AccessSection() {
           </Dialog>
 
           <div className={usersTableStyle}>
-            {roles.length === 0 && <p className={emptyMsgStyle}>Nenhum cargo cadastrado.</p>}
+            {roles.length === 0 && (
+              <p className={emptyMsgStyle}>Nenhum cargo cadastrado.</p>
+            )}
             {roles.length > 0 && (
               <>
                 {/* Tabela — a partir de `xl`. */}
@@ -979,7 +1104,9 @@ export function AccessSection() {
                           <RoleBadge role={r} />
 
                           {r.description && (
-                            <div className={roleDescriptionStyle}>{r.description}</div>
+                            <div className={roleDescriptionStyle}>
+                              {r.description}
+                            </div>
                           )}
                         </TableCell>
                         <TableCell>{r.key}</TableCell>
@@ -1019,7 +1146,9 @@ export function AccessSection() {
                         </div>
 
                         <div className={cardFieldStyle}>
-                          <span className={cardFieldLabelStyle}>Permissões</span>
+                          <span className={cardFieldLabelStyle}>
+                            Permissões
+                          </span>
                           <span className={cardFieldValueStyle}>
                             {r.permissions.length}/{ALL_PERMISSIONS.length}
                           </span>
@@ -1047,7 +1176,7 @@ export function AccessSection() {
               </>
             )}
           </div>
-      </TabsContent>
+        </TabsContent>
       </Tabs>
 
       {/* ── Confirmações de exclusão — os antigos `window.confirm` ── */}
@@ -1060,7 +1189,9 @@ export function AccessSection() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {deleteUserTarget ? `Excluir o usuário "${deleteUserTarget.full_name}"?` : ""}
+              {deleteUserTarget
+                ? `Excluir o usuário "${deleteUserTarget.full_name}"?`
+                : ''}
             </AlertDialogTitle>
             <AlertDialogDescription>
               Esta ação não pode ser desfeita.
@@ -1087,7 +1218,9 @@ export function AccessSection() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {deleteRoleTarget ? `Excluir o cargo "${deleteRoleTarget.name}"?` : ""}
+              {deleteRoleTarget
+                ? `Excluir o cargo "${deleteRoleTarget.name}"?`
+                : ''}
             </AlertDialogTitle>
             <AlertDialogDescription>
               Usuários com este cargo ficarão órfãos — troque-os antes.
@@ -1109,14 +1242,17 @@ export function AccessSection() {
 }
 
 function RoleBadge({ role }: { role: Pick<RoleRecord, 'name' | 'key'> }) {
-  const roleInfo = ROLE_CONFIG[role.key] || DEFAULT_ROLE_CONFIG
-  const Icon = roleInfo.icon
+  const roleInfo = ROLE_CONFIG[role.key] || DEFAULT_ROLE_CONFIG;
+  const Icon = roleInfo.icon;
 
   return (
-    <Badge variant="outline" className={cn("gap-1 uppercase", roleInfo.className)}>
+    <Badge
+      variant="outline"
+      className={cn('gap-1 uppercase', roleInfo.className)}
+    >
       <Icon /> {role.name}
     </Badge>
-  )
+  );
 }
 
 /**
@@ -1136,7 +1272,7 @@ function UserPermissionSummary({ user }: { user: UserRecord }) {
         denies ? `${denies} negada(s)` : null,
       ]
         .filter(Boolean)
-        .join(" · ")}
+        .join(' · ')}
     </>
   );
 }
@@ -1162,11 +1298,11 @@ function UserActions({
   readonly onDelete: () => void;
   readonly className?: string;
 }) {
-  const canDeleteUser = canDelete && user.role !== "admin";
+  const canDeleteUser = canDelete && user.role !== 'admin';
   if (!canEdit && !canDeleteUser) return null;
 
   return (
-    <div className={cn("flex gap-2", className)}>
+    <div className={cn('flex gap-2', className)}>
       {canEdit && (
         <Button
           variant="outline"
@@ -1212,7 +1348,7 @@ function RoleActions({
   readonly className?: string;
 }) {
   return (
-    <div className={cn("flex gap-2", className)}>
+    <div className={cn('flex gap-2', className)}>
       <Button
         variant="outline"
         size="xs"
@@ -1221,7 +1357,7 @@ function RoleActions({
         disabled={loading}
       >
         {role.built_in ? <Eye /> : <Pencil />}
-        {role.built_in ? "Visualizar" : "Editar"}
+        {role.built_in ? 'Visualizar' : 'Editar'}
       </Button>
       {canManageRoles && !role.built_in && (
         <Button

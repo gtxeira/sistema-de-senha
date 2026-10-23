@@ -1,6 +1,6 @@
-import type { User } from "next-auth";
-import type { SequenceType } from "@/shared/constants";
-import type { Permission, PermissionOverride } from "@/shared/permissions";
+import type { User } from 'next-auth';
+import type { SequenceType } from '@/shared/constants';
+import type { Permission, PermissionOverride } from '@/shared/permissions';
 import type {
   CreateRoleInput,
   CreateUserInput,
@@ -11,7 +11,7 @@ import type {
   UpdateRoleInput,
   UpdateUserInput,
   UserRecord,
-} from "@/shared/types/domain";
+} from '@/shared/types/domain';
 
 /**
  * Contrato HTTP entre as rotas em `src/app/api/*` e quem as chama.

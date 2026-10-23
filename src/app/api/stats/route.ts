@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
-import { getStats, parseStatsQuery } from "@/server/services/stats-service";
-import { assertSectorAccess, requireSession } from "@/server/http/api-auth";
-import { hasPermission, SECTORS_VIEW_ALL } from "@/shared/permissions";
+import { NextResponse } from 'next/server';
+import { getStats, parseStatsQuery } from '@/server/services/stats-service';
+import { assertSectorAccess, requireSession } from '@/server/http/api-auth';
+import { hasPermission, SECTORS_VIEW_ALL } from '@/shared/permissions';
 
 /* ─────────────────────────────────────────────────
    GET — retorna estatísticas e histórico paginado
@@ -22,12 +22,12 @@ export async function GET(request: Request) {
   const query = parseStatsQuery(new URL(request.url).searchParams);
 
   if (query.sector) {
-    const scope = assertSectorAccess(session, query.sector, "read");
+    const scope = assertSectorAccess(session, query.sector, 'read');
     if (scope.error) return scope.error;
   } else if (!hasPermission(session, SECTORS_VIEW_ALL)) {
     return NextResponse.json(
-      { error: "Acesso ao setor negado.", code: "sector_forbidden" },
-      { status: 403 }
+      { error: 'Acesso ao setor negado.', code: 'sector_forbidden' },
+      { status: 403 },
     );
   }
 

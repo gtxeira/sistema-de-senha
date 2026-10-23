@@ -1,38 +1,46 @@
-"use client";
+'use client';
 
-import type { ReactNode } from "react";
-import { CheckCircle2, Headphones, History, Home, type LucideIcon, Settings2 } from "lucide-react";
-import { usePathname } from "next/navigation";
-import { AppSidebar } from "@/components/sidebar/app-sidebar";
-import { useDashboardLayoutStore } from "@/stores/use-dashboard-layout-store";
-import { useEffectiveSession } from "@/hooks/use-effective-session";
-import { Separator } from "@/components/ui/separator";
+import type { ReactNode } from 'react';
+import {
+  CheckCircle2,
+  Headphones,
+  History,
+  Home,
+  type LucideIcon,
+  Settings2,
+} from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { AppSidebar } from '@/components/sidebar/app-sidebar';
+import { useDashboardLayoutStore } from '@/stores/use-dashboard-layout-store';
+import { useEffectiveSession } from '@/hooks/use-effective-session';
+import { Separator } from '@/components/ui/separator';
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
-} from "@/components/ui/sidebar";
+} from '@/components/ui/sidebar';
 import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
-  BreadcrumbList, BreadcrumbPage,
-  BreadcrumbSeparator
-} from "@/components/ui/breadcrumb";
-import { hasPermission, SCREEN_ADMIN } from "@/shared/permissions";
-import type { Route } from "next";
-import { ServerClock } from "@/components/server-clock";
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
+import { hasPermission, SCREEN_ADMIN } from '@/shared/permissions';
+import type { Route } from 'next';
+import { ServerClock } from '@/components/server-clock';
 
 export interface NavItem {
-  readonly route: string
-  readonly href: Route
-  readonly label: string
-  readonly icon: LucideIcon
+  readonly route: string;
+  readonly href: Route;
+  readonly label: string;
+  readonly icon: LucideIcon;
 }
 
 export interface RouteGroup {
-  readonly title: string
-  readonly items: readonly NavItem[]
+  readonly title: string;
+  readonly items: readonly NavItem[];
 }
 
 export interface SidebarLayoutProps {
@@ -55,7 +63,7 @@ export interface SidebarLayoutProps {
  */
 export function SidebarLayout({ children }: SidebarLayoutProps) {
   const pathname = usePathname();
-  const activeRoute = pathname.split("/")[1] || "home";
+  const activeRoute = pathname.split('/')[1] || 'home';
 
   const session = useEffectiveSession();
 
@@ -63,22 +71,39 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
   const headerActions = useDashboardLayoutStore((s) => s.headerActions);
 
   const principalItems: readonly NavItem[] = [
-    { route: "home", href: "/home", label: "Home", icon: Home },
-  ]
+    { route: 'home', href: '/home', label: 'Home', icon: Home },
+  ];
 
   const mainItems: readonly NavItem[] = [
-    { route: "painel", href: "/painel", label: "Painel de Atendimentos", icon: Headphones },
-    { route: "historico", href: "/historico", label: "Histórico", icon: History },
-  ]
+    {
+      route: 'painel',
+      href: '/painel',
+      label: 'Painel de Atendimentos',
+      icon: Headphones,
+    },
+    {
+      route: 'historico',
+      href: '/historico',
+      label: 'Histórico',
+      icon: History,
+    },
+  ];
 
   const manageItems: readonly NavItem[] = hasPermission(session, SCREEN_ADMIN)
-    ? [{ route: "admin", href: "/admin", label: "Administração", icon: Settings2 }]
-    : []
+    ? [
+        {
+          route: 'admin',
+          href: '/admin',
+          label: 'Administração',
+          icon: Settings2,
+        },
+      ]
+    : [];
 
   const groups: RouteGroup[] = [
-    { title: "Principal", items: principalItems },
-    { title: "Gestão", items: manageItems },
-    { title: "Chamadas", items: mainItems },
+    { title: 'Principal', items: principalItems },
+    { title: 'Gestão', items: manageItems },
+    { title: 'Chamadas', items: mainItems },
   ];
 
   /* Sem sessão (prerender do build) o item da rota ativa não existe nos
@@ -92,9 +117,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
     : undefined;
 
   return (
-    <SidebarProvider
-      className="h-svh overflow-hidden bg-[#f4f7fb] text-[#17324d]"
-    >
+    <SidebarProvider className="h-svh overflow-hidden bg-[#f4f7fb] text-[#17324d]">
       <AppSidebar
         session={session}
         sectorInfo={sectorInfo}
@@ -108,7 +131,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
       <SidebarInset className="min-w-0">
         <header className="sticky top-0 flex shrink-0 flex-wrap items-center justify-between gap-x-2 gap-y-2 border-b bg-background p-3 sm:px-6">
           <div className="flex min-w-0 items-center gap-2">
-            <SidebarTrigger className="-ml-1 mt-1 shrink-0" />
+            <SidebarTrigger className="mt-1 -ml-1 shrink-0" />
 
             <Separator
               orientation="vertical"
@@ -119,7 +142,9 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
               <BreadcrumbList className="min-w-0">
                 {currentGroup && (
                   <BreadcrumbItem className="hidden md:block">
-                    <BreadcrumbLink href="#">{currentGroup.title}</BreadcrumbLink>
+                    <BreadcrumbLink href="#">
+                      {currentGroup.title}
+                    </BreadcrumbLink>
                   </BreadcrumbItem>
                 )}
                 {currentGroup && (
@@ -127,7 +152,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
                 )}
                 <BreadcrumbItem className="min-w-0">
                   <BreadcrumbPage className="truncate">
-                    {currentGroupItem?.label ?? ""}
+                    {currentGroupItem?.label ?? ''}
                   </BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>

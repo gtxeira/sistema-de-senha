@@ -1,8 +1,13 @@
-import Link from "next/link";
-import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
-import { cn } from "@/client/utils";
-import React from "react";
-import type { Route } from "next";
+import Link from 'next/link';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardTitle,
+} from '@/components/ui/card';
+import { cn } from '@/client/utils';
+import React from 'react';
+import type { Route } from 'next';
 
 export interface NavCardProps {
   readonly href: Route;
@@ -28,7 +33,7 @@ export function NavCard({
       href={href}
       className={cn(
         'group flex items-center gap-4',
-        colSpanFull && "col-span-full"
+        colSpanFull && 'col-span-full',
       )}
     >
       <Card className="w-full transition-[transform,box-shadow] duration-150 hover:-translate-y-0.75 hover:shadow-[0_8px_28px_rgba(0,0,0,0.1)] active:scale-[0.98]">
@@ -37,7 +42,7 @@ export function NavCard({
             className={cn(
               'grid size-14 shrink-0 place-items-center rounded-[14px]',
               iconBgClass,
-              iconColorClass
+              iconColorClass,
             )}
           >
             {icon}

@@ -1,12 +1,12 @@
 import './globals.css';
 import Providers from './providers';
 import type { ReactNode } from 'react';
-import type { Metadata } from "next";
-import { Geist } from "next/font/google";
-import { cn } from "@/client/utils";
-import { APP_NAME, APP_TITLE_TEMPLATE } from "@/shared/page-title";
+import type { Metadata } from 'next';
+import { Geist } from 'next/font/google';
+import { cn } from '@/client/utils';
+import { APP_NAME, APP_TITLE_TEMPLATE } from '@/shared/page-title';
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+const geist = Geist({ subsets: ['latin'], variable: '--font-sans' });
 
 export const metadata: Metadata = {
   /**
@@ -26,7 +26,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="pt-BR" suppressHydrationWarning className={cn("font-sans", geist.variable)}>
+    <html
+      lang="pt-BR"
+      suppressHydrationWarning
+      className={cn('font-sans', geist.variable)}
+    >
       <body suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>

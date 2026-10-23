@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
-import type { ReactNode } from "react";
-import { DEFAULT_SECTOR, getSector } from "@/shared/constants";
-import { PAGE_TITLES } from "@/shared/page-title";
+import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
+import { DEFAULT_SECTOR, getSector } from '@/shared/constants';
+import { PAGE_TITLES } from '@/shared/page-title';
 
 interface MonitorLayoutProps {
   readonly children: ReactNode;
@@ -27,7 +27,7 @@ export async function generateMetadata({
   const info = getSector(sector) ?? getSector(DEFAULT_SECTOR);
 
   return {
-    title: `${PAGE_TITLES["/monitor/[sector]"]} - ${info?.name ?? "Monitor"}`,
+    title: `${PAGE_TITLES['/monitor/[sector]']} - ${info?.name ?? 'Monitor'}`,
   };
 }
 

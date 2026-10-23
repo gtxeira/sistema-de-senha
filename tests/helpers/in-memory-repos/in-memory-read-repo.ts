@@ -1,14 +1,14 @@
-import { normalizeCallType } from "@/shared/queue-format";
-import { normalizePage, normalizePageSize } from "@/shared/validation";
-import { MIN_DAYS, MAX_DAYS } from "@/shared/constants";
-import { dayWindow, startOfDay } from "@/shared/time";
+import { normalizeCallType } from '@/shared/queue-format';
+import { normalizePage, normalizePageSize } from '@/shared/validation';
+import { MIN_DAYS, MAX_DAYS } from '@/shared/constants';
+import { dayWindow, startOfDay } from '@/shared/time';
 import type {
   HistoryCall,
   QueueStats,
   ReadRepository,
   StatsOptions,
-} from "@/server/repositories/types";
-import type { SeedCall } from "../../contracts/read-repo.contract";
+} from '@/server/repositories/types';
+import type { SeedCall } from '../../contracts/read-repo.contract';
 
 /** Linha interna: o seed de contrato com o timestamp já preenchido. */
 interface StoredCall {
@@ -38,9 +38,9 @@ export class InMemoryReadRepository implements ReadRepository {
     this.#calls = this.#rawCalls.map((c, i) => ({
       id: String(i + 1),
       sector_id: c.sector,
-      type: c.type === "preferential" ? "preferencial" : c.type,
+      type: c.type === 'preferential' ? 'preferencial' : c.type,
       number_int: c.number,
-      number_str: `${c.type === "preferencial" ? "P" : "N"}${String(c.number).padStart(3, "0")}`,
+      number_str: `${c.type === 'preferencial' ? 'P' : 'N'}${String(c.number).padStart(3, '0')}`,
       created_at: c.created_at || new Date(),
     }));
   }
@@ -49,12 +49,7 @@ export class InMemoryReadRepository implements ReadRepository {
     // Rebuild to pick up any new calls added to the raw array
     this.#rebuild();
 
-    const {
-      sector = null,
-      type = null,
-      days = 30,
-      now = new Date(),
-    } = options;
+    const { sector = null, type = null, days = 30, now = new Date() } = options;
 
     const pageSize = normalizePageSize(options.pageSize);
     const requestedPage = normalizePage(options.page);
@@ -79,7 +74,9 @@ export class InMemoryReadRepository implements ReadRepository {
     });
 
     // Summary — ignora o filtro de tipo, igual ao Postgres.
-    const preferencial = filtered.filter((c) => c.type === "preferencial").length;
+    const preferencial = filtered.filter(
+      (c) => c.type === 'preferencial',
+    ).length;
     const total = filtered.length;
     const normal = total - preferencial;
     const todayCount = filtered.filter((c) => {

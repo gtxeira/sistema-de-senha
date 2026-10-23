@@ -1,12 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 import {
   createNews,
   listNews,
   removeNews,
-} from "@/server/services/news-service";
-import { requireSession, requirePermission } from "@/server/http/api-auth";
-import { errorMessage, errorStatus } from "@/shared/errors";
-import { NEWS_CREATE, NEWS_DELETE } from "@/shared/permissions";
+} from '@/server/services/news-service';
+import { requireSession, requirePermission } from '@/server/http/api-auth';
+import { errorMessage, errorStatus } from '@/shared/errors';
+import { NEWS_CREATE, NEWS_DELETE } from '@/shared/permissions';
 
 /* ─────────────────────────────────────────────────
    GET — lista notícias ativas
@@ -21,8 +21,8 @@ export async function GET() {
     return NextResponse.json({ news: newsList });
   } catch {
     return NextResponse.json(
-      { error: "Erro ao carregar notícias" },
-      { status: 500 }
+      { error: 'Erro ao carregar notícias' },
+      { status: 500 },
     );
   }
 }
@@ -38,16 +38,16 @@ export async function POST(request: Request) {
     if (error) return error;
 
     const formData = await request.formData();
-    const title = formData.get("title");
-    const image = formData.get("image");
+    const title = formData.get('title');
+    const image = formData.get('image');
 
     // `FormData.get` devolve `string | File | null`; o título é sempre uma
     // parte de texto, então o `typeof` rejeita multipart malformado em vez
     // de deixar um `File` chegar até o insert.
-    if (typeof title !== "string" || !title || !image) {
+    if (typeof title !== 'string' || !title || !image) {
       return NextResponse.json(
-        { error: "Título e imagem são obrigatórios" },
-        { status: 400 }
+        { error: 'Título e imagem são obrigatórios' },
+        { status: 400 },
       );
     }
 
@@ -55,8 +55,8 @@ export async function POST(request: Request) {
     return NextResponse.json(result);
   } catch (err) {
     return NextResponse.json(
-      { error: errorMessage(err, "Erro ao salvar notícia") },
-      { status: errorStatus(err, 500) }
+      { error: errorMessage(err, 'Erro ao salvar notícia') },
+      { status: errorStatus(err, 500) },
     );
   }
 }
@@ -71,12 +71,12 @@ export async function DELETE(request: Request) {
     if (error) return error;
 
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
+    const id = searchParams.get('id');
 
     if (!id) {
       return NextResponse.json(
-        { error: "ID da notícia é obrigatório" },
-        { status: 400 }
+        { error: 'ID da notícia é obrigatório' },
+        { status: 400 },
       );
     }
 
@@ -84,8 +84,8 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json(
-      { error: errorMessage(err, "Erro ao excluir notícia") },
-      { status: errorStatus(err, 500) }
+      { error: errorMessage(err, 'Erro ao excluir notícia') },
+      { status: errorStatus(err, 500) },
     );
   }
 }

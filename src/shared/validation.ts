@@ -4,7 +4,7 @@ import {
   NEWS_MAX_FILE_SIZE,
   PAGE_SIZES,
   MAX_PAGE_SIZE,
-} from "./constants";
+} from './constants';
 
 /**
  * Validações e normalizações puras de entrada — usadas tanto na borda HTTP

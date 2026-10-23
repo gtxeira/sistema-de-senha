@@ -1,6 +1,6 @@
-import { defineConfig } from "eslint/config";
-import tseslint from "typescript-eslint";
-import base, { unusedVarsRules } from "./eslint.config.base.mjs";
+import { defineConfig } from 'eslint/config';
+import tseslint from 'typescript-eslint';
+import base, { unusedVarsRules } from './eslint.config.base.mjs';
 
 /**
  * Lint type-aware (CI/CD): `projectService` + `recommendedTypeChecked`.
@@ -30,9 +30,9 @@ export default defineConfig([
     //
     // A regra continua ligada em `src`, onde um `await` esquecido é bug de
     // verdade e não um falso positivo de fábrica de mocks.
-    files: ["tests/**"],
+    files: ['tests/**'],
     rules: {
-      "@typescript-eslint/require-await": "off",
+      '@typescript-eslint/require-await': 'off',
     },
   },
   {
@@ -50,7 +50,7 @@ export default defineConfig([
     // `.js`/`.mjs` — as configurações, `scripts/`, `main.js` — não estão em
     // nenhum projeto e não têm tipos a consultar. Sem `disableTypeChecked` o
     // projectService falharia com "file not found by project service".
-    files: ["**/*.js", "**/*.mjs", "**/*.cjs"],
+    files: ['**/*.js', '**/*.mjs', '**/*.cjs'],
     extends: [tseslint.configs.disableTypeChecked],
   },
 ]);

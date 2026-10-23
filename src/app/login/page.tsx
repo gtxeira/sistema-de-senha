@@ -1,46 +1,46 @@
-"use client";
+'use client';
 
-import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
-import { LockKeyhole } from "lucide-react";
-import { readJson } from "@/shared/json";
-import { useSessionStore } from "@/stores/use-session-store";
-import type { AuthSessionBody } from "@/shared/types/api";
-import brandIcon from "@/app/icon.ico";
-import Image from "next/image";
-import { Alert } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { PasswordInput } from "@/components/ui/password-input";
+import { useState, type FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
+import { LockKeyhole } from 'lucide-react';
+import { readJson } from '@/shared/json';
+import { useSessionStore } from '@/stores/use-session-store';
+import type { AuthSessionBody } from '@/shared/types/api';
+import brandIcon from '@/app/icon.ico';
+import Image from 'next/image';
+import { Alert } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [login, setLogin] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [login, setLogin] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setError("");
+    setError('');
     setLoading(true);
 
     try {
-      const result = await signIn("credentials", {
+      const result = await signIn('credentials', {
         username: login,
         password,
         redirect: false,
       });
 
       if (result?.error) {
-        throw new Error("Usuário ou senha inválidos.");
+        throw new Error('Usuário ou senha inválidos.');
       }
 
       // Busca a sessão estabelecida pelo Auth.js e espelha os claims
       // (permissões/setor) no snapshot local usado pelos guards de tela.
-      const res = await fetch("/api/auth/session");
+      const res = await fetch('/api/auth/session');
       const session = await readJson<AuthSessionBody>(res);
 
       if (session?.user) {
@@ -50,15 +50,15 @@ export default function LoginPage() {
 
         // Emite o refresh token (12h) junto com o login — é ele que permite
         // "acordar" a sessão após 15min de idle sem digitar a senha de novo.
-        await fetch("/api/auth/refresh", { method: "POST" }).catch(() => {});
+        await fetch('/api/auth/refresh', { method: 'POST' }).catch(() => {});
       }
 
-      router.push("/home");
+      router.push('/home');
     } catch (err) {
       setError(
         err instanceof Error && err.message
           ? err.message
-          : "Usuário ou senha inválidos.",
+          : 'Usuário ou senha inválidos.',
       );
     } finally {
       setLoading(false);
@@ -68,12 +68,17 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-dvh">
       {/* ── Hero ── */}
-      <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-[linear-gradient(160deg,#061e32_0%,#0b3555_45%,#0e5070_100%)] px-12 py-[60px] before:absolute before:-right-25 before:-top-30 before:size-[480px] before:rounded-full before:bg-white before:opacity-[0.07] before:content-[''] after:absolute after:-bottom-20 after:-left-15 after:size-[300px] after:rounded-full after:bg-white after:opacity-[0.07] after:content-[''] max-md:hidden">
+      <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-[linear-gradient(160deg,#061e32_0%,#0b3555_45%,#0e5070_100%)] px-12 py-[60px] before:absolute before:-top-30 before:-right-25 before:size-[480px] before:rounded-full before:bg-white before:opacity-[0.07] before:content-[''] after:absolute after:-bottom-20 after:-left-15 after:size-[300px] after:rounded-full after:bg-white after:opacity-[0.07] after:content-[''] max-md:hidden">
         <div className="relative z-[1] max-w-[380px] text-white">
           <div className="mb-[15px] size-16 overflow-hidden">
-            <Image src={brandIcon} alt="Logo" priority className="size-full object-contain" />
+            <Image
+              src={brandIcon}
+              alt="Logo"
+              priority
+              className="size-full object-contain"
+            />
           </div>
-          <h1 className="mb-4 text-[clamp(32px,4vw,48px)] font-black leading-[1.15] text-white">
+          <h1 className="mb-4 text-[clamp(32px,4vw,48px)] leading-[1.15] font-black text-white">
             Sistema de
             <br />
             Atendimento
@@ -101,11 +106,13 @@ export default function LoginPage() {
               <strong className="block text-[15px] font-extrabold text-white">
                 Central de Atendimento
               </strong>
-              <span className="text-[11px] text-white/50">Sistema de Senhas</span>
+              <span className="text-[11px] text-white/50">
+                Sistema de Senhas
+              </span>
             </div>
           </div>
 
-          <h2 className="mb-1.5 text-2xl font-black leading-normal text-[#0d2d47] max-md:text-white">
+          <h2 className="mb-1.5 text-2xl leading-normal font-black text-[#0d2d47] max-md:text-white">
             Entrar no sistema
           </h2>
           <p className="mb-7 text-[13px] text-[#7a9aad] max-md:text-[#8eb8cc]">
@@ -117,7 +124,7 @@ export default function LoginPage() {
               <Field className="gap-[7px]">
                 <FieldLabel
                   htmlFor="login"
-                  className="text-[11px] font-bold uppercase leading-normal tracking-[0.5px] text-[#416477] max-md:text-[#8eb8cc]"
+                  className="text-[11px] leading-normal font-bold tracking-[0.5px] text-[#416477] uppercase max-md:text-[#8eb8cc]"
                 >
                   Usuário
                 </FieldLabel>
@@ -137,7 +144,7 @@ export default function LoginPage() {
               <Field className="gap-[7px]">
                 <FieldLabel
                   htmlFor="password"
-                  className="text-[11px] font-bold uppercase leading-normal tracking-[0.5px] text-[#416477] max-md:text-[#8eb8cc]"
+                  className="text-[11px] leading-normal font-bold tracking-[0.5px] text-[#416477] uppercase max-md:text-[#8eb8cc]"
                 >
                   Senha
                 </FieldLabel>
@@ -155,7 +162,10 @@ export default function LoginPage() {
             </FieldGroup>
 
             {error && (
-              <Alert variant="destructive" className="rounded-[7px] px-3.5 py-2.75 text-xs font-semibold leading-normal">
+              <Alert
+                variant="destructive"
+                className="rounded-[7px] px-3.5 py-2.75 text-xs leading-normal font-semibold"
+              >
                 {error}
               </Alert>
             )}
@@ -163,10 +173,10 @@ export default function LoginPage() {
             <Button
               type="submit"
               disabled={loading}
-              className="mt-1 h-auto w-full rounded-[9px] px-2.5 py-3.75 text-sm font-extrabold leading-normal shadow-[0_4px_16px_rgba(2,132,199,0.3)]"
+              className="mt-1 h-auto w-full rounded-[9px] px-2.5 py-3.75 text-sm leading-normal font-extrabold shadow-[0_4px_16px_rgba(2,132,199,0.3)]"
             >
               <LockKeyhole data-icon="inline-start" />
-              {loading ? "Entrando…" : "Entrar"}
+              {loading ? 'Entrando…' : 'Entrar'}
             </Button>
           </form>
         </div>

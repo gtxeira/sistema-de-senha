@@ -1,8 +1,8 @@
-import "server-only";
+import 'server-only';
 
-import { EventEmitter } from "node:events";
-import { MAX_SSE_CONNECTIONS_PER_SECTOR } from "@/shared/constants";
-import type { CallType } from "@/shared/constants";
+import { EventEmitter } from 'node:events';
+import { MAX_SSE_CONNECTIONS_PER_SECTOR } from '@/shared/constants';
+import type { CallType } from '@/shared/constants';
 
 /**
  * Payload serializado no SSE. `wraparound` só existe na chamada corrente
@@ -19,7 +19,10 @@ export interface QueueCallEvent {
   readonly wraparound?: boolean;
 }
 
-export type QueueCallListener = (call: QueueCallEvent, resetAt: string | null) => void;
+export type QueueCallListener = (
+  call: QueueCallEvent,
+  resetAt: string | null,
+) => void;
 export type QueueResetListener = (resetAt: string | null) => void;
 export type Unsubscribe = () => void;
 
@@ -43,12 +46,20 @@ class EventManager extends EventEmitter {
   }
 
   /** Emit a queue call event for a sector. */
-  emitQueueCall(sector: string, call: QueueCallEvent, resetAt: string | null = null): void {
+  emitQueueCall(
+    sector: string,
+    call: QueueCallEvent,
+    resetAt: string | null = null,
+  ): void {
     this.emit(`queue:${sector}`, call, resetAt);
   }
 
   /** Emit a queue recall event for a sector. */
-  emitQueueRecall(sector: string, call: QueueCallEvent, resetAt: string | null = null): void {
+  emitQueueRecall(
+    sector: string,
+    call: QueueCallEvent,
+    resetAt: string | null = null,
+  ): void {
     this.emit(`queue:recall:${sector}`, call, resetAt);
   }
 
@@ -59,7 +70,8 @@ class EventManager extends EventEmitter {
 
   /** Subscribe to queue calls for a sector. @returns unsubscribe function */
   subscribeToQueue(sector: string, callback: QueueCallListener): Unsubscribe {
-    const handler = (call: QueueCallEvent, resetAt: string | null) => callback(call, resetAt);
+    const handler = (call: QueueCallEvent, resetAt: string | null) =>
+      callback(call, resetAt);
     this.on(`queue:${sector}`, handler);
     return () => {
       this.off(`queue:${sector}`, handler);
@@ -68,7 +80,8 @@ class EventManager extends EventEmitter {
 
   /** Subscribe to queue recall events for a sector. @returns unsubscribe function */
   subscribeToRecall(sector: string, callback: QueueCallListener): Unsubscribe {
-    const handler = (call: QueueCallEvent, resetAt: string | null) => callback(call, resetAt);
+    const handler = (call: QueueCallEvent, resetAt: string | null) =>
+      callback(call, resetAt);
     this.on(`queue:recall:${sector}`, handler);
     return () => {
       this.off(`queue:recall:${sector}`, handler);

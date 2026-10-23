@@ -1,15 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 import {
   createRole,
   listRoles,
   removeRole,
   updateRole,
-} from "@/server/services/roles-service";
-import { requirePermission } from "@/server/http/api-auth";
-import { errorMessage, errorStatus } from "@/shared/errors";
-import { ROLES_MANAGE, USERS_VIEW } from "@/shared/permissions";
-import { readJson } from "@/shared/json";
-import type { CreateRoleRequest, RolePatchBody } from "@/shared/types/api";
+} from '@/server/services/roles-service';
+import { requirePermission } from '@/server/http/api-auth';
+import { errorMessage, errorStatus } from '@/shared/errors';
+import { ROLES_MANAGE, USERS_VIEW } from '@/shared/permissions';
+import { readJson } from '@/shared/json';
+import type { CreateRoleRequest, RolePatchBody } from '@/shared/types/api';
 
 /* ─────────────────────────────────────────────────
    Cargos e permissões (RBAC).
@@ -29,8 +29,8 @@ export async function GET() {
     return NextResponse.json({ roles: roleList });
   } catch (err) {
     return NextResponse.json(
-      { error: errorMessage(err, "Erro ao listar cargos") },
-      { status: errorStatus(err, 500) }
+      { error: errorMessage(err, 'Erro ao listar cargos') },
+      { status: errorStatus(err, 500) },
     );
   }
 }
@@ -45,8 +45,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, role });
   } catch (err) {
     return NextResponse.json(
-      { error: errorMessage(err, "Erro ao criar cargo") },
-      { status: errorStatus(err, 500) }
+      { error: errorMessage(err, 'Erro ao criar cargo') },
+      { status: errorStatus(err, 500) },
     );
   }
 }
@@ -64,8 +64,8 @@ export async function PATCH(request: Request) {
     const body = await readJson<RolePatchBody>(request);
     if (!body?.id) {
       return NextResponse.json(
-        { error: "ID do cargo é obrigatório" },
-        { status: 400 }
+        { error: 'ID do cargo é obrigatório' },
+        { status: 400 },
       );
     }
 
@@ -73,8 +73,8 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ success: true, role });
   } catch (err) {
     return NextResponse.json(
-      { error: errorMessage(err, "Erro ao atualizar cargo") },
-      { status: errorStatus(err, 500) }
+      { error: errorMessage(err, 'Erro ao atualizar cargo') },
+      { status: errorStatus(err, 500) },
     );
   }
 }
@@ -85,11 +85,11 @@ export async function DELETE(request: Request) {
     if (error) return error;
 
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
+    const id = searchParams.get('id');
     if (!id) {
       return NextResponse.json(
-        { error: "ID do cargo é obrigatório" },
-        { status: 400 }
+        { error: 'ID do cargo é obrigatório' },
+        { status: 400 },
       );
     }
 
@@ -97,8 +97,8 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json(
-      { error: errorMessage(err, "Erro ao excluir cargo") },
-      { status: errorStatus(err, 500) }
+      { error: errorMessage(err, 'Erro ao excluir cargo') },
+      { status: errorStatus(err, 500) },
     );
   }
 }

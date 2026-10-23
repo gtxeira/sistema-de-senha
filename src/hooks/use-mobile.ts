@@ -1,12 +1,12 @@
-import * as React from "react"
+import * as React from 'react';
 
-const MOBILE_BREAKPOINT = 768
+const MOBILE_BREAKPOINT = 768;
 
 /** Assina o `matchMedia` do breakpoint mobile (fonte externa ao React). */
 function subscribe(callback: () => void) {
-  const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
-  mql.addEventListener("change", callback)
-  return () => mql.removeEventListener("change", callback)
+  const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
+  mql.addEventListener('change', callback);
+  return () => mql.removeEventListener('change', callback);
 }
 
 export function useIsMobile() {
@@ -17,5 +17,5 @@ export function useIsMobile() {
     subscribe,
     () => window.innerWidth < MOBILE_BREAKPOINT,
     () => false,
-  )
+  );
 }

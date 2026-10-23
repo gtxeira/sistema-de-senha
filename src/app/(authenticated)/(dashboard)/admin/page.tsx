@@ -1,10 +1,17 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState, useSyncExternalStore, } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { AlertTriangle, ImagePlus, Monitor, RotateCcw, Save, Trash2, } from "lucide-react";
-import type { User } from "next-auth";
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import {
+  AlertTriangle,
+  ImagePlus,
+  Monitor,
+  RotateCcw,
+  Save,
+  Trash2,
+} from 'lucide-react';
+import type { User } from 'next-auth';
 import {
   getQueueSnapshot,
   getServerQueueSnapshot,
@@ -12,12 +19,24 @@ import {
   normalizeQueue,
   saveQueueState,
   subscribeQueue,
-} from "@/client/queue/queue";
-import { CALL_TYPES, DEFAULT_SECTOR, getSector, MAX_QUEUE_NUMBER, NO_PASSWORD, SECTORS, } from "@/shared/constants";
-import type { NewsItem } from "@/shared/types/domain";
-import { errorMessage } from "@/shared/errors";
-import { readJson } from "@/shared/json";
-import type { ApiErrorBody, NewsCreateBody, NewsListBody, QueueSyncBody, } from "@/shared/types/api";
+} from '@/client/queue/queue';
+import {
+  CALL_TYPES,
+  DEFAULT_SECTOR,
+  getSector,
+  MAX_QUEUE_NUMBER,
+  NO_PASSWORD,
+  SECTORS,
+} from '@/shared/constants';
+import type { NewsItem } from '@/shared/types/domain';
+import { errorMessage } from '@/shared/errors';
+import { readJson } from '@/shared/json';
+import type {
+  ApiErrorBody,
+  NewsCreateBody,
+  NewsListBody,
+  QueueSyncBody,
+} from '@/shared/types/api';
 import {
   canAccessSector,
   hasPermission,
@@ -29,9 +48,9 @@ import {
   SCREEN_ADMIN_NOTICIAS,
   SCREEN_ADMIN_USUARIOS,
   SECTORS_MANAGE_ALL,
-} from "@/shared/permissions";
-import { useEffectiveSession } from "@/hooks/use-effective-session";
-import { toast } from "sonner";
+} from '@/shared/permissions';
+import { useEffectiveSession } from '@/hooks/use-effective-session';
+import { toast } from 'sonner';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,10 +60,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+} from '@/components/ui/alert-dialog';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   Select,
   SelectContent,
@@ -53,48 +72,48 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { FilterGroup } from "@/components/filter-group";
+} from '@/components/ui/select';
+import { FilterGroup } from '@/components/filter-group';
 import {
   sectionEyebrowStyle,
   sectionHeadingStyle,
   sectionStyle,
   sectionTitleStyle,
-} from "@/app/(authenticated)/(dashboard)/admin/admin-styles";
-import { AccessSection } from "@/app/(authenticated)/(dashboard)/admin/access-section";
-import { cn } from "@/client/utils";
-import { PageHeader } from "@/components/page-header";
+} from '@/app/(authenticated)/(dashboard)/admin/admin-styles';
+import { AccessSection } from '@/app/(authenticated)/(dashboard)/admin/access-section';
+import { cn } from '@/client/utils';
+import { PageHeader } from '@/components/page-header';
 
 /* ── classes locais desta tela (as comuns vêm de ./admin-styles) ── */
 
 /** Cartões de setor: grid duplo que vira coluna no mobile.
  *  O corte é em `lg` (1024px) e não em `sm`: entre 768px e 1024px a
  *  sidebar continua aberta e sobra pouca largura para duas colunas. */
-const sectorsStyle = "mt-5 grid grid-cols-1 gap-3.5 lg:grid-cols-2";
+const sectorsStyle = 'mt-5 grid grid-cols-1 gap-3.5 lg:grid-cols-2';
 const sectorCardStyle =
-  "flex flex-col justify-between gap-3 rounded-[8px] border border-[#e1ebee] p-[18px] lg:flex-row";
-const cardActionsStyle = "flex flex-col gap-2";
+  'flex flex-col justify-between gap-3 rounded-[8px] border border-[#e1ebee] p-[18px] lg:flex-row';
+const cardActionsStyle = 'flex flex-col gap-2';
 
 /** Faixa laranja de "resetar todos os setores". */
 const resetAllWrapperStyle =
-  "mt-5 flex flex-wrap items-center justify-between gap-4 rounded-[8px] border border-[#f5d9b8] bg-[#fff8f0] px-[18px] py-4";
+  'mt-5 flex flex-wrap items-center justify-between gap-4 rounded-[8px] border border-[#f5d9b8] bg-[#fff8f0] px-[18px] py-4';
 const resetAllInfoStyle =
-  "flex min-w-[200px] flex-1 items-center gap-2.5 text-[12px] leading-normal text-[#7a4a1e]";
+  'flex min-w-[200px] flex-1 items-center gap-2.5 text-[12px] leading-normal text-[#7a4a1e]';
 
 /** Formulário e grade de notícias do monitor. */
 const newsFormStyle =
-  "mt-5 grid grid-cols-1 gap-2.5 lg:grid-cols-[1.3fr_1fr_auto]";
+  'mt-5 grid grid-cols-1 gap-2.5 lg:grid-cols-[1.3fr_1fr_auto]';
 const uploadStyle =
-  "flex h-8 cursor-pointer items-center gap-[7px] rounded-lg border border-input px-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent";
-const newsGridStyle = "mt-5 flex flex-wrap gap-3";
+  'flex h-8 cursor-pointer items-center gap-[7px] rounded-lg border border-input px-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent';
+const newsGridStyle = 'mt-5 flex flex-wrap gap-3';
 const newsCardStyle =
-  "w-[150px] overflow-hidden rounded-[7px] border border-[#e1ebee]";
-const newsTitleStyle = "block p-[9px] text-[11px]";
+  'w-[150px] overflow-hidden rounded-[7px] border border-[#e1ebee]';
+const newsTitleStyle = 'block p-[9px] text-[11px]';
 
 /** Seção de sincronização de senha. */
-const syncInfoStyle = "mb-4 text-[13px] leading-normal text-[#5a7a8a]";
+const syncInfoStyle = 'mb-4 text-[13px] leading-normal text-[#5a7a8a]';
 const syncRowStyle =
-  "grid grid-cols-1 items-end gap-3 lg:grid-cols-[1fr_1fr_1fr_auto]";
+  'grid grid-cols-1 items-end gap-3 lg:grid-cols-[1fr_1fr_1fr_auto]';
 
 /**
  * Item do carrossel de notícias da tela de administração: o que vem do
@@ -107,7 +126,7 @@ const newsCache: NewsItem[] = [];
 const serverNewsSnapshot: NewsItem[] = [];
 
 function getNewsSnapshot(): readonly NewsItem[] {
-  if (typeof window === "undefined") return serverNewsSnapshot;
+  if (typeof window === 'undefined') return serverNewsSnapshot;
   return newsCache;
 }
 
@@ -116,11 +135,11 @@ function getServerNewsSnapshot(): readonly NewsItem[] {
 }
 
 function subscribeNews(callback: () => void) {
-  window.addEventListener("storage", callback);
-  window.addEventListener("news-updated", callback);
+  window.addEventListener('storage', callback);
+  window.addEventListener('news-updated', callback);
   return () => {
-    window.removeEventListener("storage", callback);
-    window.removeEventListener("news-updated", callback);
+    window.removeEventListener('storage', callback);
+    window.removeEventListener('news-updated', callback);
   };
 }
 
@@ -137,32 +156,35 @@ export default function AdminPage() {
     getServerNewsSnapshot,
   );
 
-  const [title, setTitle] = useState("");
-  const [image, setImage] = useState("");
+  const [title, setTitle] = useState('');
+  const [image, setImage] = useState('');
   const [draftNews, setDraftNews] = useState<AdminNews[]>([]);
   const [savingNews, setSavingNews] = useState(false);
-  const [resettingSector, setResettingSector] = useState<Record<string, boolean>>({});
+  const [resettingSector, setResettingSector] = useState<
+    Record<string, boolean>
+  >({});
   // alvo do reset pendente de confirmação (`"all"` ou o id do setor);
   // null = diálogo fechado
   const [resetPending, setResetPending] = useState<string | null>(null);
   // alvo da exclusão de notícia pendente de confirmação; null = diálogo fechado
-  const [deleteNewsTarget, setDeleteNewsTarget] = useState<AdminNews | null>(null);
+  const [deleteNewsTarget, setDeleteNewsTarget] = useState<AdminNews | null>(
+    null,
+  );
   const [, refreshNews] = useState(0);
   const pendingFileRef = useRef<File | null>(null);
 
   /* notícias */
   useEffect(() => {
-    fetch("/api/news")
+    fetch('/api/news')
       .then((r) => (r.ok ? readJson<NewsListBody>(r) : null))
       .then((data) => {
         if (!data?.news) return;
         newsCache.splice(0, newsCache.length, ...data.news);
         setDraftNews(data.news);
         refreshNews((v) => v + 1);
-        window.dispatchEvent(new Event("news-updated"));
+        window.dispatchEvent(new Event('news-updated'));
       })
-      .catch(() => {
-      });
+      .catch(() => {});
   }, []);
 
   if (!session) return null;
@@ -181,21 +203,21 @@ export default function AdminPage() {
      O `window.confirm` virou um AlertDialog: os botões só guardam o alvo em
      `resetPending` (abrindo o diálogo) e a ação roda em `confirmReset`,
      quando o usuário confirma. */
-  const resetIsAll = resetPending === "all";
+  const resetIsAll = resetPending === 'all';
   const resetLabel = resetPending
     ? resetIsAll
-      ? "TODOS os setores (Farmácia e Recepção)"
+      ? 'TODOS os setores (Farmácia e Recepção)'
       : getSector(resetPending)?.name || resetPending
-    : "";
+    : '';
 
   async function confirmReset() {
     const sectorId = resetPending;
     if (!sectorId) return;
     setResetPending(null);
 
-    const isAll = sectorId === "all";
+    const isAll = sectorId === 'all';
     const label = isAll
-      ? "TODOS os setores (Farmácia e Recepção)"
+      ? 'TODOS os setores (Farmácia e Recepção)'
       : getSector(sectorId)?.name || sectorId;
 
     const sectorsToReset = isAll ? Object.keys(SECTORS) : [sectorId];
@@ -209,15 +231,17 @@ export default function AdminPage() {
       // Server first: the local replica is only dropped once the server has
       // actually reset. Doing it the other way round left every client wiped
       // locally while the server still had the old queue, with no rollback.
-      const res = await fetch("/api/queue/reset", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/queue/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sector: sectorId }),
       });
-      const data = await readJson<ApiErrorBody>(res).catch<ApiErrorBody>(() => ({}));
+      const data = await readJson<ApiErrorBody>(res).catch<ApiErrorBody>(
+        () => ({}),
+      );
 
       if (!res.ok) {
-        toast.error(data.error || "Erro ao zerar o contador no banco.");
+        toast.error(data.error || 'Erro ao zerar o contador no banco.');
         return;
       }
 
@@ -235,11 +259,11 @@ export default function AdminPage() {
 
       toast.success(
         isAll
-          ? `Todas as senhas foram resetadas. Numeração reinicia em ${MIN_QUEUE_NUMBER.toString().padStart(3, "0")}.`
-          : `Senhas de "${label}" zeradas. Numeração reinicia em ${MIN_QUEUE_NUMBER.toString().padStart(3, "0")}.`,
+          ? `Todas as senhas foram resetadas. Numeração reinicia em ${MIN_QUEUE_NUMBER.toString().padStart(3, '0')}.`
+          : `Senhas de "${label}" zeradas. Numeração reinicia em ${MIN_QUEUE_NUMBER.toString().padStart(3, '0')}.`,
       );
     } catch {
-      toast.error("Erro ao zerar os contadores.");
+      toast.error('Erro ao zerar os contadores.');
     } finally {
       setResettingSector((prev) => {
         const next = { ...prev };
@@ -262,10 +286,12 @@ export default function AdminPage() {
       },
       ...draftNews,
     ]);
-    setTitle("");
-    setImage("");
+    setTitle('');
+    setImage('');
     pendingFileRef.current = null;
-    toast.info("Alteração pendente. Clique em 'Salvar notícias' para publicar.");
+    toast.info(
+      "Alteração pendente. Clique em 'Salvar notícias' para publicar.",
+    );
   }
 
   async function saveNews() {
@@ -276,7 +302,7 @@ export default function AdminPage() {
         (item) => !draftNews.some((d) => String(d.id) === String(item.id)),
       );
       for (const item of removed) {
-        await fetch(`/api/news?id=${item.id}`, { method: "DELETE" });
+        await fetch(`/api/news?id=${item.id}`, { method: 'DELETE' });
       }
 
       // Cria os novos (que têm id começando com "draft-"). O predicado
@@ -286,27 +312,27 @@ export default function AdminPage() {
       const created: NewsItem[] = [];
       for (const item of draftNews.filter(
         (d): d is AdminNews & { readonly _file: File } =>
-          String(d.id).startsWith("draft-") && d._file !== undefined,
+          String(d.id).startsWith('draft-') && d._file !== undefined,
       )) {
         const fd = new FormData();
-        fd.append("title", item.title);
-        fd.append("image", item._file);
-        const res = await fetch("/api/news", { method: "POST", body: fd });
+        fd.append('title', item.title);
+        fd.append('image', item._file);
+        const res = await fetch('/api/news', { method: 'POST', body: fd });
         const data = await readJson<NewsCreateBody>(res);
         if (!res.ok) throw new Error(data.error);
         created.push(data.news);
       }
 
-      const res = await fetch("/api/news");
+      const res = await fetch('/api/news');
       const data = await readJson<NewsListBody>(res);
       if (!res.ok) throw new Error(data.error);
       newsCache.splice(0, newsCache.length, ...data.news);
       setDraftNews(data.news);
       refreshNews((v) => v + 1);
-      window.dispatchEvent(new Event("news-updated"));
+      window.dispatchEvent(new Event('news-updated'));
       toast.success(`${created.length} notícia(s) salva(s) com sucesso.`);
     } catch (err) {
-      toast.error(errorMessage(err, "Não foi possível salvar as notícias."));
+      toast.error(errorMessage(err, 'Não foi possível salvar as notícias.'));
     } finally {
       setSavingNews(false);
     }
@@ -321,7 +347,9 @@ export default function AdminPage() {
     setDraftNews(
       draftNews.filter((item) => String(item.id) !== String(target.id)),
     );
-    toast.info("Exclusão pendente. Clique em 'Salvar notícias' para confirmar.");
+    toast.info(
+      "Exclusão pendente. Clique em 'Salvar notícias' para confirmar.",
+    );
   }
 
   function readImage(event: React.ChangeEvent<HTMLInputElement>) {
@@ -347,37 +375,46 @@ export default function AdminPage() {
             <div className={sectionTitleStyle}>
               <div>
                 <p className={sectionEyebrowStyle}>FILAS POR SERVIÇO</p>
-                <h2 className={`font-bold ${sectionHeadingStyle}`}>Controle dos atendimentos</h2>
+                <h2 className={`font-bold ${sectionHeadingStyle}`}>
+                  Controle dos atendimentos
+                </h2>
               </div>
             </div>
 
             <div className={sectorsStyle}>
               {Object.values(SECTORS)
-                .filter((item) => canAccessSector(session, item.id, "read"))
+                .filter((item) => canAccessSector(session, item.id, 'read'))
                 .map((item) => {
                   const queue = normalizeQueue(state[item.id]);
                   const isReset = resettingSector[item.id];
-                  const canResetSector = canReset && canAccessSector(session, item.id, "write");
+                  const canResetSector =
+                    canReset && canAccessSector(session, item.id, 'write');
                   return (
                     <article key={item.id} className={sectorCardStyle}>
                       <div>
                         <strong className="block">{item.name}</strong>
                         <small className="mt-2 block text-[11px] text-[#7a919e]">
-                          Normal: {queue.normalCurrent === null || queue.normalCurrent === undefined
-                          ? "N---"
-                          : `N${String(queue.normalCurrent).padStart(3, "0")}`} ·
-                          Preferencial: {queue.priorityCurrent === null || queue.priorityCurrent === undefined
-                          ? "P---"
-                          : `P${String(queue.priorityCurrent).padStart(3, "0")}`}
+                          Normal:{' '}
+                          {queue.normalCurrent === null ||
+                          queue.normalCurrent === undefined
+                            ? 'N---'
+                            : `N${String(queue.normalCurrent).padStart(3, '0')}`}{' '}
+                          · Preferencial:{' '}
+                          {queue.priorityCurrent === null ||
+                          queue.priorityCurrent === undefined
+                            ? 'P---'
+                            : `P${String(queue.priorityCurrent).padStart(3, '0')}`}
                         </small>
                       </div>
                       <div className={cardActionsStyle}>
                         <Link
                           href={`/monitor/${item.id}`}
                           target="_blank"
-                          className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                          className={cn(
+                            buttonVariants({ variant: 'outline', size: 'sm' }),
+                          )}
                         >
-                          <Monitor data-icon="inline-start"/> Abrir Monitor
+                          <Monitor data-icon="inline-start" /> Abrir Monitor
                         </Link>
 
                         {canResetSector && (
@@ -387,8 +424,8 @@ export default function AdminPage() {
                             onClick={() => setResetPending(item.id)}
                             disabled={isReset}
                           >
-                            <RotateCcw data-icon="inline-start"/>
-                            {isReset ? "Resetando…" : "Resetar senhas"}
+                            <RotateCcw data-icon="inline-start" />
+                            {isReset ? 'Resetando…' : 'Resetar senhas'}
                           </Button>
                         )}
                       </div>
@@ -400,20 +437,24 @@ export default function AdminPage() {
             {canReset && canManageAllSectors && (
               <div className={resetAllWrapperStyle}>
                 <div className={resetAllInfoStyle}>
-                  <AlertTriangle size={16} className="shrink-0 text-[#c97a1e]"/>
+                  <AlertTriangle
+                    size={16}
+                    className="shrink-0 text-[#c97a1e]"
+                  />
                   <span>
-                  Resetar todos os setores de uma vez — numeração volta para {MIN_QUEUE_NUMBER.toString().padStart(3, "0")} em todos.
-                </span>
+                    Resetar todos os setores de uma vez — numeração volta para{' '}
+                    {MIN_QUEUE_NUMBER.toString().padStart(3, '0')} em todos.
+                  </span>
                 </div>
                 <Button
                   variant="destructive"
-                  onClick={() => setResetPending("all")}
+                  onClick={() => setResetPending('all')}
                   disabled={Object.keys(resettingSector).length > 0}
                 >
-                  <RotateCcw data-icon="inline-start"/>
+                  <RotateCcw data-icon="inline-start" />
                   {Object.keys(resettingSector).length > 0
-                    ? "Resetando…"
-                    : "Resetar todos os setores"}
+                    ? 'Resetando…'
+                    : 'Resetar todos os setores'}
                 </Button>
               </div>
             )}
@@ -421,7 +462,7 @@ export default function AdminPage() {
         )}
 
         {/* ── Sincronizar senhas ── */}
-        {canManageFilas && <SyncSection session={session} canSync={canSync}/>}
+        {canManageFilas && <SyncSection session={session} canSync={canSync} />}
 
         {/* ── Notícias do monitor ── */}
         {canManageNews && (
@@ -429,7 +470,9 @@ export default function AdminPage() {
             <div className={sectionTitleStyle}>
               <div>
                 <p className={sectionEyebrowStyle}>COMUNICAÇÃO</p>
-                <h2 className={`font-bold ${sectionHeadingStyle}`}>Notícias do monitor</h2>
+                <h2 className={`font-bold ${sectionHeadingStyle}`}>
+                  Notícias do monitor
+                </h2>
               </div>
             </div>
 
@@ -443,8 +486,8 @@ export default function AdminPage() {
                   required
                 />
                 <label className={uploadStyle}>
-                  <ImagePlus data-icon="inline-start" className="size-4"/>
-                  {image ? "Imagem selecionada" : "Adicionar imagem"}
+                  <ImagePlus data-icon="inline-start" className="size-4" />
+                  {image ? 'Imagem selecionada' : 'Adicionar imagem'}
                   <input
                     type="file"
                     accept="image/*"
@@ -454,7 +497,7 @@ export default function AdminPage() {
                   />
                 </label>
                 <Button type="submit">
-                  <ImagePlus data-icon="inline-start"/> Adicionar à lista
+                  <ImagePlus data-icon="inline-start" /> Adicionar à lista
                 </Button>
               </form>
             )}
@@ -478,7 +521,7 @@ export default function AdminPage() {
                       className="h-8 w-full justify-center rounded-none border-t border-[#e1ebee] text-destructive hover:bg-[#fdecea] hover:text-destructive"
                       onClick={() => setDeleteNewsTarget(item)}
                     >
-                      <Trash2 data-icon="inline-start"/> Excluir
+                      <Trash2 data-icon="inline-start" /> Excluir
                     </Button>
                   )}
                 </article>
@@ -491,14 +534,15 @@ export default function AdminPage() {
                 onClick={() => void saveNews()}
                 disabled={savingNews}
               >
-                <Save data-icon="inline-start"/> {savingNews ? "Salvando…" : "Salvar notícias"}
+                <Save data-icon="inline-start" />{' '}
+                {savingNews ? 'Salvando…' : 'Salvar notícias'}
               </Button>
             )}
           </section>
         )}
 
         {/* ── Gerenciamento de usuários e permissões ── */}
-        {canManageUsers && <AccessSection/>}
+        {canManageUsers && <AccessSection />}
 
         {/* Confirmação do reset — o antigo `window.confirm` */}
         <AlertDialog
@@ -511,13 +555,13 @@ export default function AdminPage() {
             <AlertDialogHeader>
               <AlertDialogTitle>
                 {resetIsAll
-                  ? "ATENÇÃO"
+                  ? 'ATENÇÃO'
                   : `Zerar as senhas do setor "${resetLabel}"?`}
               </AlertDialogTitle>
               <AlertDialogDescription className="whitespace-pre-line">
                 {resetIsAll
-                  ? `Isso vai zerar as senhas de ${resetLabel}.\n\nA numeração voltará para ${MIN_QUEUE_NUMBER.toString().padStart(3, "0")}. Esta ação não pode ser desfeita.\n\nDeseja continuar?`
-                  : `A numeração voltará para ${MIN_QUEUE_NUMBER.toString().padStart(3, "0")}.`}
+                  ? `Isso vai zerar as senhas de ${resetLabel}.\n\nA numeração voltará para ${MIN_QUEUE_NUMBER.toString().padStart(3, '0')}. Esta ação não pode ser desfeita.\n\nDeseja continuar?`
+                  : `A numeração voltará para ${MIN_QUEUE_NUMBER.toString().padStart(3, '0')}.`}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -577,12 +621,12 @@ function SyncSection({ session, canSync }: SyncSectionProps) {
   // Vem do Select (valor cru da lib) e vai para `normalizeCallType`, que
   // aceita `string` — por isso `string` e não `CallType`.
   const [syncType, setSyncType] = useState<string>(CALL_TYPES.NORMAL);
-  const [syncNumber, setSyncNumber] = useState("");
+  const [syncNumber, setSyncNumber] = useState('');
   const [syncing, setSyncing] = useState(false);
 
   // Setores operáveis por esta sessão (escopo de escrita)
   const syncSectors = Object.values(SECTORS).filter((s) =>
-    canAccessSector(session, s.id, "write"),
+    canAccessSector(session, s.id, 'write'),
   );
 
   async function handleSync(e: React.FormEvent<HTMLFormElement>) {
@@ -592,13 +636,13 @@ function SyncSection({ session, canSync }: SyncSectionProps) {
     try {
       const num = parseInt(syncNumber, 10);
       if (!num || num < 1 || num > MAX_QUEUE_NUMBER) {
-        toast.error("Use um número entre 1 e 999.");
+        toast.error('Use um número entre 1 e 999.');
         return;
       }
 
-      const res = await fetch("/api/queue/sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/queue/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sector: syncSector,
           type: syncType,
@@ -610,9 +654,9 @@ function SyncSection({ session, canSync }: SyncSectionProps) {
       if (!res.ok) throw new Error(data.error);
 
       toast.success(data.message || `Próxima senha: ${data.numberStr}`);
-      setSyncNumber("");
+      setSyncNumber('');
     } catch (err) {
-      toast.error(errorMessage(err, "Erro ao sincronizar senha."));
+      toast.error(errorMessage(err, 'Erro ao sincronizar senha.'));
     } finally {
       setSyncing(false);
     }
@@ -623,7 +667,9 @@ function SyncSection({ session, canSync }: SyncSectionProps) {
       <div className={sectionTitleStyle}>
         <div>
           <p className={sectionEyebrowStyle}>CONTROLE</p>
-          <h2 className={`font-bold ${sectionHeadingStyle}`}>Sincronizar senhas</h2>
+          <h2 className={`font-bold ${sectionHeadingStyle}`}>
+            Sincronizar senhas
+          </h2>
         </div>
       </div>
 
@@ -634,7 +680,7 @@ function SyncSection({ session, canSync }: SyncSectionProps) {
 
       {!canSync && (
         <Alert variant="destructive" className="mb-4">
-          <AlertTriangle/>
+          <AlertTriangle />
           <AlertTitle>Permissão ausente</AlertTitle>
           <AlertDescription>
             Sua sessão não tem a permissão <strong>filas.sincronizar</strong>.
@@ -649,10 +695,12 @@ function SyncSection({ session, canSync }: SyncSectionProps) {
               <Select
                 value={syncSector}
                 onValueChange={(v) => v !== null && setSyncSector(v)}
-                items={Object.fromEntries(syncSectors.map((s) => [s.id, s.name]))}
+                items={Object.fromEntries(
+                  syncSectors.map((s) => [s.id, s.name]),
+                )}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue/>
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
@@ -672,10 +720,13 @@ function SyncSection({ session, canSync }: SyncSectionProps) {
               <Select
                 value={syncType}
                 onValueChange={(v) => v !== null && setSyncType(v)}
-                items={{ [CALL_TYPES.NORMAL]: "Normal", [CALL_TYPES.PREFERENCIAL]: "Preferencial" }}
+                items={{
+                  [CALL_TYPES.NORMAL]: 'Normal',
+                  [CALL_TYPES.PREFERENCIAL]: 'Preferencial',
+                }}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue/>
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
@@ -706,7 +757,7 @@ function SyncSection({ session, canSync }: SyncSectionProps) {
               disabled={syncing || !syncNumber}
               className="mb-[1px] self-end"
             >
-              {syncing ? "Sincronizando…" : "Sincronizar"}
+              {syncing ? 'Sincronizando…' : 'Sincronizar'}
             </Button>
           </div>
         </form>

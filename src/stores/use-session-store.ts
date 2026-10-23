@@ -1,9 +1,9 @@
-import { create } from "zustand";
-import type { User } from "next-auth";
-import { SESSION_KEY } from "@/shared/constants";
-import { parseJson } from "@/shared/json";
-import { hasPermission } from "@/shared/permissions";
-import type { Permission } from "@/shared/permissions";
+import { create } from 'zustand';
+import type { User } from 'next-auth';
+import { SESSION_KEY } from '@/shared/constants';
+import { parseJson } from '@/shared/json';
+import { hasPermission } from '@/shared/permissions';
+import type { Permission } from '@/shared/permissions';
 
 /**
  * Fonte única da sessão no cliente.
@@ -48,7 +48,7 @@ export interface SessionState {
  * um erro: a sessão real está no cookie httpOnly.
  */
 export function readCachedSession(): User | null {
-  if (typeof window === "undefined") return null;
+  if (typeof window === 'undefined') return null;
   try {
     const raw = window.localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
@@ -63,7 +63,7 @@ export function readCachedSession(): User | null {
 
 /** Grava (ou apaga) o espelho da sessão no `localStorage`. */
 function writeCachedSession(user: User | null): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
   try {
     if (!user) {
       window.localStorage.removeItem(SESSION_KEY);
@@ -101,8 +101,8 @@ export const useSessionStore = create<SessionState>()((set) => ({
  * qualquer outra chave (a fila, por exemplo) acordava os assinantes da
  * sessão — e vice-versa.
  */
-if (typeof window !== "undefined") {
-  window.addEventListener("storage", (event) => {
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (event) => {
     if (event.key !== SESSION_KEY) return;
     useSessionStore.setState({ user: readCachedSession() });
   });

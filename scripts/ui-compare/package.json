@@ -1,8 +1,8 @@
 {
   "name": "ui-compare",
   "private": true,
-  "type": "module",
   "description": "Ferramenta de comparação visual (antes/depois) das telas — host, não roda no container",
+  "type": "module",
   "scripts": {
     "capture": "bun run capture.ts",
     "compare": "bun run compare.ts"

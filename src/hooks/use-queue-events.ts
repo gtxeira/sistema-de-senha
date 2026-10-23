@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useEffect, useSyncExternalStore } from "react";
-import type { SectorId } from "@/shared/constants";
+import { useEffect, useSyncExternalStore } from 'react';
+import type { SectorId } from '@/shared/constants';
 import {
   getQueueEventsSnapshot,
   subscribeQueueEvents,
   subscribeQueueSector,
-} from "@/client/queue/queue-events";
-import type { ClientQueueCall } from "@/client/queue/queue-events";
+} from '@/client/queue/queue-events';
+import type { ClientQueueCall } from '@/client/queue/queue-events';
 
 export interface QueueEventsResult {
   readonly connected: boolean;

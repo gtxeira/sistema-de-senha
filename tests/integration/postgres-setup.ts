@@ -1,6 +1,6 @@
-import { PrismaClient } from "../../src/server/generated/prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
-import bcrypt from "bcryptjs";
+import { PrismaClient } from '../../src/server/generated/prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
@@ -32,14 +32,15 @@ export async function seedTestUser(data: SeedTestUserInput) {
   const id = data.id || crypto.randomUUID();
   const username = data.username || `test.user.${Date.now()}`;
   const email = `${username}@central-atendimento.local`;
-  const rawPassword = data.password || "default123";
+  const rawPassword = data.password || 'default123';
   const passwordHash = await bcrypt.hash(rawPassword, 10);
 
   // `users.role` (enum) virou FK para a tabela `roles`
   const role = await prisma.roles.findUnique({
-    where: { key: data.role || "attendant" },
+    where: { key: data.role || 'attendant' },
   });
-  if (!role) throw new Error(`Cargo não encontrado: ${data.role || "attendant"}`);
+  if (!role)
+    throw new Error(`Cargo não encontrado: ${data.role || 'attendant'}`);
 
   await prisma.users.create({
     data: {
@@ -47,7 +48,7 @@ export async function seedTestUser(data: SeedTestUserInput) {
       username,
       email,
       password_hash: passwordHash,
-      full_name: data.full_name || "Test User",
+      full_name: data.full_name || 'Test User',
       role_id: role.id,
       sector_id: data.sector_id || null,
     },
@@ -76,7 +77,7 @@ export async function cleanupTestUsers(usernames: readonly string[]) {
  */
 export async function cleanupAllTestUsers() {
   await prisma.users.deleteMany({
-    where: { username: { startsWith: "test." } },
+    where: { username: { startsWith: 'test.' } },
   });
 }
 
@@ -99,7 +100,7 @@ export async function seedTestNews(data: SeedTestNewsInput = {}) {
   const result = await prisma.news.create({
     data: {
       title: data.title || `Test News ${Date.now()}`,
-      image_url: data.image || "https://fake.test/news.jpg",
+      image_url: data.image || 'https://fake.test/news.jpg',
       active: data.active !== undefined ? data.active : true,
       ...(data.created_at ? { created_at: data.created_at } : {}),
     },
@@ -135,7 +136,7 @@ export async function cleanupAllNews() {
  */
 export async function seedTestQueueSequence(
   sector: string,
-  type: "normal" | "preferencial",
+  type: 'normal' | 'preferencial',
   currentNumber: number,
 ) {
   await prisma.queue_sequences.upsert({
@@ -146,7 +147,11 @@ export async function seedTestQueueSequence(
       },
     },
     update: { current_number: currentNumber, updated_at: new Date() },
-    create: { sector_id: sector, call_type: type, current_number: currentNumber },
+    create: {
+      sector_id: sector,
+      call_type: type,
+      current_number: currentNumber,
+    },
   });
 }
 

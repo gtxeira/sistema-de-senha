@@ -1,8 +1,8 @@
-import { describe, beforeEach, afterEach } from "vitest";
-import { usersRepoContract } from "../../contracts/users-repo.contract";
-import { seedTestUser, cleanupTestUsers } from "../postgres-setup";
+import { describe, beforeEach, afterEach } from 'vitest';
+import { usersRepoContract } from '../../contracts/users-repo.contract';
+import { seedTestUser, cleanupTestUsers } from '../postgres-setup';
 
-describe("UsersRepository — Postgres integration", () => {
+describe('UsersRepository — Postgres integration', () => {
   let seededUsernames: string[] = [];
 
   beforeEach(async () => {
@@ -14,9 +14,8 @@ describe("UsersRepository — Postgres integration", () => {
   });
 
   usersRepoContract(async () => {
-    const { PostgresUsersRepository } = await import(
-      "@/server/repositories/users-repo.postgres"
-    );
+    const { PostgresUsersRepository } =
+      await import('@/server/repositories/users-repo.postgres');
     const repo = new PostgresUsersRepository();
 
     return {

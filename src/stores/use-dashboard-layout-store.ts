@@ -1,6 +1,6 @@
-import { create } from "zustand";
-import { ReactNode } from "react";
-import type { SectorInfo } from "@/shared/constants";
+import { create } from 'zustand';
+import { ReactNode } from 'react';
+import type { SectorInfo } from '@/shared/constants';
 
 /**
  * Estado do "casco" do dashboard que as páginas publicam.
@@ -28,7 +28,8 @@ export const useDashboardLayoutStore = create<LayoutState>()((set) => ({
   headerActions: undefined,
 
   setSectorInfo: (sectorInfo) => set({ sectorInfo }),
-  setHeaderActions: (headerActions) => set({ headerActions: headerActions ?? null }),
+  setHeaderActions: (headerActions) =>
+    set({ headerActions: headerActions ?? null }),
 
   resetLayout: () =>
     set({

@@ -12,11 +12,11 @@ import {
   TYPE_PREFIXES,
   HISTORY_LIMITS,
   NO_PASSWORD,
-} from "@/shared/constants";
-import type { CallType } from "@/shared/constants";
-import { parseJson, readJson } from "@/shared/json";
-import { dayKey, dayKeyOrNull, formatClock } from "@/shared/time";
-import type { QueueCallBody } from "@/shared/types/api";
+} from '@/shared/constants';
+import type { CallType } from '@/shared/constants';
+import { parseJson, readJson } from '@/shared/json';
+import { dayKey, dayKeyOrNull, formatClock } from '@/shared/time';
+import type { QueueCallBody } from '@/shared/types/api';
 
 export {
   SECTORS,
@@ -100,13 +100,13 @@ const serverQueueSnapshot: QueueState = {
     normalCurrent: NO_PASSWORD,
     priorityCurrent: NO_PASSWORD,
     history: [],
-    historyDate: "",
+    historyDate: '',
   },
   recepcao: {
     normalCurrent: NO_PASSWORD,
     priorityCurrent: NO_PASSWORD,
     history: [],
-    historyDate: "",
+    historyDate: '',
   },
 };
 
@@ -138,14 +138,14 @@ export function nextQueueNumber(current?: CurrentPassword): number {
 
 export function formatQueueNumber(
   number: number | string | null | undefined,
-  type: CallType = "normal",
+  type: CallType = 'normal',
 ): string {
   const prefix =
-    type === "preferencial" || type === "preferential"
+    type === 'preferencial' || type === 'preferential'
       ? TYPE_PREFIXES.preferencial
       : TYPE_PREFIXES.normal;
   if (number === null || number === undefined) return `${prefix}---`;
-  return `${prefix}${String(Number(number)).padStart(3, "0")}`;
+  return `${prefix}${String(Number(number)).padStart(3, '0')}`;
 }
 
 export function getInitialState(): QueueState {
@@ -177,8 +177,7 @@ export function clearHistoryFromNewDay(state: QueueState): QueueState {
         {
           ...queue,
           // PRESERVA os contadores — nunca zera ao mudar de dia
-          normalCurrent:
-            queue.normalCurrent ?? queue.current ?? NO_PASSWORD,
+          normalCurrent: queue.normalCurrent ?? queue.current ?? NO_PASSWORD,
           priorityCurrent: queue.priorityCurrent ?? NO_PASSWORD,
           // Limpa apenas o histórico visual
           history: [],
@@ -187,13 +186,13 @@ export function clearHistoryFromNewDay(state: QueueState): QueueState {
       ];
     }),
   );
-  if (changed && typeof window !== "undefined")
+  if (changed && typeof window !== 'undefined')
     window.localStorage.setItem(QUEUE_KEY, JSON.stringify(nextState));
   return nextState;
 }
 
 export function readQueueState(): QueueState {
-  if (typeof window === "undefined") return getInitialState();
+  if (typeof window === 'undefined') return getInitialState();
   try {
     const saved = window.localStorage.getItem(QUEUE_KEY);
     if (!saved) return getInitialState();
@@ -206,7 +205,7 @@ export function readQueueState(): QueueState {
 
 export function saveQueueState(state: QueueState): void {
   window.localStorage.setItem(QUEUE_KEY, JSON.stringify(state));
-  window.dispatchEvent(new CustomEvent("queue-updated", { detail: state }));
+  window.dispatchEvent(new CustomEvent('queue-updated', { detail: state }));
 }
 
 /**
@@ -303,7 +302,8 @@ function normalizeCalls(
     .map((call) => ({
       ...call,
       type:
-        call.type === CALL_TYPES.PREFERENCIAL || call.type === CALL_TYPES.PREFERENTIAL
+        call.type === CALL_TYPES.PREFERENCIAL ||
+        call.type === CALL_TYPES.PREFERENTIAL
           ? CALL_TYPES.PREFERENCIAL
           : CALL_TYPES.NORMAL,
     }));
@@ -386,14 +386,15 @@ export function reconcileQueueFromCalls(
     [sector]: {
       ...local,
       [field]: adopt ? newest.number : local[field],
-      history: cleanHistory([...todays, ...local.history]).slice(0, historyLimit),
+      history: cleanHistory([...todays, ...local.history]).slice(
+        0,
+        historyLimit,
+      ),
     },
   });
 }
 
-export function normalizeQueue(
-  queue?: Partial<QueueEntry> | null,
-): QueueEntry {
+export function normalizeQueue(queue?: Partial<QueueEntry> | null): QueueEntry {
   return {
     normalCurrent: queue?.normalCurrent ?? queue?.current ?? NO_PASSWORD,
     priorityCurrent: queue?.priorityCurrent ?? NO_PASSWORD,
@@ -405,15 +406,15 @@ export function normalizeQueue(
 export async function withQueueLock<T>(callback: () => Promise<T>): Promise<T> {
   if (navigator?.locks?.request)
     return navigator.locks.request(
-      "saude-queue-call",
-      { mode: "exclusive" },
+      'saude-queue-call',
+      { mode: 'exclusive' },
       callback,
     );
   const lockKey = `${QUEUE_KEY}-lock`;
   const token = `${Date.now()}-${Math.random()}`;
   while (true) {
-    const raw = window.localStorage.getItem(lockKey) || "";
-    const lockTime = Number(String(raw).split(":")[0] || 0);
+    const raw = window.localStorage.getItem(lockKey) || '';
+    const lockTime = Number(String(raw).split(':')[0] || 0);
     if (!lockTime || Date.now() - lockTime > 3000) {
       window.localStorage.setItem(lockKey, `${Date.now()}:${token}`);
       if (window.localStorage.getItem(lockKey)?.endsWith(token)) break;
@@ -434,11 +435,11 @@ export function playCallAlert(): void {
 }
 
 export function subscribeQueue(callback: () => void): () => void {
-  window.addEventListener("queue-updated", callback);
-  window.addEventListener("storage", callback);
+  window.addEventListener('queue-updated', callback);
+  window.addEventListener('storage', callback);
   return () => {
-    window.removeEventListener("queue-updated", callback);
-    window.removeEventListener("storage", callback);
+    window.removeEventListener('queue-updated', callback);
+    window.removeEventListener('storage', callback);
   };
 }
 
@@ -469,39 +470,48 @@ export async function callNextNumber({
   return withQueueLock(async () => {
     let next: number | null = null;
     try {
-      const res = await fetch("/api/queue/call", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/queue/call', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sector, type }),
       });
       const data = await readJson<QueueCallBody>(res);
       if (!res.ok) {
         if (data.useLocal) {
           const ls = normalizeQueue(readQueueState()[sector]);
-          next = type === "preferencial"
-            ? nextQueueNumber(ls.priorityCurrent)
-            : nextQueueNumber(ls.normalCurrent);
+          next =
+            type === 'preferencial'
+              ? nextQueueNumber(ls.priorityCurrent)
+              : nextQueueNumber(ls.normalCurrent);
         } else {
-          return { ok: false, error: data.error || "Erro ao conectar à sequência central." };
+          return {
+            ok: false,
+            error: data.error || 'Erro ao conectar à sequência central.',
+          };
         }
       } else {
         next = Number(data.number);
       }
     } catch {
       const ls = normalizeQueue(readQueueState()[sector]);
-      next = type === "preferencial"
-        ? nextQueueNumber(ls.priorityCurrent)
-        : nextQueueNumber(ls.normalCurrent);
+      next =
+        type === 'preferencial'
+          ? nextQueueNumber(ls.priorityCurrent)
+          : nextQueueNumber(ls.normalCurrent);
     }
 
     next = Number(next);
-    if (!Number.isInteger(next) || next < MIN_QUEUE_NUMBER || next > MAX_QUEUE_NUMBER) {
-      return { ok: false, error: "Número de senha inválido." };
+    if (
+      !Number.isInteger(next) ||
+      next < MIN_QUEUE_NUMBER ||
+      next > MAX_QUEUE_NUMBER
+    ) {
+      return { ok: false, error: 'Número de senha inválido.' };
     }
 
     const latest = readQueueState();
     const q = normalizeQueue(latest[sector]);
-    const field = type === "preferencial" ? "priorityCurrent" : "normalCurrent";
+    const field = type === 'preferencial' ? 'priorityCurrent' : 'normalCurrent';
 
     saveQueueState({
       ...latest,

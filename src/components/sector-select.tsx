@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Select,
@@ -8,13 +8,9 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import {
-  ALL_SECTORS,
-  ALL_SECTORS_INFO,
-  SECTORS,
-} from "@/shared/constants";
-import type { SectorScope } from "@/shared/constants";
+} from '@/components/ui/select';
+import { ALL_SECTORS, ALL_SECTORS_INFO, SECTORS } from '@/shared/constants';
+import type { SectorScope } from '@/shared/constants';
 
 export interface SectorSelectProps {
   /** Escopo selecionado: um setor real ou "Todos". */
@@ -69,7 +65,9 @@ export function SectorSelect({
           )}
 
           {sectors.map((s) => (
-            <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+            <SelectItem key={s.id} value={s.id}>
+              {s.name}
+            </SelectItem>
           ))}
         </SelectGroup>
       </SelectContent>

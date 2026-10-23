@@ -1,14 +1,14 @@
-"use client"
+'use client';
 
-import * as React from "react"
-import Link from "next/link"
-import type { Route } from "next"
-import { ChevronRight, Monitor } from "lucide-react"
-import { SearchForm } from "@/components/search-form"
-import { SECTORS } from "@/shared/constants"
-import type { SectorInfo } from "@/shared/constants"
-import { canAccessSector } from "@/shared/permissions"
-import type { User } from "next-auth"
+import * as React from 'react';
+import Link from 'next/link';
+import type { Route } from 'next';
+import { ChevronRight, Monitor } from 'lucide-react';
+import { SearchForm } from '@/components/search-form';
+import { SECTORS } from '@/shared/constants';
+import type { SectorInfo } from '@/shared/constants';
+import { canAccessSector } from '@/shared/permissions';
+import type { User } from 'next-auth';
 import {
   Sidebar,
   SidebarContent,
@@ -24,16 +24,20 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarRail,
-} from "@/components/ui/sidebar"
-import brandIcon from "@/app/icon.ico";
-import Image from "next/image";
-import { NavUser } from "@/components/sidebar/nav-user";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import type { RouteGroup } from "@/components/sidebar/sidebar-layout";
+} from '@/components/ui/sidebar';
+import brandIcon from '@/app/icon.ico';
+import Image from 'next/image';
+import { NavUser } from '@/components/sidebar/nav-user';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import type { RouteGroup } from '@/components/sidebar/sidebar-layout';
 
 /** Busca sem acento/caixa: "hist" e "Histórico" casam. */
 const normalize = (value: string) =>
-  value.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase()
+  value.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
 
 export function AppSidebar({
   session,
@@ -42,23 +46,25 @@ export function AppSidebar({
   routeGroups,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
-  session: User | null
-  sectorInfo?: SectorInfo
-  activeRoute: string,
-  routeGroups: readonly RouteGroup[]
+  session: User | null;
+  sectorInfo?: SectorInfo;
+  activeRoute: string;
+  routeGroups: readonly RouteGroup[];
 }) {
-  const [query, setQuery] = React.useState("")
+  const [query, setQuery] = React.useState('');
 
-  const groups = routeGroups.map((group) => ({
-    ...group,
-    items: group.items.filter((item) =>
-      normalize(item.label).includes(normalize(query.trim())),
-    ),
-  })).filter((group) => group.items.length > 0);
+  const groups = routeGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) =>
+        normalize(item.label).includes(normalize(query.trim())),
+      ),
+    }))
+    .filter((group) => group.items.length > 0);
 
   const visibleSectors = Object.values(SECTORS).filter((s) =>
-    canAccessSector(session, s.id, "read"),
-  )
+    canAccessSector(session, s.id, 'read'),
+  );
 
   return (
     <Sidebar {...props}>
@@ -71,7 +77,9 @@ export function AppSidebar({
               </div>
 
               <div className="flex flex-col gap-0.5 leading-none">
-                <span className="font-medium">Sistema de Atendimento por Senhas</span>
+                <span className="font-medium">
+                  Sistema de Atendimento por Senhas
+                </span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -100,7 +108,7 @@ export function AppSidebar({
                 ))}
 
                 {/* Exibido EXCLUSIVAMENTE no grupo "Chamadas" se houver monitores acessíveis */}
-                {group.title === "Chamadas" && visibleSectors.length > 0 && (
+                {group.title === 'Chamadas' && visibleSectors.length > 0 && (
                   <SidebarMenuItem>
                     <Collapsible defaultOpen className="group/collapsible">
                       <CollapsibleTrigger
@@ -143,13 +151,13 @@ export function AppSidebar({
       <SidebarFooter className="gap-0">
         <NavUser
           user={{
-            name: session?.name ?? "Atendente",
-            sector: sectorInfo?.name ?? "Setor Não Selecionado",
+            name: session?.name ?? 'Atendente',
+            sector: sectorInfo?.name ?? 'Setor Não Selecionado',
           }}
         />
       </SidebarFooter>
 
       <SidebarRail />
     </Sidebar>
-  )
+  );
 }

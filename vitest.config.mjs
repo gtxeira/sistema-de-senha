@@ -1,34 +1,36 @@
-import { defineConfig } from "vitest/config";
-import { fileURLToPath, URL } from "node:url";
-import { resolve } from "node:path";
-import { checkIsRunningInDocker } from "./scripts/check-is-running-in-docker.js";
-import { loadEnvFile } from "./scripts/load-env-file.js";
+import { defineConfig } from 'vitest/config';
+import { fileURLToPath, URL } from 'node:url';
+import { resolve } from 'node:path';
+import { checkIsRunningInDocker } from './scripts/check-is-running-in-docker.js';
+import { loadEnvFile } from './scripts/load-env-file.js';
 
 export default defineConfig(() => {
-  const root = fileURLToPath(new URL(".", import.meta.url));
-  const testEnv = loadEnvFile(resolve(root, ".env.test"));
+  const root = fileURLToPath(new URL('.', import.meta.url));
+  const testEnv = loadEnvFile(resolve(root, '.env.test'));
 
   const isDocker = checkIsRunningInDocker();
 
   const s3Endpoint = isDocker
-    ? testEnv.S3_ENDPOINT.replace("localhost", "garage")
+    ? testEnv.S3_ENDPOINT.replace('localhost', 'garage')
     : testEnv.S3_ENDPOINT;
 
   return {
     resolve: {
       alias: {
-        "@": fileURLToPath(new URL("./src", import.meta.url)),
+        '@': fileURLToPath(new URL('./src', import.meta.url)),
         // Em produção o Next resolve `server-only` para o marcador que
         // rejeita imports em Client Components. Nos testes o pacote lança
         // por padrão, então apontamos para um stub vazio.
-        "server-only": fileURLToPath(new URL("./tests/stubs/server-only.ts", import.meta.url)),
+        'server-only': fileURLToPath(
+          new URL('./tests/stubs/server-only.ts', import.meta.url),
+        ),
       },
     },
     test: {
-      environment: "happy-dom",
+      environment: 'happy-dom',
       globals: true,
-      include: ["tests/**/*.test.{js,jsx,ts,tsx}"],
-      setupFiles: ["./tests/setup.ts"],
+      include: ['tests/**/*.test.{js,jsx,ts,tsx}'],
+      setupFiles: ['./tests/setup.ts'],
       fileParallelism: false,
 
       env: {
@@ -43,28 +45,28 @@ export default defineConfig(() => {
 
       server: {
         deps: {
-          inline: ["next-auth", "next"],
+          inline: ['next-auth', 'next'],
         },
       },
 
       coverage: {
-        provider: "v8",
+        provider: 'v8',
         include: [
-          "src/server/**/*.ts",
-          "src/client/**/*.ts",
-          "src/shared/**/*.ts",
-          "src/hooks/**/*.ts",
-          "src/app/api/**/*.ts",
-          "src/proxy.ts",
+          'src/server/**/*.ts',
+          'src/client/**/*.ts',
+          'src/shared/**/*.ts',
+          'src/hooks/**/*.ts',
+          'src/app/api/**/*.ts',
+          'src/proxy.ts',
         ],
         exclude: [
-          "tests/**",
-          "src/**/*.test.{js,jsx,ts,tsx}",
-          "src/**/*.module.css",
+          'tests/**',
+          'src/**/*.test.{js,jsx,ts,tsx}',
+          'src/**/*.module.css',
           // Cliente Prisma gerado — não é código nosso.
-          "src/server/generated/**",
+          'src/server/generated/**',
         ],
-        reporter: ["text", "html", "json-summary"],
+        reporter: ['text', 'html', 'json-summary'],
       },
     },
   };

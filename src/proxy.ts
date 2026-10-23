@@ -1,15 +1,15 @@
-import { auth, SESSION_COOKIE_NAME } from "@/auth";
-import { NextResponse } from "next/server";
-import { REFRESH_COOKIE_NAME, SIGN_IN_PATH } from "@/shared/constants";
+import { auth, SESSION_COOKIE_NAME } from '@/auth';
+import { NextResponse } from 'next/server';
+import { REFRESH_COOKIE_NAME, SIGN_IN_PATH } from '@/shared/constants';
 import {
   SCREEN_HOME,
   canAccessSector,
   hasPermission,
   matchRoute,
   sessionFreshnessProblem,
-} from "@/shared/permissions";
-import type { PermissionCarrier } from "@/shared/permissions";
-import type { NextAuthRequest } from "next-auth";
+} from '@/shared/permissions';
+import type { PermissionCarrier } from '@/shared/permissions';
+import type { NextAuthRequest } from 'next-auth';
 
 /**
  * Sem sessão válida (ou stale/expirada): se existe um refresh cookie,
@@ -25,8 +25,8 @@ function resumeSessionOrLogin(
   hasRefresh: boolean,
 ): NextResponse {
   if (hasRefresh) {
-    const refreshUrl = new URL("/api/auth/refresh", req.url);
-    refreshUrl.searchParams.set("callbackUrl", pathname);
+    const refreshUrl = new URL('/api/auth/refresh', req.url);
+    refreshUrl.searchParams.set('callbackUrl', pathname);
     return NextResponse.redirect(refreshUrl);
   }
   // Nunca redirecionar para o próprio pathname (auto-loop, ex.:
@@ -38,14 +38,14 @@ function resumeSessionOrLogin(
 /** Redireciona para a home (se a permissão de tela existir) ou /login. */
 function homeOrLogin(user: PermissionCarrier, baseUrl: string): URL {
   return new URL(
-    hasPermission(user, SCREEN_HOME) ? "/home" : SIGN_IN_PATH,
+    hasPermission(user, SCREEN_HOME) ? '/home' : SIGN_IN_PATH,
     baseUrl,
   );
 }
 
 /** A URL é a página de login (ou uma subrota dela)? */
 function isSignInPath(pathname: string): boolean {
-  return pathname === SIGN_IN_PATH || pathname.startsWith(SIGN_IN_PATH + "/");
+  return pathname === SIGN_IN_PATH || pathname.startsWith(SIGN_IN_PATH + '/');
 }
 
 export default auth((req) => {
@@ -53,9 +53,9 @@ export default auth((req) => {
 
   // Ignora estáticos e APIs
   if (
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/api") ||
-    pathname.includes(".")
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api') ||
+    pathname.includes('.')
   ) {
     return NextResponse.next();
   }
@@ -66,7 +66,7 @@ export default auth((req) => {
   // A raiz é a única rota que o proxy não classifica: quem decide para
   // onde ela vai é o server component (src/app/page.tsx), que tem a
   // sessão em mãos. O proxy só abre espaço.
-  if (pathname === "/") {
+  if (pathname === '/') {
     return NextResponse.next();
   }
 
@@ -79,14 +79,14 @@ export default auth((req) => {
       !sessionFreshnessProblem(user) &&
       hasPermission(user, SCREEN_HOME)
     ) {
-      return NextResponse.redirect(new URL("/home", req.url));
+      return NextResponse.redirect(new URL('/home', req.url));
     }
     // Sessão stale até no /login: tenta o refresh antes de renderizar.
     // Sem refresh cookie não há como acordar — renderiza o login (o redirect
     // para /login aqui seria um loop infinito) e descarta o cookie inválido
     // até o próximo login sobrescrevê-lo.
     if (user && sessionFreshnessProblem(user)) {
-      if (hasRefresh) return resumeSessionOrLogin(req, "/home", true);
+      if (hasRefresh) return resumeSessionOrLogin(req, '/home', true);
       const res = NextResponse.next();
       res.cookies.delete(SESSION_COOKIE_NAME);
       return res;
@@ -122,7 +122,7 @@ export default auth((req) => {
   // /monitor/<setor>: leitura exige setor próprio ou setores.todos.ver
   if (
     requirement.sector &&
-    !canAccessSector(user, requirement.sector, "read")
+    !canAccessSector(user, requirement.sector, 'read')
   ) {
     return NextResponse.redirect(homeOrLogin(user, req.url));
   }
@@ -131,5 +131,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };

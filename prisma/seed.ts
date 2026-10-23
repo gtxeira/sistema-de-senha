@@ -1,47 +1,47 @@
-import { PrismaClient } from "../src/server/generated/prisma/client";
-import type { rolesModel } from "../src/server/generated/prisma/models/roles";
-import { PrismaPg } from "@prisma/adapter-pg";
-import bcrypt from "bcryptjs";
+import { PrismaClient } from '../src/server/generated/prisma/client';
+import type { rolesModel } from '../src/server/generated/prisma/models/roles';
+import { PrismaPg } from '@prisma/adapter-pg';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
 });
 
 const SECTORS = [
-  { id: "farmacia", name: "Farmácia" },
-  { id: "recepcao", name: "Recepção Saúde" },
+  { id: 'farmacia', name: 'Farmácia' },
+  { id: 'recepcao', name: 'Recepção Saúde' },
 ];
 
 // TODO: Adicionar o seed diretamente no armazenamento S3
 const DEFAULT_NEWS = {
-  title: "Bem-vindo ao Sistema de Senhas",
-  image_url: "/news/1789083615350-os7rdzpymeb.jpeg",
+  title: 'Bem-vindo ao Sistema de Senhas',
+  image_url: '/news/1789083615350-os7rdzpymeb.jpeg',
 };
 
 const USERS = [
   {
-    username: "admin",
-    email: "admin.sistema@central-atendimento.local",
-    password: "admin123",
-    full_name: "Administrador do Sistema",
-    role: "admin",
+    username: 'admin',
+    email: 'admin.sistema@central-atendimento.local',
+    password: 'admin123',
+    full_name: 'Administrador do Sistema',
+    role: 'admin',
     sector_id: null,
   },
   {
-    username: "atendente.recepcao",
-    email: "atendente.recepcao@central-atendimento.local",
-    password: "recepcao123",
-    full_name: "Atendente Recepção",
-    role: "attendant",
-    sector_id: "recepcao",
+    username: 'atendente.recepcao',
+    email: 'atendente.recepcao@central-atendimento.local',
+    password: 'recepcao123',
+    full_name: 'Atendente Recepção',
+    role: 'attendant',
+    sector_id: 'recepcao',
   },
   {
-    username: "atendente.farmacia",
-    email: "atendente.farmacia@central-atendimento.local",
-    password: "farmacia123",
-    full_name: "Atendente Farmácia",
-    role: "attendant",
-    sector_id: "farmacia",
+    username: 'atendente.farmacia',
+    email: 'atendente.farmacia@central-atendimento.local',
+    password: 'farmacia123',
+    full_name: 'Atendente Farmácia',
+    role: 'attendant',
+    sector_id: 'farmacia',
   },
 ];
 
@@ -59,8 +59,8 @@ async function main() {
   //    também para bancos criados apenas com o seed) ────────────
   const roles: Record<string, rolesModel> = {};
   for (const [key, name] of [
-    ["admin", "Administrador"],
-    ["attendant", "Atendente"],
+    ['admin', 'Administrador'],
+    ['attendant', 'Atendente'],
   ]) {
     roles[key] = await prisma.roles.upsert({
       where: { key },
@@ -110,12 +110,12 @@ async function main() {
     console.log(`  ✓ ${user.username} / ${user.password} (${user.role})`);
   }
 
-  console.log("\nSeed concluído.");
+  console.log('\nSeed concluído.');
 }
 
 main()
   .catch((e) => {
-    console.error("Erro no seed:", e);
+    console.error('Erro no seed:', e);
     process.exit(1);
   })
   .finally(() => prisma.$disconnect());

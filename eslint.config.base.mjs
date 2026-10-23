@@ -1,7 +1,7 @@
-import { globalIgnores } from "eslint/config";
-import nextVitals from "eslint-config-next/core-web-vitals";
-import noRelativeImportPaths from "eslint-plugin-no-relative-import-paths";
-import tseslint from "typescript-eslint";
+import { globalIgnores } from 'eslint/config';
+import nextVitals from 'eslint-config-next/core-web-vitals';
+import noRelativeImportPaths from 'eslint-plugin-no-relative-import-paths';
+import tseslint from 'typescript-eslint';
 
 /**
  * `no-unused-vars` com a convenção de `_`.
@@ -13,7 +13,7 @@ import tseslint from "typescript-eslint";
 export const unusedVarsRules = [
   {
     plugins: {
-      "@typescript-eslint": tseslint.plugin,
+      '@typescript-eslint': tseslint.plugin,
     },
     rules: {
       // Não vem do `nextVitals`: sem ela, import e variáveis mortos só
@@ -21,13 +21,13 @@ export const unusedVarsRules = [
       // "propositalmente ignorado" — um evento que o componente descarta, um
       // stub de implementação — sem o padrão toda assinatura pública com
       // parâmetro intocado seria reportada.
-      "@typescript-eslint/no-unused-vars": [
-        "error",
+      '@typescript-eslint/no-unused-vars': [
+        'error',
         {
-          args: "after-used",
-          argsIgnorePattern: "^_",
-          varsIgnorePattern: "^_",
-          caughtErrorsIgnorePattern: "^_",
+          args: 'after-used',
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
         },
       ],
     },
@@ -50,37 +50,44 @@ export const unusedVarsRules = [
  */
 const boundary = (patterns) => ({
   rules: {
-    "no-restricted-imports": ["error", { patterns }],
+    'no-restricted-imports': ['error', { patterns }],
   },
 });
 
 const uiBoundary = boundary([
   {
-    group: ["@/server/*"],
+    group: ['@/server/*'],
     message:
-      "Código de UI não pode importar backend. Use a API HTTP ou tipos de @/shared.",
+      'Código de UI não pode importar backend. Use a API HTTP ou tipos de @/shared.',
   },
 ]);
 
 const serverBoundary = boundary([
   {
-    group: ["@/app/*", "@/components/*", "@/hooks/*", "@/stores/*", "@/client/*"],
-    message: "Código de servidor não pode importar UI. Mantenha a regra no service/rota.",
+    group: [
+      '@/app/*',
+      '@/components/*',
+      '@/hooks/*',
+      '@/stores/*',
+      '@/client/*',
+    ],
+    message:
+      'Código de servidor não pode importar UI. Mantenha a regra no service/rota.',
   },
 ]);
 
 const sharedBoundary = boundary([
   {
     group: [
-      "@/server/*",
-      "@/client/*",
-      "@/app/*",
-      "@/components/*",
-      "@/hooks/*",
-      "@/stores/*",
+      '@/server/*',
+      '@/client/*',
+      '@/app/*',
+      '@/components/*',
+      '@/hooks/*',
+      '@/stores/*',
     ],
     message:
-      "Código compartilhado deve ser puro: sem backend, UI ou runtime específico.",
+      'Código compartilhado deve ser puro: sem backend, UI ou runtime específico.',
   },
 ]);
 
@@ -97,53 +104,53 @@ const config = [
   ...nextVitals,
   {
     plugins: {
-      "no-relative-import-paths": noRelativeImportPaths,
+      'no-relative-import-paths': noRelativeImportPaths,
     },
     rules: {
-      "no-relative-import-paths/no-relative-import-paths": [
-        "warn",
+      'no-relative-import-paths/no-relative-import-paths': [
+        'warn',
         {
           allowSameFolder: true, // Mantém ./arquivo no mesmo diretório
-          rootDir: "src", // Mapeia a pasta raiz do alias
-          prefix: "@", // Define o prefixo do alias
+          rootDir: 'src', // Mapeia a pasta raiz do alias
+          prefix: '@', // Define o prefixo do alias
         },
       ],
     },
   },
   {
     files: [
-      "src/components/**/*.{ts,tsx}",
-      "src/hooks/**/*.{ts,tsx}",
-      "src/stores/**/*.{ts,tsx}",
-      "src/client/**/*.{ts,tsx}",
+      'src/components/**/*.{ts,tsx}',
+      'src/hooks/**/*.{ts,tsx}',
+      'src/stores/**/*.{ts,tsx}',
+      'src/client/**/*.{ts,tsx}',
     ],
     ...uiBoundary,
   },
   {
-    files: ["src/shared/**/*.{ts,tsx}"],
+    files: ['src/shared/**/*.{ts,tsx}'],
     ...sharedBoundary,
   },
   {
-    files: ["src/server/**/*.{ts,tsx}"],
+    files: ['src/server/**/*.{ts,tsx}'],
     ...serverBoundary,
   },
   {
-    files: ["src/app/**/*.{ts,tsx}"],
+    files: ['src/app/**/*.{ts,tsx}'],
     ...boundary([
       {
-        group: ["@/server/*"],
+        group: ['@/server/*'],
         message:
-          "Páginas não importam backend diretamente. Use a API HTTP ou `@/auth` para sessão.",
+          'Páginas não importam backend diretamente. Use a API HTTP ou `@/auth` para sessão.',
       },
     ]),
   },
   {
     // As rotas são a borda HTTP: podem importar `server`, mas não UI.
-    files: ["src/app/api/**/*.{ts,tsx}"],
+    files: ['src/app/api/**/*.{ts,tsx}'],
     ...boundary([
       {
-        group: ["@/components/*", "@/hooks/*", "@/stores/*", "@/client/*"],
-        message: "Rotas de API não importam UI.",
+        group: ['@/components/*', '@/hooks/*', '@/stores/*', '@/client/*'],
+        message: 'Rotas de API não importam UI.',
       },
     ]),
   },
@@ -151,15 +158,15 @@ const config = [
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
-    ".next/**",
-    "out/**",
-    "build/**",
-    "next-env.d.ts",
+    '.next/**',
+    'out/**',
+    'build/**',
+    'next-env.d.ts',
     // Cliente Prisma gerado (prisma generate) — código de terceiros.
-    "src/server/generated/**",
+    'src/server/generated/**',
     // Saída de build/ferramenta, não código da aplicação.
-    "dist-electron/**",
-    "coverage/**",
+    'dist-electron/**',
+    'coverage/**',
   ]),
 ];
 

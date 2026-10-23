@@ -1,15 +1,18 @@
-import crypto from "node:crypto";
-import { DEFAULT_GUICHE } from "@/shared/constants";
-import { ALL_PERMISSIONS, computeEffectivePermissions } from "@/shared/permissions";
-import type { Permission, PermissionOverride } from "@/shared/permissions";
+import crypto from 'node:crypto';
+import { DEFAULT_GUICHE } from '@/shared/constants';
+import {
+  ALL_PERMISSIONS,
+  computeEffectivePermissions,
+} from '@/shared/permissions';
+import type { Permission, PermissionOverride } from '@/shared/permissions';
 import type {
   CreateUserInput,
   UpdateUserInput,
   UserRecord,
   UsersRepository,
-} from "@/server/repositories/types";
-import { RouteError } from "@/server/http/errors";
-import type { UsersSeedUserInput } from "../../contracts/users-repo.contract";
+} from '@/server/repositories/types';
+import { RouteError } from '@/server/http/errors';
+import type { UsersSeedUserInput } from '../../contracts/users-repo.contract';
 
 /**
  * Mesmo truque de `PERMISSION_SET` em `permissions.ts`: guardado como
@@ -22,7 +25,9 @@ const KNOWN_PERMISSIONS = new Set<string>(ALL_PERMISSIONS);
  * que a validação de cada override caia no `any` — mesmo truque do
  * `users-repo.postgres.ts`.
  */
-function isOverrideList(value: unknown): value is readonly PermissionOverride[] {
+function isOverrideList(
+  value: unknown,
+): value is readonly PermissionOverride[] {
   return Array.isArray(value);
 }
 
@@ -92,18 +97,20 @@ export class InMemoryUsersRepository implements UsersRepository {
     return Array.from(this.#users.values()).map(toUserRecord);
   }
 
-  async create(data: CreateUserInput): Promise<{ success: true; user: UserRecord }> {
-    const username = (data.username || "").trim().toLowerCase();
+  async create(
+    data: CreateUserInput,
+  ): Promise<{ success: true; user: UserRecord }> {
+    const username = (data.username || '').trim().toLowerCase();
 
     if (!isValidUsername(username) || !data.password || !data.full_name) {
       throw new RouteError(
         400,
-        "Usuário (nome.sobrenome), senha e nome completo são obrigatórios",
+        'Usuário (nome.sobrenome), senha e nome completo são obrigatórios',
       );
     }
 
     if (this.#usernameIndex.has(username)) {
-      throw new RouteError(409, "Nome de usuário já existe");
+      throw new RouteError(409, 'Nome de usuário já existe');
     }
 
     const id = crypto.randomUUID();
@@ -120,17 +127,17 @@ export class InMemoryUsersRepository implements UsersRepository {
 
   async update(id: string, data: UpdateUserInput): Promise<UserRecord> {
     const user = this.#users.get(id);
-    if (!user) throw new RouteError(404, "Usuário não encontrado");
+    if (!user) throw new RouteError(404, 'Usuário não encontrado');
 
     if (data?.full_name !== undefined) {
       const fullName = String(data.full_name).trim();
-      if (!fullName) throw new RouteError(400, "Nome completo é obrigatório");
+      if (!fullName) throw new RouteError(400, 'Nome completo é obrigatório');
       user.full_name = fullName;
     }
     // senha vazia/ausente mantém a atual (mesma regra do repositório real)
     if (data?.password) {
       if (String(data.password).length < 6) {
-        throw new RouteError(400, "Senha deve ter pelo menos 6 caracteres");
+        throw new RouteError(400, 'Senha deve ter pelo menos 6 caracteres');
       }
       user.password_hash = `hashed:${data.password}`;
     }
@@ -147,9 +154,9 @@ export class InMemoryUsersRepository implements UsersRepository {
     permissions: readonly PermissionOverride[],
   ): Promise<PermissionOverride[]> {
     const user = this.#users.get(id);
-    if (!user) throw new RouteError(404, "Usuário não encontrado");
+    if (!user) throw new RouteError(404, 'Usuário não encontrado');
     if (!isOverrideList(permissions)) {
-      throw new RouteError(400, "Permissões devem ser uma lista");
+      throw new RouteError(400, 'Permissões devem ser uma lista');
     }
 
     const rows: PermissionOverride[] = [];
@@ -179,7 +186,7 @@ export class InMemoryUsersRepository implements UsersRepository {
 
   async remove(id: string): Promise<void> {
     const user = this.#users.get(id);
-    if (!user) throw new RouteError(404, "Usuário não encontrado");
+    if (!user) throw new RouteError(404, 'Usuário não encontrado');
     this.#users.delete(id);
     if (user.username) {
       this.#usernameIndex.delete(user.username);
@@ -193,16 +200,16 @@ function buildUser(
   username: string,
   data: UsersSeedUserInput | CreateUserInput,
 ): StoredUser {
-  const role = data.role || "attendant";
+  const role = data.role || 'attendant';
   return {
     id,
     username,
-    full_name: data.full_name || "Test User",
+    full_name: data.full_name || 'Test User',
     role,
     // Sem `roles` em memória o id do cargo é a própria chave.
     role_id: role,
     role_name: null,
-    role_built_in: role === "admin" || role === "attendant",
+    role_built_in: role === 'admin' || role === 'attendant',
     guiche_id: DEFAULT_GUICHE,
     sector_id: data.sector_id || null,
     active: data.active ?? true,

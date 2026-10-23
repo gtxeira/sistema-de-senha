@@ -1,18 +1,18 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { cleanupQueueTestData } from "../../postgres-setup";
-import { readJson } from "@/shared/json";
-import type { StatsBody } from "@/shared/types/api";
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { cleanupQueueTestData } from '../../postgres-setup';
+import { readJson } from '@/shared/json';
+import type { StatsBody } from '@/shared/types/api';
 
 async function importRoute() {
-  return import("@/app/api/stats/route");
+  return import('@/app/api/stats/route');
 }
 
 async function importQueueRepo() {
-  const mod = await import("@/server/repositories");
+  const mod = await import('@/server/repositories');
   return mod.queue;
 }
 
-describe("/api/stats — integration", () => {
+describe('/api/stats — integration', () => {
   beforeEach(async () => {
     await cleanupQueueTestData();
   });
@@ -21,10 +21,10 @@ describe("/api/stats — integration", () => {
     await cleanupQueueTestData();
   });
 
-  describe("GET", () => {
-    it("retorna estrutura vazia quando não há dados", async () => {
+  describe('GET', () => {
+    it('retorna estrutura vazia quando não há dados', async () => {
       const { GET } = await importRoute();
-      const req = new Request("http://localhost/api/stats");
+      const req = new Request('http://localhost/api/stats');
       const res = await GET(req);
       const body = await readJson<StatsBody>(res);
 
@@ -40,35 +40,35 @@ describe("/api/stats — integration", () => {
       });
     });
 
-    it("retorna estatísticas com chamadas reais", async () => {
+    it('retorna estatísticas com chamadas reais', async () => {
       const repo = await importQueueRepo();
       await repo.saveCall({
-        sector: "farmacia",
+        sector: 'farmacia',
         number: 1,
-        numberStr: "N001",
-        sequenceType: "normal",
-        callType: "normal",
+        numberStr: 'N001',
+        sequenceType: 'normal',
+        callType: 'normal',
         attendantId: null,
       });
       await repo.saveCall({
-        sector: "farmacia",
+        sector: 'farmacia',
         number: 2,
-        numberStr: "N002",
-        sequenceType: "normal",
-        callType: "normal",
+        numberStr: 'N002',
+        sequenceType: 'normal',
+        callType: 'normal',
         attendantId: null,
       });
       await repo.saveCall({
-        sector: "recepcao",
+        sector: 'recepcao',
         number: 1,
-        numberStr: "N001",
-        sequenceType: "normal",
-        callType: "normal",
+        numberStr: 'N001',
+        sequenceType: 'normal',
+        callType: 'normal',
         attendantId: null,
       });
 
       const { GET } = await importRoute();
-      const req = new Request("http://localhost/api/stats");
+      const req = new Request('http://localhost/api/stats');
       const res = await GET(req);
       const body = await readJson<StatsBody>(res);
 
@@ -77,22 +77,22 @@ describe("/api/stats — integration", () => {
       expect(body.summary.preferencial).toBe(0);
     });
 
-    it("pagina o histórico no servidor", async () => {
+    it('pagina o histórico no servidor', async () => {
       const repo = await importQueueRepo();
       for (let number = 1; number <= 3; number++) {
         await repo.saveCall({
-          sector: "farmacia",
+          sector: 'farmacia',
           number,
           numberStr: `N00${number}`,
-          sequenceType: "normal",
-          callType: "normal",
+          sequenceType: 'normal',
+          callType: 'normal',
           attendantId: null,
         });
       }
 
       const { GET } = await importRoute();
       const res = await GET(
-        new Request("http://localhost/api/stats?page=2&pageSize=2"),
+        new Request('http://localhost/api/stats?page=2&pageSize=2'),
       );
       const body = await readJson<StatsBody>(res);
 
@@ -106,10 +106,10 @@ describe("/api/stats — integration", () => {
       expect(body.calls).toHaveLength(1);
     });
 
-    it("clampa page e pageSize", async () => {
+    it('clampa page e pageSize', async () => {
       const { GET } = await importRoute();
       const res = await GET(
-        new Request("http://localhost/api/stats?page=0&pageSize=999"),
+        new Request('http://localhost/api/stats?page=0&pageSize=999'),
       );
       const body = await readJson<StatsBody>(res);
 
@@ -117,118 +117,122 @@ describe("/api/stats — integration", () => {
       expect(body.pagination.pageSize).toBe(100);
     });
 
-    it("filtra por setor", async () => {
+    it('filtra por setor', async () => {
       const repo = await importQueueRepo();
       await repo.saveCall({
-        sector: "farmacia",
+        sector: 'farmacia',
         number: 1,
-        numberStr: "N001",
-        sequenceType: "normal",
-        callType: "normal",
+        numberStr: 'N001',
+        sequenceType: 'normal',
+        callType: 'normal',
         attendantId: null,
       });
       await repo.saveCall({
-        sector: "recepcao",
+        sector: 'recepcao',
         number: 1,
-        numberStr: "N001",
-        sequenceType: "normal",
-        callType: "normal",
+        numberStr: 'N001',
+        sequenceType: 'normal',
+        callType: 'normal',
         attendantId: null,
       });
 
       const { GET } = await importRoute();
-      const req = new Request("http://localhost/api/stats?sector=farmacia");
+      const req = new Request('http://localhost/api/stats?sector=farmacia');
       const res = await GET(req);
       const body = await readJson<StatsBody>(res);
 
       expect(body.summary.total).toBe(1);
       expect(body.pagination.total).toBe(1);
       expect(body.calls).toHaveLength(1);
-      expect(body.calls[0].sector_id).toBe("farmacia");
+      expect(body.calls[0].sector_id).toBe('farmacia');
     });
 
-    it("limita days entre 1 e 90", async () => {
+    it('limita days entre 1 e 90', async () => {
       const { GET } = await importRoute();
 
-      const resLow = await GET(new Request("http://localhost/api/stats?days=0"));
+      const resLow = await GET(
+        new Request('http://localhost/api/stats?days=0'),
+      );
       const bodyLow = await readJson<StatsBody>(resLow);
       expect(bodyLow.days).toBeGreaterThanOrEqual(1);
 
-      const resHigh = await GET(new Request("http://localhost/api/stats?days=999"));
+      const resHigh = await GET(
+        new Request('http://localhost/api/stats?days=999'),
+      );
       const bodyHigh = await readJson<StatsBody>(resHigh);
       expect(bodyHigh.days).toBeLessThanOrEqual(90);
 
-      const resDefault = await GET(new Request("http://localhost/api/stats"));
+      const resDefault = await GET(new Request('http://localhost/api/stats'));
       const bodyDefault = await readJson<StatsBody>(resDefault);
       expect(bodyDefault.days).toBeGreaterThanOrEqual(29);
       expect(bodyDefault.days).toBeLessThanOrEqual(31);
     });
 
-    it("conta chamadas de hoje (today)", async () => {
+    it('conta chamadas de hoje (today)', async () => {
       const repo = await importQueueRepo();
       await repo.saveCall({
-        sector: "farmacia",
+        sector: 'farmacia',
         number: 1,
-        numberStr: "N001",
-        sequenceType: "normal",
-        callType: "normal",
+        numberStr: 'N001',
+        sequenceType: 'normal',
+        callType: 'normal',
         attendantId: null,
       });
 
       const { GET } = await importRoute();
-      const req = new Request("http://localhost/api/stats");
+      const req = new Request('http://localhost/api/stats');
       const res = await GET(req);
       const body = await readJson<StatsBody>(res);
 
       expect(body.summary.total).toBe(1);
     });
 
-    it("retorna a página do histórico", async () => {
+    it('retorna a página do histórico', async () => {
       const repo = await importQueueRepo();
       await repo.saveCall({
-        sector: "farmacia",
+        sector: 'farmacia',
         number: 1,
-        numberStr: "N001",
-        sequenceType: "normal",
-        callType: "normal",
+        numberStr: 'N001',
+        sequenceType: 'normal',
+        callType: 'normal',
         attendantId: null,
       });
 
       const { GET } = await importRoute();
-      const req = new Request("http://localhost/api/stats");
+      const req = new Request('http://localhost/api/stats');
       const res = await GET(req);
       const body = await readJson<StatsBody>(res);
 
       expect(body.calls.length).toBeGreaterThan(0);
-      expect(body.calls[0]).toHaveProperty("id");
-      expect(body.calls[0]).toHaveProperty("number");
-      expect(body.calls[0]).toHaveProperty("type");
+      expect(body.calls[0]).toHaveProperty('id');
+      expect(body.calls[0]).toHaveProperty('number');
+      expect(body.calls[0]).toHaveProperty('type');
       // O INSTANTE (ISO), não "HH:mm".
-      expect(body.calls[0]).toHaveProperty("createdAt");
+      expect(body.calls[0]).toHaveProperty('createdAt');
     });
 
-    it("filtra por tipo sem alterar o resumo", async () => {
+    it('filtra por tipo sem alterar o resumo', async () => {
       const repo = await importQueueRepo();
       await repo.saveCall({
-        sector: "farmacia",
+        sector: 'farmacia',
         number: 1,
-        numberStr: "N001",
-        sequenceType: "normal",
-        callType: "normal",
+        numberStr: 'N001',
+        sequenceType: 'normal',
+        callType: 'normal',
         attendantId: null,
       });
       await repo.saveCall({
-        sector: "farmacia",
+        sector: 'farmacia',
         number: 1,
-        numberStr: "P001",
-        sequenceType: "preferencial",
-        callType: "preferential",
+        numberStr: 'P001',
+        sequenceType: 'preferencial',
+        callType: 'preferential',
         attendantId: null,
       });
 
       const { GET } = await importRoute();
       const res = await GET(
-        new Request("http://localhost/api/stats?type=preferencial"),
+        new Request('http://localhost/api/stats?type=preferencial'),
       );
       const body = await readJson<StatsBody>(res);
 
@@ -239,23 +243,23 @@ describe("/api/stats — integration", () => {
       // Tabela: só o tipo pedido.
       expect(body.pagination.total).toBe(1);
       expect(body.calls).toHaveLength(1);
-      expect(body.calls[0].type).toBe("preferencial");
+      expect(body.calls[0].type).toBe('preferencial');
     });
 
-    it("ignora type inválido", async () => {
+    it('ignora type inválido', async () => {
       const repo = await importQueueRepo();
       await repo.saveCall({
-        sector: "farmacia",
+        sector: 'farmacia',
         number: 1,
-        numberStr: "N001",
-        sequenceType: "normal",
-        callType: "normal",
+        numberStr: 'N001',
+        sequenceType: 'normal',
+        callType: 'normal',
         attendantId: null,
       });
 
       const { GET } = await importRoute();
       const res = await GET(
-        new Request("http://localhost/api/stats?type=qualquer"),
+        new Request('http://localhost/api/stats?type=qualquer'),
       );
       const body = await readJson<StatsBody>(res);
 

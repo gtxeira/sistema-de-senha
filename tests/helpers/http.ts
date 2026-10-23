@@ -13,8 +13,8 @@ export function routeRequest(url: string, body?: unknown): Request {
     body === undefined
       ? {}
       : {
-          method: "POST",
-          headers: { "content-type": "application/json" },
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
           body: JSON.stringify(body),
         };
   return new Request(url, init);

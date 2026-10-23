@@ -2,18 +2,18 @@ import type {
   CreateNewsInput,
   NewsItem,
   NewsRepository,
-} from "@/server/repositories/types";
-import { RouteError } from "@/server/http/errors";
-import type { NewsSeedInput } from "../../contracts/news-repo.contract";
+} from '@/server/repositories/types';
+import { RouteError } from '@/server/http/errors';
+import type { NewsSeedInput } from '../../contracts/news-repo.contract';
 
 /**
  * Allowed image MIME types.
  */
 const ALLOWED_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
 ]);
 
 /** Notícia gravada no Map — `NewsItem` é o formato devolvido na leitura. */
@@ -48,24 +48,26 @@ export class InMemoryNewsRepository implements NewsRepository {
     return { id, title: item.title };
   }
 
-  async create(data: CreateNewsInput): Promise<{ success: true; news: NewsItem }> {
+  async create(
+    data: CreateNewsInput,
+  ): Promise<{ success: true; news: NewsItem }> {
     const { title, image } = data;
 
-    if (!title || typeof title !== "string" || !title.trim()) {
-      throw new RouteError(400, "Informe um título.");
+    if (!title || typeof title !== 'string' || !title.trim()) {
+      throw new RouteError(400, 'Informe um título.');
     }
 
-    if (!image || typeof image === "string") {
-      throw new RouteError(400, "Envie um arquivo de imagem.");
+    if (!image || typeof image === 'string') {
+      throw new RouteError(400, 'Envie um arquivo de imagem.');
     }
 
     // A partir daqui `image` é `File` (o tipo estreita depois das checagens).
     if (!ALLOWED_TYPES.has(image.type)) {
-      throw new RouteError(400, "Formato inválido. Use JPG, PNG, WEBP ou GIF.");
+      throw new RouteError(400, 'Formato inválido. Use JPG, PNG, WEBP ou GIF.');
     }
 
     const id = this.#nextId();
-    const ext = (image.name.split(".").pop() || "jpg").toLowerCase();
+    const ext = (image.name.split('.').pop() || 'jpg').toLowerCase();
     const imageUrl = `https://fake.storage/news/${id}.${ext}`;
 
     const item: StoredNews = {
@@ -90,13 +92,13 @@ export class InMemoryNewsRepository implements NewsRepository {
   async remove(id: string | number): Promise<{ success: true }> {
     // `Number.isInteger` não estreita `string | number`, e o original rejeita
     // string numérica — checar o tipo antes preserva exatamente esse comportamento.
-    if (typeof id !== "number" || !Number.isInteger(id) || id < 1) {
-      throw new RouteError(400, "ID inválido.");
+    if (typeof id !== 'number' || !Number.isInteger(id) || id < 1) {
+      throw new RouteError(400, 'ID inválido.');
     }
 
     const item = this.#news.get(id);
     if (!item) {
-      throw new RouteError(404, "Notícia não encontrada.");
+      throw new RouteError(404, 'Notícia não encontrada.');
     }
 
     item.active = false;

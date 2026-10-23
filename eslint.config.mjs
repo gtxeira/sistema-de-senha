@@ -1,5 +1,5 @@
-import { defineConfig } from "eslint/config";
-import base from "./eslint.config.base.mjs";
+import { defineConfig } from 'eslint/config';
+import base from './eslint.config.base.mjs';
 
 /**
  * Lint rápido do dia a dia: só regras estáticas, sem `projectService`.

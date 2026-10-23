@@ -1,9 +1,9 @@
-import { describe, expect, it } from "vitest";
-import { readdirSync } from "node:fs";
-import { dirname, join, relative, resolve, sep } from "node:path";
-import { fileURLToPath } from "node:url";
-import { matchRoute, ROUTE_RULES } from "@/shared/permissions";
-import { SIGN_IN_PATH } from "@/shared/constants";
+import { describe, expect, it } from 'vitest';
+import { readdirSync } from 'node:fs';
+import { dirname, join, relative, resolve, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { matchRoute, ROUTE_RULES } from '@/shared/permissions';
+import { SIGN_IN_PATH } from '@/shared/constants';
 
 /**
  * Anti-drift entre o **filesystem** e o **registro de rotas**.
@@ -23,10 +23,13 @@ import { SIGN_IN_PATH } from "@/shared/constants";
 // `src/app` a partir da raiz do repositório (o arquivo do teste mora em
 // `tests/unit/app/`). O caminho é resolvido com `node:path` — o `URL` do
 // happy-dom não resolve o base `file://` como o do Node.
-const APP_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "../../../src/app");
+const APP_DIR = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  '../../../src/app',
+);
 
 /** Nomes de arquivo que o App Router trata como página de rota. */
-const PAGE_FILES = ["page.tsx", "page.ts", "page.jsx", "page.js"];
+const PAGE_FILES = ['page.tsx', 'page.ts', 'page.jsx', 'page.js'];
 
 /** Todos os arquivos de página sob `src/app`. */
 function findPageFiles(dir: string): string[] {
@@ -54,32 +57,31 @@ function routeUrl(file: string): string {
     .filter((segment) => !PAGE_FILES.includes(segment))
     // Route groups `(authenticated)` e rotas interceptadas `(.)x` não são
     // parte da URL; slots de rota paralela (`@modal`) também não.
-    .filter((segment) => !segment.startsWith("(") && !segment.startsWith("@"))
-    .map((segment) => (segment.startsWith("[") ? "exemplo" : segment));
-  return `/${segments.join("/")}`;
+    .filter((segment) => !segment.startsWith('(') && !segment.startsWith('@'))
+    .map((segment) => (segment.startsWith('[') ? 'exemplo' : segment));
+  return `/${segments.join('/')}`;
 }
 
 /** URLs de todas as páginas do app. */
 const pageUrls = findPageFiles(APP_DIR).map(routeUrl);
 
-describe("registro de rotas (anti-drift com src/app)", () => {
-  it("o app tem páginas para conferir", () => {
+describe('registro de rotas (anti-drift com src/app)', () => {
+  it('o app tem páginas para conferir', () => {
     expect(pageUrls.length).toBeGreaterThan(0);
   });
 
-  it("a página de login existe no path declarado em SIGN_IN_PATH", () => {
+  it('a página de login existe no path declarado em SIGN_IN_PATH', () => {
     expect(pageUrls).toContain(SIGN_IN_PATH);
   });
 
-  it("toda página do app está classificada no registro de rotas", () => {
+  it('toda página do app está classificada no registro de rotas', () => {
     const naoClassificadas = pageUrls.filter(
-      (url) =>
-        url !== "/" && url !== SIGN_IN_PATH && matchRoute(url) === null,
+      (url) => url !== '/' && url !== SIGN_IN_PATH && matchRoute(url) === null,
     );
     expect(naoClassificadas).toEqual([]);
   });
 
-  it("toda regra do registro corresponde a uma página do app", () => {
+  it('toda regra do registro corresponde a uma página do app', () => {
     const orfas = ROUTE_RULES.filter(
       (rule) =>
         !pageUrls.some(

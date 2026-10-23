@@ -8,37 +8,34 @@
  * Este módulo é puro (sem I/O, sem banco) e importado pelo `proxy.ts`,
  * que roda em Edge Runtime — mantenha-o livre de dependências pesadas.
  */
-import {
-  PERMISSIONS_MAX_AGE,
-  SESSION_ABSOLUTE_MAX_AGE,
-} from "./constants";
+import { PERMISSIONS_MAX_AGE, SESSION_ABSOLUTE_MAX_AGE } from './constants';
 
 /* ── Telas ── */
-export const SCREEN_HOME = "tela.home";
-export const SCREEN_PAINEL = "tela.painel";
-export const SCREEN_HISTORICO = "tela.historico";
-export const SCREEN_MONITOR = "tela.monitor";
-export const SCREEN_ADMIN = "tela.admin";
-export const SCREEN_ADMIN_FILAS = "tela.admin.filas";
-export const SCREEN_ADMIN_NOTICIAS = "tela.admin.noticias";
-export const SCREEN_ADMIN_USUARIOS = "tela.admin.usuarios";
+export const SCREEN_HOME = 'tela.home';
+export const SCREEN_PAINEL = 'tela.painel';
+export const SCREEN_HISTORICO = 'tela.historico';
+export const SCREEN_MONITOR = 'tela.monitor';
+export const SCREEN_ADMIN = 'tela.admin';
+export const SCREEN_ADMIN_FILAS = 'tela.admin.filas';
+export const SCREEN_ADMIN_NOTICIAS = 'tela.admin.noticias';
+export const SCREEN_ADMIN_USUARIOS = 'tela.admin.usuarios';
 
 /* ── Ações ── */
-export const USERS_VIEW = "usuarios.ver";
-export const USERS_CREATE = "usuarios.criar";
-export const USERS_EDIT = "usuarios.editar";
-export const USERS_DELETE = "usuarios.excluir";
-export const ROLES_MANAGE = "cargos.gerenciar";
-export const QUEUE_CALL = "filas.chamar";
-export const QUEUE_RECALL = "filas.reavancar";
-export const QUEUE_RESET = "filas.resetar";
-export const QUEUE_SYNC = "filas.sincronizar";
-export const NEWS_CREATE = "noticias.criar";
-export const NEWS_DELETE = "noticias.excluir";
+export const USERS_VIEW = 'usuarios.ver';
+export const USERS_CREATE = 'usuarios.criar';
+export const USERS_EDIT = 'usuarios.editar';
+export const USERS_DELETE = 'usuarios.excluir';
+export const ROLES_MANAGE = 'cargos.gerenciar';
+export const QUEUE_CALL = 'filas.chamar';
+export const QUEUE_RECALL = 'filas.reavancar';
+export const QUEUE_RESET = 'filas.resetar';
+export const QUEUE_SYNC = 'filas.sincronizar';
+export const NEWS_CREATE = 'noticias.criar';
+export const NEWS_DELETE = 'noticias.excluir';
 
 /* ── Escopo de setor ── */
-export const SECTORS_VIEW_ALL = "setores.todos.ver";
-export const SECTORS_MANAGE_ALL = "setores.todos.gerenciar";
+export const SECTORS_VIEW_ALL = 'setores.todos.ver';
+export const SECTORS_MANAGE_ALL = 'setores.todos.gerenciar';
 
 /**
  * `as const` é o que transforma as chaves acima em literais e, por consequência,
@@ -47,42 +44,54 @@ export const SECTORS_MANAGE_ALL = "setores.todos.gerenciar";
  */
 export const PERMISSION_GROUPS = [
   {
-    key: "telas",
-    label: "Telas",
+    key: 'telas',
+    label: 'Telas',
     items: [
-      { permission: SCREEN_HOME, label: "Home" },
-      { permission: SCREEN_PAINEL, label: "Painel de chamadas" },
-      { permission: SCREEN_HISTORICO, label: "Histórico" },
-      { permission: SCREEN_MONITOR, label: "Monitores (telas de espera)" },
-      { permission: SCREEN_ADMIN, label: "Administração (acesso à seção)" },
-      { permission: SCREEN_ADMIN_FILAS, label: "Admin · Filas e sincronização" },
-      { permission: SCREEN_ADMIN_NOTICIAS, label: "Admin · Notícias" },
-      { permission: SCREEN_ADMIN_USUARIOS, label: "Admin · Usuários e permissões" },
+      { permission: SCREEN_HOME, label: 'Home' },
+      { permission: SCREEN_PAINEL, label: 'Painel de chamadas' },
+      { permission: SCREEN_HISTORICO, label: 'Histórico' },
+      { permission: SCREEN_MONITOR, label: 'Monitores (telas de espera)' },
+      { permission: SCREEN_ADMIN, label: 'Administração (acesso à seção)' },
+      {
+        permission: SCREEN_ADMIN_FILAS,
+        label: 'Admin · Filas e sincronização',
+      },
+      { permission: SCREEN_ADMIN_NOTICIAS, label: 'Admin · Notícias' },
+      {
+        permission: SCREEN_ADMIN_USUARIOS,
+        label: 'Admin · Usuários e permissões',
+      },
     ],
   },
   {
-    key: "acoes",
-    label: "Ações",
+    key: 'acoes',
+    label: 'Ações',
     items: [
-      { permission: USERS_VIEW, label: "Visualizar usuários" },
-      { permission: USERS_CREATE, label: "Criar usuários" },
-      { permission: USERS_EDIT, label: "Editar usuários" },
-      { permission: USERS_DELETE, label: "Excluir usuários" },
-      { permission: ROLES_MANAGE, label: "Gerenciar cargos e permissões" },
-      { permission: QUEUE_CALL, label: "Chamar senhas" },
-      { permission: QUEUE_RECALL, label: "Repetir última senha" },
-      { permission: QUEUE_RESET, label: "Zerar filas" },
-      { permission: QUEUE_SYNC, label: "Sincronizar senhas" },
-      { permission: NEWS_CREATE, label: "Publicar notícias" },
-      { permission: NEWS_DELETE, label: "Excluir notícias" },
+      { permission: USERS_VIEW, label: 'Visualizar usuários' },
+      { permission: USERS_CREATE, label: 'Criar usuários' },
+      { permission: USERS_EDIT, label: 'Editar usuários' },
+      { permission: USERS_DELETE, label: 'Excluir usuários' },
+      { permission: ROLES_MANAGE, label: 'Gerenciar cargos e permissões' },
+      { permission: QUEUE_CALL, label: 'Chamar senhas' },
+      { permission: QUEUE_RECALL, label: 'Repetir última senha' },
+      { permission: QUEUE_RESET, label: 'Zerar filas' },
+      { permission: QUEUE_SYNC, label: 'Sincronizar senhas' },
+      { permission: NEWS_CREATE, label: 'Publicar notícias' },
+      { permission: NEWS_DELETE, label: 'Excluir notícias' },
     ],
   },
   {
-    key: "escopo",
-    label: "Escopo de setor",
+    key: 'escopo',
+    label: 'Escopo de setor',
     items: [
-      { permission: SECTORS_VIEW_ALL, label: "Visualizar filas de todos os setores" },
-      { permission: SECTORS_MANAGE_ALL, label: "Operar filas de todos os setores" },
+      {
+        permission: SECTORS_VIEW_ALL,
+        label: 'Visualizar filas de todos os setores',
+      },
+      {
+        permission: SECTORS_MANAGE_ALL,
+        label: 'Operar filas de todos os setores',
+      },
     ],
   },
 ] as const;
@@ -126,7 +135,9 @@ export function computeEffectivePermissions(
   rolePermissions: readonly string[] | null | undefined = [],
   userPermissions: readonly PermissionOverride[] | null | undefined = [],
 ): Permission[] {
-  const set = new Set((rolePermissions ?? []).filter((p) => PERMISSION_SET.has(p)));
+  const set = new Set(
+    (rolePermissions ?? []).filter((p) => PERMISSION_SET.has(p)),
+  );
   for (const row of userPermissions ?? []) {
     if (!PERMISSION_SET.has(row.permission)) continue;
     if (row.granted) set.add(row.permission);
@@ -185,9 +196,10 @@ export function hasAnyPermission(
 export function canAccessSector(
   sessionOrUser: PermissionCarrier | null | undefined,
   sector: string | null,
-  mode: "read" | "write" = "read",
+  mode: 'read' | 'write' = 'read',
 ): boolean {
-  const scopePermission = mode === "write" ? SECTORS_MANAGE_ALL : SECTORS_VIEW_ALL;
+  const scopePermission =
+    mode === 'write' ? SECTORS_MANAGE_ALL : SECTORS_VIEW_ALL;
   if (hasPermission(sessionOrUser, scopePermission)) return true;
   const ownSector = sessionOrUser?.sector ?? sessionOrUser?.user?.sector;
   return !!sector && ownSector === sector;
@@ -210,11 +222,11 @@ export function canAccessSector(
  * usuário do setor ou para quem tem a permissão de escopo.
  */
 export const ROUTE_RULES = [
-  { prefix: "/home", permission: SCREEN_HOME },
-  { prefix: "/painel", permission: SCREEN_PAINEL },
-  { prefix: "/historico", permission: SCREEN_HISTORICO },
-  { prefix: "/monitor", permission: SCREEN_MONITOR, sectorScoped: true },
-  { prefix: "/admin", permission: SCREEN_ADMIN },
+  { prefix: '/home', permission: SCREEN_HOME },
+  { prefix: '/painel', permission: SCREEN_PAINEL },
+  { prefix: '/historico', permission: SCREEN_HISTORICO },
+  { prefix: '/monitor', permission: SCREEN_MONITOR, sectorScoped: true },
+  { prefix: '/admin', permission: SCREEN_ADMIN },
 ] as const;
 
 /** O que uma rota exige de quem a acessa. */
@@ -233,8 +245,8 @@ export interface RouteRequirement {
  * `farmacia`). `null` quando a URL não tem o segmento.
  */
 function segmentAfter(pathname: string, prefix: string): string | null {
-  if (!pathname.startsWith(prefix + "/")) return null;
-  const segment = pathname.slice(prefix.length + 1).split("/")[0];
+  if (!pathname.startsWith(prefix + '/')) return null;
+  const segment = pathname.slice(prefix.length + 1).split('/')[0];
   return segment || null;
 }
 
@@ -248,11 +260,11 @@ function segmentAfter(pathname: string, prefix: string): string | null {
  */
 export function matchRoute(pathname: string): RouteRequirement | null {
   const rule = ROUTE_RULES.find(
-    (r) => pathname === r.prefix || pathname.startsWith(r.prefix + "/"),
+    (r) => pathname === r.prefix || pathname.startsWith(r.prefix + '/'),
   );
   if (!rule) return null;
 
-  const sectorScoped = "sectorScoped" in rule && rule.sectorScoped === true;
+  const sectorScoped = 'sectorScoped' in rule && rule.sectorScoped === true;
   return {
     permission: rule.permission,
     sector: sectorScoped ? segmentAfter(pathname, rule.prefix) : null,
@@ -287,13 +299,19 @@ function asClaims(user: object | null | undefined): SessionClaims {
 export function sessionFreshnessProblem(
   user: object | null | undefined,
   now: number = Date.now(),
-): "expired" | "stale" | null {
+): 'expired' | 'stale' | null {
   const { authAt, permsAt } = asClaims(user);
-  if (typeof authAt !== "number" || now - authAt > SESSION_ABSOLUTE_MAX_AGE * 1000) {
-    return "expired";
+  if (
+    typeof authAt !== 'number' ||
+    now - authAt > SESSION_ABSOLUTE_MAX_AGE * 1000
+  ) {
+    return 'expired';
   }
-  if (typeof permsAt !== "number" || now - permsAt > PERMISSIONS_MAX_AGE * 1000) {
-    return "stale";
+  if (
+    typeof permsAt !== 'number' ||
+    now - permsAt > PERMISSIONS_MAX_AGE * 1000
+  ) {
+    return 'stale';
   }
   return null;
 }

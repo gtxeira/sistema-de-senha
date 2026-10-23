@@ -14,9 +14,9 @@
  * `.status` direto não compila.
  */
 export function errorStatus(error: unknown, fallback = 500): number {
-  if (typeof error === "object" && error !== null && "status" in error) {
+  if (typeof error === 'object' && error !== null && 'status' in error) {
     const status = error.status;
-    if (typeof status === "number" && status) return status;
+    if (typeof status === 'number' && status) return status;
   }
   return fallback;
 }
@@ -24,10 +24,10 @@ export function errorStatus(error: unknown, fallback = 500): number {
 /**
  * Extracts `error.message` from an unknown catch value.
  */
-export function errorMessage(error: unknown, fallback = ""): string {
-  if (typeof error === "object" && error !== null && "message" in error) {
+export function errorMessage(error: unknown, fallback = ''): string {
+  if (typeof error === 'object' && error !== null && 'message' in error) {
     const message = error.message;
-    if (typeof message === "string" && message) return message;
+    if (typeof message === 'string' && message) return message;
   }
   return fallback;
 }
@@ -39,23 +39,25 @@ export function errorMessage(error: unknown, fallback = ""): string {
  * @returns o código ou `null` quando não for um erro com `code`
  */
 export function errorCode(error: unknown): string | null {
-  if (typeof error === "object" && error !== null && "code" in error) {
+  if (typeof error === 'object' && error !== null && 'code' in error) {
     const { code } = error;
-    return typeof code === "string" ? code : null;
+    return typeof code === 'string' ? code : null;
   }
   return null;
 }
 
 export function isInvalidApiKeyError(error: unknown): boolean {
   const message =
-    typeof error === "object" && error !== null && "message" in error ? error.message : undefined;
+    typeof error === 'object' && error !== null && 'message' in error
+      ? error.message
+      : undefined;
   // Só entra no regex o que é literalmente texto: `String(obj)` viraria
   // "[object Object]" e nunca casaria de qualquer forma.
   const text =
-    typeof message === "string" && message !== ""
+    typeof message === 'string' && message !== ''
       ? message
-      : typeof error === "string"
+      : typeof error === 'string'
         ? error
-        : "";
+        : '';
   return /invalid api key/i.test(text);
 }

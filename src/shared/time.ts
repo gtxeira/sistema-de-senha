@@ -1,4 +1,4 @@
-import { APP_TIMEZONE, LOCALE } from "./constants";
+import { APP_TIMEZONE, LOCALE } from './constants';
 
 /* ─────────────────────────────────────────────────────────────
    time.ts — dono único do tempo do sistema.
@@ -45,7 +45,7 @@ export interface DayWindow {
 /* ─── Internos ───────────────────────────────────────────────── */
 
 function pad2(value: number): string {
-  return String(value).padStart(2, "0");
+  return String(value).padStart(2, '0');
 }
 
 /**
@@ -99,13 +99,13 @@ function cached(
  */
 function zonedParts(date: Date, timeZone: string): ZonedParts {
   const formatter = cached(partsFormatters, timeZone, {
-    hourCycle: "h23",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
   });
 
   let year = 0;
@@ -117,22 +117,22 @@ function zonedParts(date: Date, timeZone: string): ZonedParts {
 
   for (const part of formatter.formatToParts(date)) {
     switch (part.type) {
-      case "year":
+      case 'year':
         year = Number(part.value);
         break;
-      case "month":
+      case 'month':
         month = Number(part.value);
         break;
-      case "day":
+      case 'day':
         day = Number(part.value);
         break;
-      case "hour":
+      case 'hour':
         hour = Number(part.value);
         break;
-      case "minute":
+      case 'minute':
         minute = Number(part.value);
         break;
-      case "second":
+      case 'second':
         second = Number(part.value);
         break;
       default:
@@ -173,7 +173,14 @@ function tzOffsetMs(date: Date, timeZone: string): number {
  * offset do instante obtido, até estabilizar.
  */
 function wallToInstant(
-  wall: { year: number; month: number; day: number; hour: number; minute: number; second: number },
+  wall: {
+    year: number;
+    month: number;
+    day: number;
+    hour: number;
+    minute: number;
+    second: number;
+  },
   timeZone: string,
 ): Date {
   // `Date.UTC` normaliza dia/month overflow (dia 32 vira dia 1 do mês
@@ -208,7 +215,10 @@ function wallToInstant(
  * (UTC−03:00), uma chamada às 00:00 UTC já é do dia ANTERIOR — e é
  * exatamente aí que o "hoje" do histórico virava no horário errado.
  */
-export function dayKey(value: DateInput, timeZone: string = APP_TIMEZONE): string {
+export function dayKey(
+  value: DateInput,
+  timeZone: string = APP_TIMEZONE,
+): string {
   const wall = zonedParts(toDate(value), timeZone);
   return `${wall.year}-${pad2(wall.month)}-${pad2(wall.day)}`;
 }
@@ -237,10 +247,7 @@ export function startOfDay(
   timeZone: string = APP_TIMEZONE,
 ): Date {
   const wall = zonedParts(toDate(value), timeZone);
-  return wallToInstant(
-    { ...wall, hour: 0, minute: 0, second: 0 },
-    timeZone,
-  );
+  return wallToInstant({ ...wall, hour: 0, minute: 0, second: 0 }, timeZone);
 }
 
 /**
@@ -299,7 +306,7 @@ export function dayWindow(
  * `localStorage` aceita qualquer string) mostra "—" em vez de estourar
  * o render.
  */
-const INVALID_DATE = "—";
+const INVALID_DATE = '—';
 
 /**
  * Formata, tolerando data inválida.
@@ -327,9 +334,9 @@ export function formatClock(
 ): string {
   return safeFormat(
     cached(clockFormatters, timeZone, {
-      hourCycle: "h23",
-      hour: "2-digit",
-      minute: "2-digit",
+      hourCycle: 'h23',
+      hour: '2-digit',
+      minute: '2-digit',
     }),
     value,
   );
@@ -342,10 +349,10 @@ export function formatClockSeconds(
 ): string {
   return safeFormat(
     cached(clockSecondsFormatters, timeZone, {
-      hourCycle: "h23",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
+      hourCycle: 'h23',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
     }),
     value,
   );
@@ -358,9 +365,9 @@ export function formatDay(
 ): string {
   return safeFormat(
     cached(dayFormatters, timeZone, {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
     }),
     value,
   );
@@ -373,12 +380,12 @@ export function formatDateTime(
 ): string {
   return safeFormat(
     cached(dateTimeFormatters, timeZone, {
-      hourCycle: "h23",
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+      hourCycle: 'h23',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     }),
     value,
   );
@@ -391,10 +398,10 @@ export function formatLongDate(
 ): string {
   return safeFormat(
     cached(longDateFormatters, timeZone, {
-      weekday: "long",
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
+      weekday: 'long',
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
     }),
     value,
   ).toUpperCase();

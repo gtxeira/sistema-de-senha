@@ -1,11 +1,11 @@
-import "server-only";
+import 'server-only';
 
 import {
   S3Client,
   PutObjectCommand,
   DeleteObjectCommand,
   HeadObjectCommand,
-} from "@aws-sdk/client-s3";
+} from '@aws-sdk/client-s3';
 
 function getEnv(): NodeJS.ProcessEnv {
   return process.env;
@@ -23,13 +23,13 @@ function getS3Client(): S3Client {
 
   if (!endpoint || !accessKeyId || !secretAccessKey) {
     throw new Error(
-      "S3 não configurado. Defina S3_ENDPOINT, S3_ACCESS_KEY e S3_SECRET_KEY."
+      'S3 não configurado. Defina S3_ENDPOINT, S3_ACCESS_KEY e S3_SECRET_KEY.',
     );
   }
 
   client = new S3Client({
     endpoint,
-    region: env.S3_REGION || "us-east-1",
+    region: env.S3_REGION || 'us-east-1',
     forcePathStyle: true,
     credentials: { accessKeyId, secretAccessKey },
   });
@@ -38,11 +38,11 @@ function getS3Client(): S3Client {
 }
 
 function getS3Bucket(): string {
-  return getEnv().S3_BUCKET || "news-images";
+  return getEnv().S3_BUCKET || 'news-images';
 }
 
 function getS3PublicUrl(): string | undefined {
-  return getEnv().S3_PUBLIC_URL?.replace(/\/+$/, "");
+  return getEnv().S3_PUBLIC_URL?.replace(/\/+$/, '');
 }
 
 /**
@@ -51,12 +51,12 @@ function getS3PublicUrl(): string | undefined {
  * dependendo da versão do SDK só um dos dois vem preenchido.
  */
 function isNotFound(error: unknown): boolean {
-  if (typeof error !== "object" || error === null) return false;
+  if (typeof error !== 'object' || error === null) return false;
   const e = error as {
     readonly $metadata?: { readonly httpStatusCode?: number } | null;
     readonly name?: string;
   };
-  return e.$metadata?.httpStatusCode === 404 || e.name === "NotFound";
+  return e.$metadata?.httpStatusCode === 404 || e.name === 'NotFound';
 }
 
 /**
@@ -77,7 +77,7 @@ export async function uploadToS3(
       Key: key,
       Body: buffer,
       ContentType: contentType,
-    })
+    }),
   );
 }
 
@@ -93,7 +93,7 @@ export async function deleteFromS3(key: string): Promise<void> {
       new DeleteObjectCommand({
         Bucket: getS3Bucket(),
         Key: key,
-      })
+      }),
     );
   } catch {
     // Best effort — ignore errors on delete
@@ -107,7 +107,7 @@ export async function deleteFromS3(key: string): Promise<void> {
 export function getPublicUrl(key: string): string {
   const publicUrl = getS3PublicUrl();
   if (!publicUrl) {
-    throw new Error("S3_PUBLIC_URL não configurado.");
+    throw new Error('S3_PUBLIC_URL não configurado.');
   }
   return `${publicUrl}/${key}`;
 }
@@ -117,10 +117,12 @@ export function getPublicUrl(key: string): string {
  * @param imageUrl - The URL stored in the database
  * @returns The object key, or null if not an S3 URL
  */
-export function extractKeyFromUrl(imageUrl: string | null | undefined): string | null {
+export function extractKeyFromUrl(
+  imageUrl: string | null | undefined,
+): string | null {
   const publicUrl = getS3PublicUrl();
   if (!imageUrl || !publicUrl) return null;
-  const prefix = publicUrl + "/";
+  const prefix = publicUrl + '/';
   if (!imageUrl.startsWith(prefix)) return null;
   return imageUrl.slice(prefix.length);
 }
@@ -138,7 +140,7 @@ export async function objectExistsInS3(key: string): Promise<boolean> {
       new HeadObjectCommand({
         Bucket: getS3Bucket(),
         Key: key,
-      })
+      }),
     );
     return true;
   } catch (err) {

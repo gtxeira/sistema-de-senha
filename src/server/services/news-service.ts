@@ -1,8 +1,8 @@
-import "server-only";
+import 'server-only';
 
-import { news } from "@/server/repositories";
-import type { CreateNewsInput } from "@/server/repositories/types";
-import type { NewsItem } from "@/shared/types/domain";
+import { news } from '@/server/repositories';
+import type { CreateNewsInput } from '@/server/repositories/types';
+import type { NewsItem } from '@/shared/types/domain';
 
 /**
  * Use cases de notícias.
@@ -23,8 +23,6 @@ export function createNews(
   return news.create(data);
 }
 
-export function removeNews(
-  id: string | number,
-): Promise<{ success: true }> {
+export function removeNews(id: string | number): Promise<{ success: true }> {
   return news.remove(id);
 }

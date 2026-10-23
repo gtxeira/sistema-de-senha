@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   use,
@@ -7,8 +7,8 @@ import {
   useState,
   useSyncExternalStore,
   memo,
-} from "react";
-import { Clock3 } from "lucide-react";
+} from 'react';
+import { Clock3 } from 'lucide-react';
 import {
   callNextNumber,
   cleanHistory,
@@ -18,27 +18,32 @@ import {
   saveQueueState,
   subscribeQueue,
   type QueueState,
-} from "@/client/queue/queue";
+} from '@/client/queue/queue';
 import {
-  SECTORS, DEFAULT_SECTOR, CALL_TYPES, TYPE_FIELDS, NEWS_CAROUSEL_INTERVAL, HISTORY_LIMITS,
+  SECTORS,
+  DEFAULT_SECTOR,
+  CALL_TYPES,
+  TYPE_FIELDS,
+  NEWS_CAROUSEL_INTERVAL,
+  HISTORY_LIMITS,
   NO_PASSWORD,
   isSectorId,
   getSector,
-} from "@/shared/constants";
-import type { CallType, SectorId } from "@/shared/constants";
-import type { NewsItem } from "@/shared/types/domain";
-import { useQueueEvents } from "@/hooks/use-queue-events";
-import { useServerClock } from "@/hooks/use-server-clock";
+} from '@/shared/constants';
+import type { CallType, SectorId } from '@/shared/constants';
+import type { NewsItem } from '@/shared/types/domain';
+import { useQueueEvents } from '@/hooks/use-queue-events';
+import { useServerClock } from '@/hooks/use-server-clock';
 import {
   forceAnnounce,
   monitorSpeak,
   registerMonitorSpeaker,
   speakText,
   unlockSpeech,
-} from "@/client/audio/speech";
-import { formatClock } from "@/shared/time";
-import { readJson } from "@/shared/json";
-import type { NewsListBody } from "@/shared/types/api";
+} from '@/client/audio/speech';
+import { formatClock } from '@/shared/time';
+import { readJson } from '@/shared/json';
+import type { NewsListBody } from '@/shared/types/api';
 
 /* ─── notícias ─── */
 let newsSnapshot: NewsItem[] = [];
@@ -48,27 +53,32 @@ const serverNewsSnapshot: NewsItem[] = [];
 const monitorServerSnapshot: QueueState = Object.fromEntries(
   Object.keys(SECTORS).map((key) => [
     key,
-    { normalCurrent: NO_PASSWORD, priorityCurrent: NO_PASSWORD, history: [], historyDate: "" },
+    {
+      normalCurrent: NO_PASSWORD,
+      priorityCurrent: NO_PASSWORD,
+      history: [],
+      historyDate: '',
+    },
   ]),
 );
 let lastSpokenCallId: string | null = null;
 
 function getNewsSnapshot() {
-  if (typeof window === "undefined") return serverNewsSnapshot;
+  if (typeof window === 'undefined') return serverNewsSnapshot;
   return newsSnapshot;
 }
 function subscribeNews(cb: () => void) {
-  window.addEventListener("storage", cb);
-  window.addEventListener("news-updated", cb);
+  window.addEventListener('storage', cb);
+  window.addEventListener('news-updated', cb);
   return () => {
-    window.removeEventListener("storage", cb);
-    window.removeEventListener("news-updated", cb);
+    window.removeEventListener('storage', cb);
+    window.removeEventListener('news-updated', cb);
   };
 }
 
 function formatMonitorNumber(number: number | string | null | undefined) {
-  if (number === null || number === undefined) return "---";
-  return String(Number(number)).padStart(3, "0");
+  if (number === null || number === undefined) return '---';
+  return String(Number(number)).padStart(3, '0');
 }
 
 /* ─── carrossel de notícias isolado (evita re-render da voz) ─── */
@@ -81,12 +91,12 @@ const NewsCarousel = memo(function NewsCarousel() {
   const [newsIndex, setNewsIndex] = useState(0);
 
   useEffect(() => {
-    fetch("/api/news")
+    fetch('/api/news')
       .then((r) => (r.ok ? readJson<NewsListBody>(r) : null))
       .then((data) => {
         if (!data?.news?.length) return;
         newsSnapshot = data.news;
-        window.dispatchEvent(new Event("news-updated"));
+        window.dispatchEvent(new Event('news-updated'));
       })
       .catch(() => {});
   }, []);
@@ -115,7 +125,11 @@ const NewsCarousel = memo(function NewsCarousel() {
     <>
       {item?.image && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={item.image} alt={item.title || ""} className="absolute inset-0 h-full w-full object-cover" />
+        <img
+          src={item.image}
+          alt={item.title || ''}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
       )}
       <div className="relative z-[1] w-full p-6 text-white">
         <div className="flex gap-[7px]">
@@ -124,8 +138,8 @@ const NewsCarousel = memo(function NewsCarousel() {
               key={i}
               className={
                 i === newsIndex
-                  ? "h-2 w-6 rounded-[5px] bg-[#8fe2d2]"
-                  : "h-2 w-2 rounded-[50%] bg-[#ffffff66]"
+                  ? 'h-2 w-6 rounded-[5px] bg-[#8fe2d2]'
+                  : 'h-2 w-2 rounded-[50%] bg-[#ffffff66]'
               }
             />
           ))}
@@ -170,16 +184,16 @@ export default function MonitorPage({ params }: MonitorPageProps) {
   useEffect(() => {
     const unlock = () => {
       unlockSpeech();
-      speakText("Som ativado.");
+      speakText('Som ativado.');
       setAudioEnabled(true);
-      window.removeEventListener("pointerdown", unlock);
-      window.removeEventListener("keydown", unlock);
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
     };
-    window.addEventListener("pointerdown", unlock, { once: true });
-    window.addEventListener("keydown", unlock, { once: true });
+    window.addEventListener('pointerdown', unlock, { once: true });
+    window.addEventListener('keydown', unlock, { once: true });
     return () => {
-      window.removeEventListener("pointerdown", unlock);
-      window.removeEventListener("keydown", unlock);
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
     };
   }, []);
 
@@ -201,8 +215,14 @@ export default function MonitorPage({ params }: MonitorPageProps) {
     const prev = getQueueSnapshot() || monitorServerSnapshot;
     const queue = prev[sector] || {};
 
-    const callType = lastCall.type === CALL_TYPES.PREFERENCIAL ? CALL_TYPES.PREFERENCIAL : CALL_TYPES.NORMAL;
-    const field = callType === CALL_TYPES.PREFERENCIAL ? TYPE_FIELDS.preferencial : TYPE_FIELDS.normal;
+    const callType =
+      lastCall.type === CALL_TYPES.PREFERENCIAL
+        ? CALL_TYPES.PREFERENCIAL
+        : CALL_TYPES.NORMAL;
+    const field =
+      callType === CALL_TYPES.PREFERENCIAL
+        ? TYPE_FIELDS.preferencial
+        : TYPE_FIELDS.normal;
 
     const currentHistory = queue.history || [];
     const newEntry = {
@@ -218,7 +238,10 @@ export default function MonitorPage({ params }: MonitorPageProps) {
       [sector]: {
         ...queue,
         [field]: lastCall.number,
-        history: cleanHistory([newEntry, ...currentHistory]).slice(0, HISTORY_LIMITS.monitor),
+        history: cleanHistory([newEntry, ...currentHistory]).slice(
+          0,
+          HISTORY_LIMITS.monitor,
+        ),
       },
     });
 
@@ -235,26 +258,33 @@ export default function MonitorPage({ params }: MonitorPageProps) {
    */
   useEffect(() => {
     if (!sector || calls == null) return;
-    reconcileQueueFromCalls(sector, calls, { historyLimit: HISTORY_LIMITS.monitor });
+    reconcileQueueFromCalls(sector, calls, {
+      historyLimit: HISTORY_LIMITS.monitor,
+    });
   }, [calls, sector]);
 
   /* ─── chamar próxima senha (via teclado / passador) ─── */
-  const callNext = useCallback(async (type: CallType) => {
-    if (calling) return;
-    setCalling(true);
+  const callNext = useCallback(
+    async (type: CallType) => {
+      if (calling) return;
+      setCalling(true);
 
-    const result = await callNextNumber({ sector, type });
+      const result = await callNextNumber({ sector, type });
 
-    if (result.ok) {
-      forceAnnounce(result.next, result.type);
-    }
+      if (result.ok) {
+        forceAnnounce(result.next, result.type);
+      }
 
-    setCalling(false);
-  }, [calling, sector]);
+      setCalling(false);
+    },
+    [calling, sector],
+  );
 
   /* ─── repetir última senha ─── */
   const reCall = useCallback(() => {
-    const q = normalizeQueue((getQueueSnapshot() || monitorServerSnapshot)[sector]);
+    const q = normalizeQueue(
+      (getQueueSnapshot() || monitorServerSnapshot)[sector],
+    );
     const last = q.history[0];
     if (!last) return;
     forceAnnounce(last.number, last.type);
@@ -266,24 +296,24 @@ export default function MonitorPage({ params }: MonitorPageProps) {
       // `e.target` é `EventTarget | null` — sem o `instanceof` não há `tagName`.
       if (
         e.target instanceof HTMLElement &&
-        ["INPUT", "TEXTAREA", "SELECT", "BUTTON"].includes(e.target.tagName)
+        ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(e.target.tagName)
       )
         return;
 
       const k = e.key;
-      if (["ArrowRight", "PageDown", "Enter", " "].includes(k)) {
+      if (['ArrowRight', 'PageDown', 'Enter', ' '].includes(k)) {
         e.preventDefault();
         void callNext(CALL_TYPES.NORMAL);
-      } else if (["ArrowLeft", "PageUp"].includes(k)) {
+      } else if (['ArrowLeft', 'PageUp'].includes(k)) {
         e.preventDefault();
         void callNext(CALL_TYPES.PREFERENCIAL);
-      } else if (["ArrowUp", "Home"].includes(k)) {
+      } else if (['ArrowUp', 'Home'].includes(k)) {
         e.preventDefault();
         reCall();
       }
     }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, [callNext, reCall]);
 
   /* ─── atalhos de mouse ─── */
@@ -300,14 +330,14 @@ export default function MonitorPage({ params }: MonitorPageProps) {
       e.preventDefault();
     }
 
-    window.addEventListener("mousedown", onMouseDown);
-    window.addEventListener("wheel", onWheel, { passive: false });
-    window.addEventListener("contextmenu", onContextMenu);
+    window.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('wheel', onWheel, { passive: false });
+    window.addEventListener('contextmenu', onContextMenu);
 
     return () => {
-      window.removeEventListener("mousedown", onMouseDown);
-      window.removeEventListener("wheel", onWheel);
-      window.removeEventListener("contextmenu", onContextMenu);
+      window.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('wheel', onWheel);
+      window.removeEventListener('contextmenu', onContextMenu);
     };
   }, [callNext, reCall]);
 
@@ -319,10 +349,13 @@ export default function MonitorPage({ params }: MonitorPageProps) {
   // `localStorage` (sem `createdAt`) usam o `time` já gravado.
   const validHistory = cleanHistory(current.history || []).map((h) => ({
     ...h,
-    time: h.createdAt ? formatClock(h.createdAt) : (h.time ?? "—"),
+    time: h.createdAt ? formatClock(h.createdAt) : (h.time ?? '—'),
   }));
 
-  const latest = validHistory[0] || { number: current.normalCurrent ?? NO_PASSWORD, type: CALL_TYPES.NORMAL };
+  const latest = validHistory[0] || {
+    number: current.normalCurrent ?? NO_PASSWORD,
+    type: CALL_TYPES.NORMAL,
+  };
   const recentCalls = validHistory.slice(1, 5);
   const isPriority = latest.type === CALL_TYPES.PREFERENCIAL;
   const hasNoPassword = latest.number === null || latest.number === undefined;
@@ -337,7 +370,7 @@ export default function MonitorPage({ params }: MonitorPageProps) {
           {info.name.toUpperCase()}
         </div>
         <div className="text-center max-[900px]:hidden">
-          <strong className="whitespace-nowrap text-[clamp(22px,3.1vw,44px)] tracking-[3px]">
+          <strong className="text-[clamp(22px,3.1vw,44px)] tracking-[3px] whitespace-nowrap">
             CENTRAL DE ATENDIMENTO
           </strong>
         </div>
@@ -345,31 +378,33 @@ export default function MonitorPage({ params }: MonitorPageProps) {
           {/* O `@media (max-width: 500px)` antigo reduzia o .clock para 13px,
               mas perdia em especificidade para `.headerMeta .clock` (18px) —
               o efeito real nunca foi o de 13px. */}
-          <div className="flex items-center justify-self-end gap-2 text-[18px]">
+          <div className="flex items-center gap-2 justify-self-end text-[18px]">
             <Clock3 size={18} />
-            {timeString || "--:--:--"}
+            {timeString || '--:--:--'}
           </div>
-          <div className="mt-1 whitespace-nowrap text-[10px] font-bold tracking-[1px] text-[#c5dce5] max-[420px]:whitespace-normal max-[420px]:text-[9px] max-[420px]:leading-tight">
+          <div className="mt-1 text-[10px] font-bold tracking-[1px] whitespace-nowrap text-[#c5dce5] max-[420px]:text-[9px] max-[420px]:leading-tight max-[420px]:whitespace-normal">
             {dateString}
           </div>
         </div>
       </header>
 
-      <div className="grid h-full w-full min-h-0 grid-cols-[40%_60%] max-[900px]:flex max-[900px]:h-auto max-[900px]:flex-col">
+      <div className="grid h-full min-h-0 w-full grid-cols-[40%_60%] max-[900px]:flex max-[900px]:h-auto max-[900px]:flex-col">
         <section className="grid h-full min-h-0 grid-rows-[62%_38%] max-[900px]:flex max-[900px]:h-auto max-[900px]:flex-col">
           <section
-            className={`box-border flex h-full min-h-0 flex-col items-center justify-center border-current border-r border-r-[#cadde2] p-3 ${
-              isPriority ? "bg-[#fff7f7]" : "bg-white"
+            className={`box-border flex h-full min-h-0 flex-col items-center justify-center border-r border-current border-r-[#cadde2] p-3 ${
+              isPriority ? 'bg-[#fff7f7]' : 'bg-white'
             } max-[900px]:h-auto max-[900px]:min-h-[320px]`}
           >
-            <p className="mb-[5px] text-[13px] tracking-[5px] text-[#78909c]">SENHA</p>
+            <p className="mb-[5px] text-[13px] tracking-[5px] text-[#78909c]">
+              SENHA
+            </p>
             <strong
-              className={`text-[clamp(110px,12vw,240px)] tracking-[5px] leading-none ${
+              className={`text-[clamp(110px,12vw,240px)] leading-none tracking-[5px] ${
                 hasNoPassword
-                  ? "text-[#b0bec5]"
+                  ? 'text-[#b0bec5]'
                   : isPriority
-                    ? "text-[#d63838]"
-                    : "text-[#1972a0]"
+                    ? 'text-[#d63838]'
+                    : 'text-[#1972a0]'
               } max-[500px]:text-[88px]`}
             >
               {formatMonitorNumber(latest?.number ?? NO_PASSWORD)}
@@ -388,12 +423,16 @@ export default function MonitorPage({ params }: MonitorPageProps) {
               </span>
             )}
             <small className="mt-2 text-[11px] text-[#8aa0ab]">
-              {hasNoPassword ? "Aguardando primeiras chamadas" : "Dirija-se ao balcão de atendimento"}
+              {hasNoPassword
+                ? 'Aguardando primeiras chamadas'
+                : 'Dirija-se ao balcão de atendimento'}
             </small>
           </section>
 
-          <section className="box-border h-full min-h-0 overflow-hidden border-current border-r border-r-[#cadde2] bg-[#f8fbfc] px-[3vw] pb-3 pt-4 max-[900px]:h-auto max-[900px]:min-h-[280px]">
-            <p className="mb-2 text-[10px] font-extrabold tracking-[2px] text-[#178c7c]">ÚLTIMAS SENHAS</p>
+          <section className="box-border h-full min-h-0 overflow-hidden border-r border-current border-r-[#cadde2] bg-[#f8fbfc] px-[3vw] pt-4 pb-3 max-[900px]:h-auto max-[900px]:min-h-[280px]">
+            <p className="mb-2 text-[10px] font-extrabold tracking-[2px] text-[#178c7c]">
+              ÚLTIMAS SENHAS
+            </p>
             {recentCalls.length > 0 ? (
               // O JS já fatia em 4 itens (`slice(1, 5)`) — o CSS antigo escondia o 5º+.
               recentCalls.map((item, i) => (
@@ -404,13 +443,13 @@ export default function MonitorPage({ params }: MonitorPageProps) {
                   <strong
                     className={`text-[clamp(25px,2.6vw,42px)] tracking-[2px] ${
                       item.type === CALL_TYPES.PREFERENCIAL
-                        ? "text-[#d63838]"
-                        : "text-[#1972a0]"
+                        ? 'text-[#d63838]'
+                        : 'text-[#1972a0]'
                     }`}
                   >
                     {formatMonitorNumber(item?.number ?? NO_PASSWORD)}
                   </strong>
-                  {item.type === "preferencial" ? (
+                  {item.type === 'preferencial' ? (
                     <span className="inline-block rounded-[8px] bg-[#ef4444] px-3 py-1 text-center text-[10px] font-extrabold tracking-[1px] text-white">
                       PREFERENCIAL
                     </span>
@@ -430,7 +469,7 @@ export default function MonitorPage({ params }: MonitorPageProps) {
           </section>
         </section>
 
-        <section className="relative flex h-full min-h-0 w-full items-end overflow-hidden border-current bg-[#dce9eb] after:absolute after:inset-[40%_0_0] after:bg-[linear-gradient(transparent,#092f43dc)] after:content-[''] max-[900px]:h-[420px] max-[900px]:order-first">
+        <section className="relative flex h-full min-h-0 w-full items-end overflow-hidden border-current bg-[#dce9eb] after:absolute after:inset-[40%_0_0] after:bg-[linear-gradient(transparent,#092f43dc)] after:content-[''] max-[900px]:order-first max-[900px]:h-[420px]">
           <NewsCarousel />
         </section>
       </div>

@@ -1,16 +1,13 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from 'vitest';
 import {
   generateRefreshToken,
   hashRefreshToken,
   issueRefreshToken,
   revokeRefreshToken,
   rotateRefreshToken,
-} from "@/server/auth/refresh";
-import type { RefreshTokenRow, RotateResult } from "@/server/auth/refresh";
-import {
-  REFRESH_REUSE_GRACE,
-  REFRESH_TOKEN_MAX_AGE,
-} from "@/shared/constants";
+} from '@/server/auth/refresh';
+import type { RefreshTokenRow, RotateResult } from '@/server/auth/refresh';
+import { REFRESH_REUSE_GRACE, REFRESH_TOKEN_MAX_AGE } from '@/shared/constants';
 
 /** Mesmo shape de `RefreshTokenRow`, mutável — o teste envelhece a linha. */
 type FakeRow = { -readonly [K in keyof RefreshTokenRow]: RefreshTokenRow[K] };
@@ -24,7 +21,8 @@ function makeFakePrisma() {
   const rows: FakeRow[] = [];
 
   function match(row: FakeRow, where: Record<string, unknown>): boolean {
-    if (where.token_hash !== undefined) return row.token_hash === where.token_hash;
+    if (where.token_hash !== undefined)
+      return row.token_hash === where.token_hash;
     if (where.family_id !== undefined) return row.family_id === where.family_id;
     if (where.id !== undefined) return row.id === where.id;
     return false;
@@ -46,9 +44,9 @@ function makeFakePrisma() {
           id: crypto.randomUUID(),
           used_at: null,
           created_at: new Date(),
-          user_id: "",
-          token_hash: "",
-          family_id: "",
+          user_id: '',
+          token_hash: '',
+          family_id: '',
           expires_at: new Date(0),
           ...data,
         };
@@ -63,7 +61,7 @@ function makeFakePrisma() {
         readonly data: Record<string, unknown>;
       }) => {
         const row = rows.find((r) => match(r, where));
-        if (!row) throw new Error("not found");
+        if (!row) throw new Error('not found');
         Object.assign(row, data);
         return row;
       },
@@ -98,19 +96,19 @@ function expectRotated(
   return result;
 }
 
-const USER = "user-1";
+const USER = 'user-1';
 
-describe("refresh tokens — rotação", () => {
+describe('refresh tokens — rotação', () => {
   let prisma: ReturnType<typeof makeFakePrisma>;
 
   beforeEach(() => {
     prisma = makeFakePrisma();
   });
 
-  it("emite token opaco e guarda apenas o hash", async () => {
+  it('emite token opaco e guarda apenas o hash', async () => {
     const { raw, expiresAt, familyId } = await issueRefreshToken(prisma, USER);
 
-    expect(typeof raw).toBe("string");
+    expect(typeof raw).toBe('string');
     expect(raw.length).toBeGreaterThanOrEqual(32);
     expect(familyId).toBeTruthy();
 
@@ -126,19 +124,21 @@ describe("refresh tokens — rotação", () => {
     expect(ttl).toBeLessThanOrEqual(REFRESH_TOKEN_MAX_AGE);
   });
 
-  it("gera tokens únicos", () => {
-    const tokens = new Set(Array.from({ length: 50 }, () => generateRefreshToken()));
+  it('gera tokens únicos', () => {
+    const tokens = new Set(
+      Array.from({ length: 50 }, () => generateRefreshToken()),
+    );
     expect(tokens.size).toBe(50);
   });
 
-  it("rotaciona: marca a antiga como usada e emite nova na mesma família", async () => {
+  it('rotaciona: marca a antiga como usada e emite nova na mesma família', async () => {
     const first = await issueRefreshToken(prisma, USER);
 
     const result = expectRotated(await rotateRefreshToken(prisma, first.raw));
     expect(result.raw).not.toBe(first.raw);
     expect(result.userId).toBe(USER);
     // A rotação mantém a família no banco — ela não é devolvida.
-    expect("familyId" in result).toBe(false);
+    expect('familyId' in result).toBe(false);
 
     expect(prisma.rows).toHaveLength(2);
     const [oldRow, newRow] = prisma.rows;
@@ -149,34 +149,34 @@ describe("refresh tokens — rotação", () => {
     expect(newRow.expires_at.getTime()).toBe(oldRow.expires_at.getTime());
   });
 
-  it("token desconhecido ⇒ unknown", async () => {
-    const result = await rotateRefreshToken(prisma, "nunca-emitido");
-    expect(result).toEqual({ ok: false, reason: "unknown" });
+  it('token desconhecido ⇒ unknown', async () => {
+    const result = await rotateRefreshToken(prisma, 'nunca-emitido');
+    expect(result).toEqual({ ok: false, reason: 'unknown' });
   });
 
-  it("token expirado ⇒ expired e é removido", async () => {
+  it('token expirado ⇒ expired e é removido', async () => {
     const first = await issueRefreshToken(prisma, USER);
     // envelhece a linha para além da janela
     prisma.rows[0].expires_at = new Date(Date.now() - 1000);
 
     const result = await rotateRefreshToken(prisma, first.raw);
-    expect(result).toEqual({ ok: false, reason: "expired" });
+    expect(result).toEqual({ ok: false, reason: 'expired' });
     expect(prisma.rows).toHaveLength(0);
   });
 
-  it("reuso dentro da janela de graça ⇒ conflict (corrida do próprio client)", async () => {
+  it('reuso dentro da janela de graça ⇒ conflict (corrida do próprio client)', async () => {
     const first = await issueRefreshToken(prisma, USER);
     const rotated = await rotateRefreshToken(prisma, first.raw);
     expect(rotated.ok).toBe(true);
 
     // o cliente perdedor reapresenta o token antigo imediatamente
     const result = await rotateRefreshToken(prisma, first.raw);
-    expect(result).toEqual({ ok: false, reason: "conflict" });
+    expect(result).toEqual({ ok: false, reason: 'conflict' });
     // NÃO revoga a família — os 2 tokens seguem válidos
     expect(prisma.rows).toHaveLength(2);
   });
 
-  it("reuso fora da graça ⇒ revoga a família inteira (reuse detection)", async () => {
+  it('reuso fora da graça ⇒ revoga a família inteira (reuse detection)', async () => {
     const first = await issueRefreshToken(prisma, USER);
     const rotated = await rotateRefreshToken(prisma, first.raw);
     expect(rotated.ok).toBe(true);
@@ -187,12 +187,12 @@ describe("refresh tokens — rotação", () => {
     );
 
     const result = await rotateRefreshToken(prisma, first.raw);
-    expect(result).toEqual({ ok: false, reason: "revoked" });
+    expect(result).toEqual({ ok: false, reason: 'revoked' });
     // família apagada: nem o token vigente serve mais
     expect(prisma.rows).toHaveLength(0);
   });
 
-  it("reuso detectado mantém mesmo prazo absoluto em toda a família", async () => {
+  it('reuso detectado mantém mesmo prazo absoluto em toda a família', async () => {
     const first = await issueRefreshToken(prisma, USER);
     const absolute = first.expiresAt.getTime();
 
@@ -205,14 +205,14 @@ describe("refresh tokens — rotação", () => {
   });
 });
 
-describe("refresh tokens — logout", () => {
+describe('refresh tokens — logout', () => {
   let prisma: ReturnType<typeof makeFakePrisma>;
 
   beforeEach(() => {
     prisma = makeFakePrisma();
   });
 
-  it("revokeRefreshToken apaga toda a família", async () => {
+  it('revokeRefreshToken apaga toda a família', async () => {
     const first = await issueRefreshToken(prisma, USER);
     const rotated = expectRotated(await rotateRefreshToken(prisma, first.raw));
 
@@ -221,9 +221,9 @@ describe("refresh tokens — logout", () => {
     expect(prisma.rows).toHaveLength(0);
   });
 
-  it("token desconhecido não remove nada", async () => {
+  it('token desconhecido não remove nada', async () => {
     await issueRefreshToken(prisma, USER);
-    const removed = await revokeRefreshToken(prisma, "desconhecido");
+    const removed = await revokeRefreshToken(prisma, 'desconhecido');
     expect(removed).toBe(false);
     expect(prisma.rows).toHaveLength(1);
   });

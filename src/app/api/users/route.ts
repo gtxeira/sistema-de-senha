@@ -1,20 +1,20 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 import {
   createUser,
   deleteUser,
   listUsers,
   updateUser,
-} from "@/server/services/users-service";
-import { requirePermission } from "@/server/http/api-auth";
-import { errorMessage, errorStatus } from "@/shared/errors";
+} from '@/server/services/users-service';
+import { requirePermission } from '@/server/http/api-auth';
+import { errorMessage, errorStatus } from '@/shared/errors';
 import {
   USERS_CREATE,
   USERS_DELETE,
   USERS_EDIT,
   USERS_VIEW,
-} from "@/shared/permissions";
-import { readJson } from "@/shared/json";
-import type { CreateUserRequest, UserPatchBody } from "@/shared/types/api";
+} from '@/shared/permissions';
+import { readJson } from '@/shared/json';
+import type { CreateUserRequest, UserPatchBody } from '@/shared/types/api';
 
 /* ─────────────────────────────────────────────────
    Gestão de usuários: cada operação exige a permissão
@@ -35,8 +35,8 @@ export async function GET() {
     return NextResponse.json({ users: userList });
   } catch (err) {
     return NextResponse.json(
-      { error: errorMessage(err, "Erro ao listar usuários") },
-      { status: errorStatus(err, 500) }
+      { error: errorMessage(err, 'Erro ao listar usuários') },
+      { status: errorStatus(err, 500) },
     );
   }
 }
@@ -54,8 +54,8 @@ export async function POST(request: Request) {
     return NextResponse.json(result);
   } catch (err) {
     return NextResponse.json(
-      { error: errorMessage(err, "Erro ao criar usuário") },
-      { status: errorStatus(err, 500) }
+      { error: errorMessage(err, 'Erro ao criar usuário') },
+      { status: errorStatus(err, 500) },
     );
   }
 }
@@ -74,8 +74,8 @@ export async function PATCH(request: Request) {
     const id = body?.id;
     if (!id) {
       return NextResponse.json(
-        { error: "ID do usuário é obrigatório" },
-        { status: 400 }
+        { error: 'ID do usuário é obrigatório' },
+        { status: 400 },
       );
     }
 
@@ -83,8 +83,8 @@ export async function PATCH(request: Request) {
     return NextResponse.json(result);
   } catch (err) {
     return NextResponse.json(
-      { error: errorMessage(err, "Erro ao atualizar usuário") },
-      { status: errorStatus(err, 500) }
+      { error: errorMessage(err, 'Erro ao atualizar usuário') },
+      { status: errorStatus(err, 500) },
     );
   }
 }
@@ -98,12 +98,12 @@ export async function DELETE(request: Request) {
     if (error) return error;
 
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
+    const id = searchParams.get('id');
 
     if (!id) {
       return NextResponse.json(
-        { error: "ID do usuário é obrigatório" },
-        { status: 400 }
+        { error: 'ID do usuário é obrigatório' },
+        { status: 400 },
       );
     }
 
@@ -111,8 +111,8 @@ export async function DELETE(request: Request) {
     return NextResponse.json(result);
   } catch (err) {
     return NextResponse.json(
-      { error: errorMessage(err, "Erro ao excluir usuário") },
-      { status: errorStatus(err, 500) }
+      { error: errorMessage(err, 'Erro ao excluir usuário') },
+      { status: errorStatus(err, 500) },
     );
   }
 }

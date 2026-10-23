@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import type { User } from "next-auth";
-import { useServerSession } from "@/components/server-session-provider";
-import { useSession } from "@/stores/use-session-store";
+import type { User } from 'next-auth';
+import { useServerSession } from '@/components/server-session-provider';
+import { useSession } from '@/stores/use-session-store';
 
 /**
  * A sessão que a UI deve usar.

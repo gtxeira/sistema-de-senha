@@ -1,6 +1,6 @@
-import { vi } from "vitest";
-import type { Mock } from "vitest";
-import { auth } from "@/auth";
+import { vi } from 'vitest';
+import type { Mock } from 'vitest';
+import { auth } from '@/auth';
 
 /**
  * Assinatura do mock de `@/auth`.

@@ -1,12 +1,12 @@
-import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { SESSION_COOKIE_NAME } from "@/auth";
-import { prisma } from "@/server/db/prisma-client";
+import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { SESSION_COOKIE_NAME } from '@/auth';
+import { prisma } from '@/server/db/prisma-client';
 import {
   REFRESH_COOKIE_NAME,
   clearRefreshCookieOptions,
   revokeRefreshToken,
-} from "@/server/auth/refresh";
+} from '@/server/auth/refresh';
 
 /**
  * POST — encerra a sessão por completo: revoga a família do refresh token
@@ -20,12 +20,12 @@ import {
 export async function POST(request: Request) {
   const jar = await cookies();
   const raw = jar.get(REFRESH_COOKIE_NAME)?.value;
-  const secure = request.headers.get("x-forwarded-proto") === "https";
+  const secure = request.headers.get('x-forwarded-proto') === 'https';
 
   if (raw) await revokeRefreshToken(prisma, raw);
 
   jar.delete(SESSION_COOKIE_NAME);
-  jar.set(REFRESH_COOKIE_NAME, "", clearRefreshCookieOptions(secure));
+  jar.set(REFRESH_COOKIE_NAME, '', clearRefreshCookieOptions(secure));
 
   return NextResponse.json({ ok: true });
 }

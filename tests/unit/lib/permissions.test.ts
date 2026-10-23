@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from 'vitest';
 import {
   ALL_PERMISSIONS,
   QUEUE_CALL,
@@ -13,22 +13,19 @@ import {
   hasPermission,
   matchRoute,
   sessionFreshnessProblem,
-} from "@/shared/permissions";
+} from '@/shared/permissions';
 import {
   PERMISSIONS_MAX_AGE,
   SESSION_ABSOLUTE_MAX_AGE,
-} from "@/shared/constants";
+} from '@/shared/constants';
 
-describe("computeEffectivePermissions", () => {
-  it("retorna a união das permissões do cargo", () => {
-    const result = computeEffectivePermissions(
-      [SCREEN_HOME, QUEUE_CALL],
-      [],
-    );
+describe('computeEffectivePermissions', () => {
+  it('retorna a união das permissões do cargo', () => {
+    const result = computeEffectivePermissions([SCREEN_HOME, QUEUE_CALL], []);
     expect(result).toEqual([SCREEN_HOME, QUEUE_CALL]);
   });
 
-  it("grants do usuário somam ao cargo", () => {
+  it('grants do usuário somam ao cargo', () => {
     const result = computeEffectivePermissions(
       [SCREEN_HOME],
       [{ permission: USERS_VIEW, granted: true }],
@@ -36,7 +33,7 @@ describe("computeEffectivePermissions", () => {
     expect(result).toEqual([SCREEN_HOME, USERS_VIEW]);
   });
 
-  it("denials do usuário vencem o cargo", () => {
+  it('denials do usuário vencem o cargo', () => {
     const result = computeEffectivePermissions(
       [SCREEN_HOME, QUEUE_CALL],
       [{ permission: QUEUE_CALL, granted: false }],
@@ -44,7 +41,7 @@ describe("computeEffectivePermissions", () => {
     expect(result).toEqual([SCREEN_HOME]);
   });
 
-  it("deny de permissão inexistente no cargo é um no-op", () => {
+  it('deny de permissão inexistente no cargo é um no-op', () => {
     const result = computeEffectivePermissions(
       [SCREEN_HOME],
       [{ permission: QUEUE_RESET, granted: false }],
@@ -52,15 +49,15 @@ describe("computeEffectivePermissions", () => {
     expect(result).toEqual([SCREEN_HOME]);
   });
 
-  it("ignora chaves desconhecidas (registro fixo no código)", () => {
+  it('ignora chaves desconhecidas (registro fixo no código)', () => {
     const result = computeEffectivePermissions(
-      ["permissao.fantasma", SCREEN_HOME],
-      [{ permission: "outra.fantasma", granted: true }],
+      ['permissao.fantasma', SCREEN_HOME],
+      [{ permission: 'outra.fantasma', granted: true }],
     );
     expect(result).toEqual([SCREEN_HOME]);
   });
 
-  it("grants e denies do mesmo cargo se cancelam (deny vence)", () => {
+  it('grants e denies do mesmo cargo se cancelam (deny vence)', () => {
     const result = computeEffectivePermissions(
       [QUEUE_CALL],
       [
@@ -71,7 +68,7 @@ describe("computeEffectivePermissions", () => {
     expect(result).toEqual([]);
   });
 
-  it("resultado segue a ordem canônica do registro", () => {
+  it('resultado segue a ordem canônica do registro', () => {
     const result = computeEffectivePermissions(
       [USERS_VIEW, SCREEN_HOME, QUEUE_RESET],
       [],
@@ -84,133 +81,137 @@ describe("computeEffectivePermissions", () => {
     );
   });
 
-  it("entradas vazias viram lista vazia", () => {
+  it('entradas vazias viram lista vazia', () => {
     expect(computeEffectivePermissions()).toEqual([]);
     expect(computeEffectivePermissions(null, null)).toEqual([]);
   });
 });
 
-describe("hasPermission / shape da sessão", () => {
-  it("lê session.user.permissions (sessão do servidor)", () => {
-    expect(hasPermission({ user: { permissions: [SCREEN_ADMIN] } }, SCREEN_ADMIN)).toBe(true);
-    expect(hasPermission({ user: { permissions: [SCREEN_ADMIN] } }, USERS_VIEW)).toBe(false);
+describe('hasPermission / shape da sessão', () => {
+  it('lê session.user.permissions (sessão do servidor)', () => {
+    expect(
+      hasPermission({ user: { permissions: [SCREEN_ADMIN] } }, SCREEN_ADMIN),
+    ).toBe(true);
+    expect(
+      hasPermission({ user: { permissions: [SCREEN_ADMIN] } }, USERS_VIEW),
+    ).toBe(false);
   });
 
-  it("lê permissions direto (snapshot do localStorage)", () => {
+  it('lê permissions direto (snapshot do localStorage)', () => {
     expect(hasPermission({ permissions: [USERS_VIEW] }, USERS_VIEW)).toBe(true);
   });
 
-  it("sem sessão retorna false", () => {
+  it('sem sessão retorna false', () => {
     expect(hasPermission(null, SCREEN_HOME)).toBe(false);
     expect(hasPermission(undefined, SCREEN_HOME)).toBe(false);
   });
 });
 
-describe("canAccessSector (escopo de setor)", () => {
-  const own = { sector: "farmacia", permissions: [] };
+describe('canAccessSector (escopo de setor)', () => {
+  const own = { sector: 'farmacia', permissions: [] };
   const scopedRead = { sector: null, permissions: [SECTORS_VIEW_ALL] };
   const scopedWrite = { sector: null, permissions: [SECTORS_MANAGE_ALL] };
   const noSector = { sector: null, permissions: [] };
 
-  it("setor próprio sempre pode ser lido", () => {
-    expect(canAccessSector(own, "farmacia", "read")).toBe(true);
+  it('setor próprio sempre pode ser lido', () => {
+    expect(canAccessSector(own, 'farmacia', 'read')).toBe(true);
   });
 
-  it("setor próprio pode ser escrito", () => {
-    expect(canAccessSector(own, "farmacia", "write")).toBe(true);
+  it('setor próprio pode ser escrito', () => {
+    expect(canAccessSector(own, 'farmacia', 'write')).toBe(true);
   });
 
-  it("outro setor é negado sem escopo", () => {
-    expect(canAccessSector(own, "recepcao", "read")).toBe(false);
-    expect(canAccessSector(own, "recepcao", "write")).toBe(false);
+  it('outro setor é negado sem escopo', () => {
+    expect(canAccessSector(own, 'recepcao', 'read')).toBe(false);
+    expect(canAccessSector(own, 'recepcao', 'write')).toBe(false);
   });
 
-  it("setores.todos.ver libera leitura de qualquer setor", () => {
-    expect(canAccessSector(scopedRead, "recepcao", "read")).toBe(true);
+  it('setores.todos.ver libera leitura de qualquer setor', () => {
+    expect(canAccessSector(scopedRead, 'recepcao', 'read')).toBe(true);
     // mas não escrita
-    expect(canAccessSector(scopedRead, "recepcao", "write")).toBe(false);
+    expect(canAccessSector(scopedRead, 'recepcao', 'write')).toBe(false);
   });
 
-  it("setores.todos.gerenciar libera escrita em qualquer setor", () => {
-    expect(canAccessSector(scopedWrite, "recepcao", "write")).toBe(true);
+  it('setores.todos.gerenciar libera escrita em qualquer setor', () => {
+    expect(canAccessSector(scopedWrite, 'recepcao', 'write')).toBe(true);
     // escrita não implica leitura: são chaves separadas por design
     // (para ver filtros/monitores é preciso setores.todos.ver)
-    expect(canAccessSector(scopedWrite, "recepcao", "read")).toBe(false);
+    expect(canAccessSector(scopedWrite, 'recepcao', 'read')).toBe(false);
   });
 
-  it("sem setor e sem permissão, nega tudo", () => {
-    expect(canAccessSector(noSector, "farmacia", "read")).toBe(false);
-    expect(canAccessSector(noSector, "farmacia", "write")).toBe(false);
-    expect(canAccessSector(noSector, null, "read")).toBe(false);
-  });
-});
-
-describe("matchRoute (registro canônico de rotas)", () => {
-  it("mapeia as rotas de tela", () => {
-    expect(matchRoute("/home")?.permission).toBe(SCREEN_HOME);
-    expect(matchRoute("/painel")?.permission).toBe("tela.painel");
-    expect(matchRoute("/historico")?.permission).toBe("tela.historico");
-    expect(matchRoute("/monitor")?.permission).toBe("tela.monitor");
-    expect(matchRoute("/admin")?.permission).toBe(SCREEN_ADMIN);
-  });
-
-  it("casa subrotas", () => {
-    expect(matchRoute("/admin/qualquer")?.permission).toBe(SCREEN_ADMIN);
-    expect(matchRoute("/monitor/farmacia")?.permission).toBe("tela.monitor");
-  });
-
-  it("não casa prefixo parcial", () => {
-    expect(matchRoute("/homem")).toBeNull();
-    expect(matchRoute("/administracao")).toBeNull();
-  });
-
-  it("rotas fora de telas retornam null", () => {
-    expect(matchRoute("/login")).toBeNull();
-    expect(matchRoute("/")).toBeNull();
-  });
-
-  it("só /monitor é escopada por setor", () => {
-    expect(matchRoute("/monitor/farmacia")?.sector).toBe("farmacia");
-    expect(matchRoute("/monitor/recepcao")?.sector).toBe("recepcao");
-    expect(matchRoute("/monitor")?.sector).toBeNull();
-    expect(matchRoute("/monitor/")?.sector).toBeNull();
-    expect(matchRoute("/admin")?.sector).toBeNull();
-    expect(matchRoute("/home")?.sector).toBeNull();
+  it('sem setor e sem permissão, nega tudo', () => {
+    expect(canAccessSector(noSector, 'farmacia', 'read')).toBe(false);
+    expect(canAccessSector(noSector, 'farmacia', 'write')).toBe(false);
+    expect(canAccessSector(noSector, null, 'read')).toBe(false);
   });
 });
 
-describe("sessionFreshnessProblem (auth_at / perms_at)", () => {
+describe('matchRoute (registro canônico de rotas)', () => {
+  it('mapeia as rotas de tela', () => {
+    expect(matchRoute('/home')?.permission).toBe(SCREEN_HOME);
+    expect(matchRoute('/painel')?.permission).toBe('tela.painel');
+    expect(matchRoute('/historico')?.permission).toBe('tela.historico');
+    expect(matchRoute('/monitor')?.permission).toBe('tela.monitor');
+    expect(matchRoute('/admin')?.permission).toBe(SCREEN_ADMIN);
+  });
+
+  it('casa subrotas', () => {
+    expect(matchRoute('/admin/qualquer')?.permission).toBe(SCREEN_ADMIN);
+    expect(matchRoute('/monitor/farmacia')?.permission).toBe('tela.monitor');
+  });
+
+  it('não casa prefixo parcial', () => {
+    expect(matchRoute('/homem')).toBeNull();
+    expect(matchRoute('/administracao')).toBeNull();
+  });
+
+  it('rotas fora de telas retornam null', () => {
+    expect(matchRoute('/login')).toBeNull();
+    expect(matchRoute('/')).toBeNull();
+  });
+
+  it('só /monitor é escopada por setor', () => {
+    expect(matchRoute('/monitor/farmacia')?.sector).toBe('farmacia');
+    expect(matchRoute('/monitor/recepcao')?.sector).toBe('recepcao');
+    expect(matchRoute('/monitor')?.sector).toBeNull();
+    expect(matchRoute('/monitor/')?.sector).toBeNull();
+    expect(matchRoute('/admin')?.sector).toBeNull();
+    expect(matchRoute('/home')?.sector).toBeNull();
+  });
+});
+
+describe('sessionFreshnessProblem (auth_at / perms_at)', () => {
   const now = Date.now();
 
-  it("sessão nova não tem problema", () => {
+  it('sessão nova não tem problema', () => {
     expect(
       sessionFreshnessProblem({ authAt: now, permsAt: now }, now),
     ).toBeNull();
   });
 
-  it("perms_at dentro da janela continua válido", () => {
+  it('perms_at dentro da janela continua válido', () => {
     const permsAt = now - (PERMISSIONS_MAX_AGE - 60) * 1000;
     expect(sessionFreshnessProblem({ authAt: now, permsAt }, now)).toBeNull();
   });
 
-  it("perms_at vencido ⇒ stale (exige refresh)", () => {
+  it('perms_at vencido ⇒ stale (exige refresh)', () => {
     const permsAt = now - (PERMISSIONS_MAX_AGE + 1) * 1000;
-    expect(
-      sessionFreshnessProblem({ authAt: now, permsAt }, now),
-    ).toBe("stale");
+    expect(sessionFreshnessProblem({ authAt: now, permsAt }, now)).toBe(
+      'stale',
+    );
   });
 
-  it("auth_at vencido ⇒ expired (re-login) — mesmo com perms_at novo", () => {
+  it('auth_at vencido ⇒ expired (re-login) — mesmo com perms_at novo', () => {
     const authAt = now - (SESSION_ABSOLUTE_MAX_AGE + 1) * 1000;
-    expect(
-      sessionFreshnessProblem({ authAt, permsAt: now }, now),
-    ).toBe("expired");
+    expect(sessionFreshnessProblem({ authAt, permsAt: now }, now)).toBe(
+      'expired',
+    );
   });
 
-  it("claims ausentes (token legado) ⇒ tratado como expirado/stale", () => {
-    expect(sessionFreshnessProblem({ id: "u1" }, now)).toBe("expired");
-    expect(sessionFreshnessProblem(undefined, now)).toBe("expired");
+  it('claims ausentes (token legado) ⇒ tratado como expirado/stale', () => {
+    expect(sessionFreshnessProblem({ id: 'u1' }, now)).toBe('expired');
+    expect(sessionFreshnessProblem(undefined, now)).toBe('expired');
     // auth_at novo sem perms_at ⇒ só as permissões estão stale (refresh resolve)
-    expect(sessionFreshnessProblem({ authAt: now }, now)).toBe("stale");
+    expect(sessionFreshnessProblem({ authAt: now }, now)).toBe('stale');
   });
 });

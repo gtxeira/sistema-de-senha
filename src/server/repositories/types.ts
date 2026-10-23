@@ -1,5 +1,5 @@
-import type { CallType, SequenceType } from "@/shared/constants";
-import type { Permission, PermissionOverride } from "@/shared/permissions";
+import type { CallType, SequenceType } from '@/shared/constants';
+import type { Permission, PermissionOverride } from '@/shared/permissions';
 import type {
   CreateRoleInput,
   CreateUserInput,
@@ -10,7 +10,7 @@ import type {
   UpdateRoleInput,
   UpdateUserInput,
   UserRecord,
-} from "@/shared/types/domain";
+} from '@/shared/types/domain';
 
 /**
  * Contrato das camadas de dados.
@@ -45,7 +45,7 @@ export type {
   CreateRoleInput,
   UpdateRoleInput,
   NewsItem,
-} from "@/shared/types/domain";
+} from '@/shared/types/domain';
 
 /* ── Queue ──────────────────────────────────────────────────────── */
 
@@ -87,7 +87,11 @@ export interface QueueRepository {
   resetSector(sector: string): Promise<void>;
 
   /** Fixa o próximo número (sync manual). A chamada seguinte retorna `nextNumber`. */
-  setNextNumber(sector: string, type: SequenceType, nextNumber: number): Promise<void>;
+  setNextNumber(
+    sector: string,
+    type: SequenceType,
+    nextNumber: number,
+  ): Promise<void>;
 
   /**
    * Chamadas recentes do setor. Com `resetAt`, exclui as anteriores ao reset

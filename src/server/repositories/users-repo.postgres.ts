@@ -1,16 +1,24 @@
-import "server-only";
+import 'server-only';
 
-import bcrypt from "bcryptjs";
-import { prisma } from "@/server/db/prisma-client";
-import type { Prisma } from "@/server/generated/prisma/client";
-import { routeError } from "@/server/http/errors";
-import { isValidUsername } from "@/shared/validation";
-import { generateEmail } from "@/shared/format";
-import { errorCode, errorStatus, errorMessage } from "@/shared/errors";
-import { DEFAULT_ROLE, BCRYPT_SALT_ROUNDS } from "@/shared/constants";
-import { ALL_PERMISSIONS, computeEffectivePermissions } from "@/shared/permissions";
-import type { Permission, PermissionOverride } from "@/shared/permissions";
-import type { CreateUserInput, UpdateUserInput, UsersRepository, UserRecord } from "./types";
+import bcrypt from 'bcryptjs';
+import { prisma } from '@/server/db/prisma-client';
+import type { Prisma } from '@/server/generated/prisma/client';
+import { routeError } from '@/server/http/errors';
+import { isValidUsername } from '@/shared/validation';
+import { generateEmail } from '@/shared/format';
+import { errorCode, errorStatus, errorMessage } from '@/shared/errors';
+import { DEFAULT_ROLE, BCRYPT_SALT_ROUNDS } from '@/shared/constants';
+import {
+  ALL_PERMISSIONS,
+  computeEffectivePermissions,
+} from '@/shared/permissions';
+import type { Permission, PermissionOverride } from '@/shared/permissions';
+import type {
+  CreateUserInput,
+  UpdateUserInput,
+  UsersRepository,
+  UserRecord,
+} from './types';
 
 const PERMISSION_SET = new Set<string>(ALL_PERMISSIONS);
 
@@ -34,7 +42,9 @@ async function resolveRoleId(data: {
  * `Array.isArray` tem assinatura `arg is any[]`; declarar o elemento evita que
  * a validação de cada override caia no `any`.
  */
-function isOverrideList(value: unknown): value is readonly PermissionOverride[] {
+function isOverrideList(
+  value: unknown,
+): value is readonly PermissionOverride[] {
   return Array.isArray(value);
 }
 
@@ -44,7 +54,7 @@ function validateOverrides(
 ): PermissionOverride[] | null {
   if (permissions === undefined) return null;
   if (!isOverrideList(permissions)) {
-    throw routeError(400, "Permissões devem ser uma lista");
+    throw routeError(400, 'Permissões devem ser uma lista');
   }
   const seen = new Map<string, boolean>();
   for (const row of permissions) {
@@ -95,14 +105,14 @@ export class PostgresUsersRepository implements UsersRepository {
   async list(): Promise<UserRecord[]> {
     const users = await prisma.users.findMany({
       select: USER_SELECT,
-      orderBy: { created_at: "desc" },
+      orderBy: { created_at: 'desc' },
     });
 
     const shapedUsers = users.map(shapeUser);
 
     return shapedUsers.sort((a, b) => {
-      const aIsAdmin = a.role === "admin";
-      const bIsAdmin = b.role === "admin";
+      const aIsAdmin = a.role === 'admin';
+      const bIsAdmin = b.role === 'admin';
 
       if (aIsAdmin && !bIsAdmin) return -1;
       if (!aIsAdmin && bIsAdmin) return 1;
@@ -110,14 +120,18 @@ export class PostgresUsersRepository implements UsersRepository {
     });
   }
 
-  async create(data: CreateUserInput): Promise<{ success: true; user: UserRecord }> {
+  async create(
+    data: CreateUserInput,
+  ): Promise<{ success: true; user: UserRecord }> {
     const { username: rawUsername, password, full_name, sector_id } = data;
-    const username = String(rawUsername || "").trim().toLowerCase();
+    const username = String(rawUsername || '')
+      .trim()
+      .toLowerCase();
 
     if (!isValidUsername(username) || !password || !full_name) {
       throw routeError(
         400,
-        "Usuário (nome.sobrenome), senha e nome completo são obrigatórios",
+        'Usuário (nome.sobrenome), senha e nome completo são obrigatórios',
       );
     }
 
@@ -145,13 +159,16 @@ export class PostgresUsersRepository implements UsersRepository {
 
       return { success: true, user: shapeUser(user) };
     } catch (err) {
-      if (errorCode(err) === "P2002") {
-        throw routeError(409, "Nome de usuário já existe");
+      if (errorCode(err) === 'P2002') {
+        throw routeError(409, 'Nome de usuário já existe');
       }
-      if (errorCode(err) === "P2003") {
-        throw routeError(400, "Cargo inválido");
+      if (errorCode(err) === 'P2003') {
+        throw routeError(400, 'Cargo inválido');
       }
-      throw routeError(errorStatus(err), errorMessage(err, "Erro ao criar usuário"));
+      throw routeError(
+        errorStatus(err),
+        errorMessage(err, 'Erro ao criar usuário'),
+      );
     }
   }
 
@@ -166,12 +183,12 @@ export class PostgresUsersRepository implements UsersRepository {
 
     if (data?.full_name !== undefined) {
       const fullName = String(data.full_name).trim();
-      if (!fullName) throw routeError(400, "Nome completo é obrigatório");
+      if (!fullName) throw routeError(400, 'Nome completo é obrigatório');
       values.full_name = fullName;
     }
-    if (data?.password !== undefined && data.password !== "") {
+    if (data?.password !== undefined && data.password !== '') {
       if (String(data.password).length < 6) {
-        throw routeError(400, "Senha deve ter pelo menos 6 caracteres");
+        throw routeError(400, 'Senha deve ter pelo menos 6 caracteres');
       }
       values.password_hash = await bcrypt.hash(
         String(data.password),
@@ -181,11 +198,12 @@ export class PostgresUsersRepository implements UsersRepository {
     if (data?.role_id !== undefined || data?.role !== undefined) {
       values.role_id = await resolveRoleId(data);
     }
-    if (data?.sector_id !== undefined) values.sector_id = data.sector_id || null;
+    if (data?.sector_id !== undefined)
+      values.sector_id = data.sector_id || null;
     if (data?.active !== undefined) values.active = !!data.active;
 
     if (!Object.keys(values).length) {
-      throw routeError(400, "Nada para atualizar");
+      throw routeError(400, 'Nada para atualizar');
     }
 
     try {
@@ -196,11 +214,12 @@ export class PostgresUsersRepository implements UsersRepository {
       });
       return shapeUser(user);
     } catch (err) {
-      if (errorCode(err) === "P2025") throw routeError(404, "Usuário não encontrado");
-      if (errorCode(err) === "P2003") throw routeError(400, "Cargo inválido");
+      if (errorCode(err) === 'P2025')
+        throw routeError(404, 'Usuário não encontrado');
+      if (errorCode(err) === 'P2003') throw routeError(400, 'Cargo inválido');
       throw routeError(
         errorStatus(err),
-        errorMessage(err, "Erro ao atualizar usuário"),
+        errorMessage(err, 'Erro ao atualizar usuário'),
       );
     }
   }
@@ -228,10 +247,11 @@ export class PostgresUsersRepository implements UsersRepository {
       ]);
       return overrides;
     } catch (err) {
-      if (errorCode(err) === "P2025") throw routeError(404, "Usuário não encontrado");
+      if (errorCode(err) === 'P2025')
+        throw routeError(404, 'Usuário não encontrado');
       throw routeError(
         errorStatus(err),
-        errorMessage(err, "Erro ao salvar permissões"),
+        errorMessage(err, 'Erro ao salvar permissões'),
       );
     }
   }
@@ -260,10 +280,13 @@ export class PostgresUsersRepository implements UsersRepository {
     try {
       await prisma.users.delete({ where: { id } });
     } catch (err) {
-      if (errorCode(err) === "P2025") {
-        throw routeError(404, "Usuário não encontrado");
+      if (errorCode(err) === 'P2025') {
+        throw routeError(404, 'Usuário não encontrado');
       }
-      throw routeError(errorStatus(err), errorMessage(err, "Erro ao excluir usuário"));
+      throw routeError(
+        errorStatus(err),
+        errorMessage(err, 'Erro ao excluir usuário'),
+      );
     }
   }
 }

@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { createContext, useContext, type ReactNode } from "react";
-import type { User } from "next-auth";
+import { createContext, useContext, type ReactNode } from 'react';
+import type { User } from 'next-auth';
 
 /**
  * Sessão do servidor, publicada na árvore via Context.

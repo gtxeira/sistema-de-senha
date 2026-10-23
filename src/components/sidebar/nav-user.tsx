@@ -1,14 +1,8 @@
-"use client"
+'use client';
 
-import {
-  ChevronsUpDown,
-  LogOut,
-} from "lucide-react"
+import { ChevronsUpDown, LogOut } from 'lucide-react';
 
-import {
-  Avatar,
-  AvatarFallback,
-} from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,41 +11,41 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from '@/components/ui/dropdown-menu';
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/ui/sidebar"
-import * as React from "react";
-import { signOut } from "next-auth/react";
-import { useSessionStore } from "@/stores/use-session-store";
+} from '@/components/ui/sidebar';
+import * as React from 'react';
+import { signOut } from 'next-auth/react';
+import { useSessionStore } from '@/stores/use-session-store';
 
 export function NavUser({
   user,
 }: {
   user: {
-    name: string
-    sector: string
-  }
+    name: string;
+    sector: string;
+  };
 }) {
-  const { isMobile } = useSidebar()
+  const { isMobile } = useSidebar();
 
   const userInitials = user.name
     ? user.name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .substring(0, 2)
-      .toUpperCase()
-    : "US"
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .substring(0, 2)
+        .toUpperCase()
+    : 'US';
 
   async function handleLogout(e: React.SyntheticEvent) {
-    e.preventDefault()
+    e.preventDefault();
 
     try {
-      await fetch("/api/auth/logout", { method: "POST" })
+      await fetch('/api/auth/logout', { method: 'POST' });
     } catch {
       // segue o signOut mesmo sem a revogação (rede)
     }
@@ -59,7 +53,7 @@ export function NavUser({
     // Limpa a sessão local (store + espelho no storage) antes de sair: a
     // aba não pode continuar exibindo os dados do usuário que saiu.
     useSessionStore.getState().clear();
-    void signOut({ callbackUrl: "/login" })
+    void signOut({ callbackUrl: '/login' });
   }
 
   return (
@@ -72,10 +66,7 @@ export function NavUser({
                 size="lg"
                 className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
               >
-                <UserAvatar
-                  user={user}
-                  userInitials={userInitials}
-                />
+                <UserAvatar user={user} userInitials={userInitials} />
 
                 <ChevronsUpDown className="ml-auto size-4" />
               </SidebarMenuButton>
@@ -84,17 +75,14 @@ export function NavUser({
 
           <DropdownMenuContent
             className="w-56 min-w-56 rounded-lg p-2"
-            side={isMobile ? "bottom" : "right"}
+            side={isMobile ? 'bottom' : 'right'}
             align="end"
             sideOffset={4}
           >
             <DropdownMenuGroup>
               <DropdownMenuLabel className="p-0 font-normal">
                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                  <UserAvatar
-                    user={user}
-                    userInitials={userInitials}
-                  />
+                  <UserAvatar user={user} userInitials={userInitials} />
                 </div>
               </DropdownMenuLabel>
             </DropdownMenuGroup>
@@ -109,7 +97,7 @@ export function NavUser({
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
-  )
+  );
 }
 
 function UserAvatar({
@@ -117,21 +105,21 @@ function UserAvatar({
   userInitials,
 }: {
   user: {
-    name: string
-    sector: string
-  },
-  userInitials: string
+    name: string;
+    sector: string;
+  };
+  userInitials: string;
 }) {
   return (
     <>
       <Avatar className="h-8 w-8">
-        <AvatarFallback className="font-bold text-[11px]">
+        <AvatarFallback className="text-[11px] font-bold">
           {userInitials}
         </AvatarFallback>
       </Avatar>
 
       <div className="grid flex-1 text-left text-sm leading-tight">
-        <span className="truncate font-semibold text-xs">{user.name}</span>
+        <span className="truncate text-xs font-semibold">{user.name}</span>
         <span className="truncate text-[11px]">{user.sector}</span>
       </div>
     </>

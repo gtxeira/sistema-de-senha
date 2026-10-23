@@ -1,12 +1,19 @@
-"use client";
+'use client';
 
-import { Monitor, Settings2, Headphones, History } from "lucide-react";
-import { SECTORS } from "@/shared/constants";
-import { SCREEN_ADMIN, canAccessSector, hasPermission } from "@/shared/permissions";
-import { useEffectiveSession } from "@/hooks/use-effective-session";
-import { PageHeader } from "@/components/page-header";
-import { NavCard, type NavCardProps } from "@/app/(authenticated)/(dashboard)/home/nav-card";
-import type { Route } from "next";
+import { Monitor, Settings2, Headphones, History } from 'lucide-react';
+import { SECTORS } from '@/shared/constants';
+import {
+  SCREEN_ADMIN,
+  canAccessSector,
+  hasPermission,
+} from '@/shared/permissions';
+import { useEffectiveSession } from '@/hooks/use-effective-session';
+import { PageHeader } from '@/components/page-header';
+import {
+  NavCard,
+  type NavCardProps,
+} from '@/app/(authenticated)/(dashboard)/home/nav-card';
+import type { Route } from 'next';
 
 type NavItem = {
   id: string;
@@ -18,45 +25,45 @@ export default function HomePage() {
 
   const navItems: NavItem[] = [
     hasPermission(session, SCREEN_ADMIN) && {
-      id: "admin",
-      href: "/admin" as Route,
-      title: "Administração",
-      description: "Filas, notícias e estatísticas",
+      id: 'admin',
+      href: '/admin' as Route,
+      title: 'Administração',
+      description: 'Filas, notícias e estatísticas',
       icon: <Settings2 size={30} />,
-      iconBgClass: "bg-[#fff7ed]",
-      iconColorClass: "text-[#ea580c]",
+      iconBgClass: 'bg-[#fff7ed]',
+      iconColorClass: 'text-[#ea580c]',
       colSpanFull: true,
     },
     {
-      id: "painel",
-      href: "/painel" as Route,
-      title: "Painel de Atendimento",
-      description: "Controle as chamadas em tempo real",
+      id: 'painel',
+      href: '/painel' as Route,
+      title: 'Painel de Atendimento',
+      description: 'Controle as chamadas em tempo real',
       icon: <Headphones size={30} />,
-      iconBgClass: "bg-[#f5f3ff]",
-      iconColorClass: "text-[#7c3aed]",
+      iconBgClass: 'bg-[#f5f3ff]',
+      iconColorClass: 'text-[#7c3aed]',
       colSpanFull: true,
     },
     {
-      id: "historico",
-      href: "/historico" as Route,
-      title: "Histórico",
-      description: "Consulte todas as chamadas de senhas realizadas",
+      id: 'historico',
+      href: '/historico' as Route,
+      title: 'Histórico',
+      description: 'Consulte todas as chamadas de senhas realizadas',
       icon: <History size={30} />,
-      iconBgClass: "bg-[#f5f3ff]",
-      iconColorClass: "text-amber",
+      iconBgClass: 'bg-[#f5f3ff]',
+      iconColorClass: 'text-amber',
       colSpanFull: true,
     },
     ...Object.values(SECTORS)
-      .filter((s) => canAccessSector(session, s.id, "read"))
+      .filter((s) => canAccessSector(session, s.id, 'read'))
       .map((s) => ({
         id: `monitor-${s.id}`,
         href: `/monitor/${s.id}` as Route,
-        title: "Monitor",
+        title: 'Monitor',
         description: s.name,
         icon: <Monitor size={30} />,
-        iconBgClass: "bg-primary-light",
-        iconColorClass: "text-primary",
+        iconBgClass: 'bg-primary-light',
+        iconColorClass: 'text-primary',
         colSpanFull: false,
       })),
   ].filter((item) => typeof item === 'object' && item !== null); // Remove os itens 'false' (ex: Admin sem permissão)

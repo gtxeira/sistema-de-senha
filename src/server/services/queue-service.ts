@@ -1,17 +1,17 @@
-import "server-only";
+import 'server-only';
 
-import { queue } from "@/server/repositories";
-import { eventManager } from "@/server/realtime/event-manager";
-import type { QueueCallEvent } from "@/server/realtime/event-manager";
-import { routeError } from "@/server/http/errors";
-import { formatNumberString, normalizeCallType } from "@/shared/queue-format";
+import { queue } from '@/server/repositories';
+import { eventManager } from '@/server/realtime/event-manager';
+import type { QueueCallEvent } from '@/server/realtime/event-manager';
+import { routeError } from '@/server/http/errors';
+import { formatNumberString, normalizeCallType } from '@/shared/queue-format';
 import {
   MAX_QUEUE_NUMBER,
   MIN_QUEUE_NUMBER,
   SECTORS,
-} from "@/shared/constants";
-import type { SectorId, SequenceType } from "@/shared/constants";
-import type { RecentCall } from "@/shared/types/domain";
+} from '@/shared/constants';
+import type { SectorId, SequenceType } from '@/shared/constants';
+import type { RecentCall } from '@/shared/types/domain';
 
 /**
  * Use cases da fila.
@@ -88,7 +88,7 @@ export async function recallLast(
   // before it survive for /historico but no longer belong to the live queue.
   const calls = await queue.getRecentCalls(sector, 1, resetAt);
   if (!calls.length) {
-    throw routeError(404, "Nenhuma senha anterior para repetir.");
+    throw routeError(404, 'Nenhuma senha anterior para repetir.');
   }
 
   const last = calls[0];
@@ -134,10 +134,7 @@ export async function resetSectors(
   // stream carry the event, so `sector: "all"` propagates naturally.
   for (const sector of sectors) {
     const resetAt = await queue.getSectorResetAt(sector);
-    eventManager.emitQueueReset(
-      sector,
-      resetAt ? resetAt.toISOString() : null,
-    );
+    eventManager.emitQueueReset(sector, resetAt ? resetAt.toISOString() : null);
   }
 
   return { sectors: [...sectors] };

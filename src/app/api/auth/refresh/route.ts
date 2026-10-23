@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { encode } from "next-auth/jwt";
-import { auth, SESSION_COOKIE_NAME } from "@/auth";
-import { prisma } from "@/server/db/prisma-client";
+import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { encode } from 'next-auth/jwt';
+import { auth, SESSION_COOKIE_NAME } from '@/auth';
+import { prisma } from '@/server/db/prisma-client';
 import {
   REFRESH_COOKIE_NAME,
   clearRefreshCookieOptions,
@@ -10,11 +10,11 @@ import {
   refreshCookieOptions,
   revokeRefreshToken,
   rotateRefreshToken,
-} from "@/server/auth/refresh";
-import type { RotateFailure } from "@/server/auth/refresh";
-import { ACCESS_TOKEN_MAX_AGE } from "@/shared/constants";
-import { computeEffectivePermissions } from "@/shared/permissions";
-import type { Permission } from "@/shared/permissions";
+} from '@/server/auth/refresh';
+import type { RotateFailure } from '@/server/auth/refresh';
+import { ACCESS_TOKEN_MAX_AGE } from '@/shared/constants';
+import { computeEffectivePermissions } from '@/shared/permissions';
+import type { Permission } from '@/shared/permissions';
 
 /** `cookies()` é assíncrono e só existe dentro de um handler. */
 type CookieJar = Awaited<ReturnType<typeof cookies>>;
@@ -23,7 +23,7 @@ type CookieJar = Awaited<ReturnType<typeof cookies>>;
  * Motivo de um refresh que não rotacionou — `RotateFailure` do repositório
  * mais o "não autenticado" (sem cookie e sem sessão para criar a família).
  */
-type RefreshFailure = RotateFailure | "unauthenticated";
+type RefreshFailure = RotateFailure | 'unauthenticated';
 
 /**
  * Resultado de `rotateOrCreate` — união discriminada por `failure`.
@@ -70,14 +70,14 @@ type MintOutcome =
 
 function isSecureRequest(request: Request): boolean {
   const proto =
-    request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() ||
-    new URL(request.url).protocol.replace(":", "");
-  return proto === "https";
+    request.headers.get('x-forwarded-proto')?.split(',')[0]?.trim() ||
+    new URL(request.url).protocol.replace(':', '');
+  return proto === 'https';
 }
 
 function sanitizeCallbackUrl(value: string | null): string {
-  const url = String(value || "");
-  if (!url.startsWith("/") || url.startsWith("//")) return "/home";
+  const url = String(value || '');
+  if (!url.startsWith('/') || url.startsWith('//')) return '/home';
   return url;
 }
 
@@ -86,10 +86,7 @@ async function mintSession(
   request: Request,
   jar: CookieJar,
   userId: string,
-  {
-    rotatedRaw,
-    expiresAt,
-  }: { rotatedRaw: string; expiresAt: Date }
+  { rotatedRaw, expiresAt }: { rotatedRaw: string; expiresAt: Date },
 ): Promise<MintOutcome> {
   const user = await prisma.users.findUnique({
     where: { id: userId },
@@ -106,7 +103,7 @@ async function mintSession(
     jar.delete(REFRESH_COOKIE_NAME);
     return {
       error: NextResponse.json(
-        { error: "Session expired.", code: "session_expired" },
+        { error: 'Session expired.', code: 'session_expired' },
         { status: 401 },
       ),
     };
@@ -134,7 +131,7 @@ async function mintSession(
   // estoura TypeError no hkdf. O guard torna a falha explícita e — o
   // importante — nunca deixa o token ser assinado com secret vazio.
   const secret = process.env.AUTH_SECRET;
-  if (!secret) throw new Error("AUTH_SECRET não configurado");
+  if (!secret) throw new Error('AUTH_SECRET não configurado');
 
   const value = await encode({
     token,
@@ -146,9 +143,9 @@ async function mintSession(
   const secure = isSecureRequest(request);
   jar.set(SESSION_COOKIE_NAME, value, {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: 'lax',
     secure,
-    path: "/",
+    path: '/',
     maxAge: ACCESS_TOKEN_MAX_AGE,
   });
   if (rotatedRaw) {
@@ -165,7 +162,7 @@ async function mintSession(
 async function rotateOrCreate(
   request: Request,
   jar: CookieJar,
-  { allowCreate }: { allowCreate: boolean }
+  { allowCreate }: { allowCreate: boolean },
 ): Promise<RotateOutcome> {
   const raw = jar.get(REFRESH_COOKIE_NAME)?.value;
 
@@ -183,9 +180,9 @@ async function rotateOrCreate(
   // família, e apenas quando já existe uma sessão válida. Sem essa
   // exigência, qualquer anônimo poderia mintar cookies — e o GET (vindo
   // do proxy) não deve criar estado.
-  if (!allowCreate) return { failure: "unauthenticated" };
+  if (!allowCreate) return { failure: 'unauthenticated' };
   const session = await auth();
-  if (!session?.user) return { failure: "unauthenticated" };
+  if (!session?.user) return { failure: 'unauthenticated' };
   const issued = await issueRefreshToken(prisma, session.user.id);
   return {
     userId: session.user.id,
@@ -195,16 +192,16 @@ async function rotateOrCreate(
 }
 
 function failureResponse(reason: RefreshFailure): NextResponse {
-  if (reason === "conflict") {
+  if (reason === 'conflict') {
     // Outro fluxo do mesmo cliente acabou de renovar: o vencedor já
     // gravou os cookies. O caller deve repetir a leitura de sessão.
     return NextResponse.json(
-      { error: "Session already refreshed.", code: "refresh_conflict" },
+      { error: 'Session already refreshed.', code: 'refresh_conflict' },
       { status: 401 },
     );
   }
   return NextResponse.json(
-    { error: "Session expired.", code: "session_expired" },
+    { error: 'Session expired.', code: 'session_expired' },
     { status: 401 },
   );
 }
@@ -217,7 +214,7 @@ export async function POST(request: Request) {
     // Cookies inválidos/expirados saem de cena junto.
     const secure = isSecureRequest(request);
     jar.delete(SESSION_COOKIE_NAME);
-    jar.set(REFRESH_COOKIE_NAME, "", clearRefreshCookieOptions(secure));
+    jar.set(REFRESH_COOKIE_NAME, '', clearRefreshCookieOptions(secure));
     return failureResponse(outcome.failure);
   }
 
@@ -233,19 +230,19 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   const jar = await cookies();
   const url = new URL(request.url);
-  const callbackUrl = sanitizeCallbackUrl(url.searchParams.get("callbackUrl"));
+  const callbackUrl = sanitizeCallbackUrl(url.searchParams.get('callbackUrl'));
 
   const outcome = await rotateOrCreate(request, jar, { allowCreate: false });
   if (outcome.failure) {
-    if (outcome.failure === "conflict") {
+    if (outcome.failure === 'conflict') {
       // Outro fluxo acabou de renovar — segue para o destino; se os
       // cookies novos chegaram ao jar do navegador, a página carrega.
       return NextResponse.redirect(new URL(callbackUrl, request.url));
     }
     const secure = isSecureRequest(request);
     jar.delete(SESSION_COOKIE_NAME);
-    jar.set(REFRESH_COOKIE_NAME, "", clearRefreshCookieOptions(secure));
-    return NextResponse.redirect(new URL("/login", request.url));
+    jar.set(REFRESH_COOKIE_NAME, '', clearRefreshCookieOptions(secure));
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   const minted = await mintSession(request, jar, outcome.userId, {
@@ -253,7 +250,7 @@ export async function GET(request: Request) {
     expiresAt: outcome.expiresAt,
   });
   if (minted.error) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   return NextResponse.redirect(new URL(callbackUrl, request.url));

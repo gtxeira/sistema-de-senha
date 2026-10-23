@@ -1,4 +1,4 @@
-import { defineConfig } from "prisma/config";
+import { defineConfig } from 'prisma/config';
 
 // O CLI do Prisma 7 não carrega mais `.env` sozinho, e aqui ele é executado tanto
 // pelo Node (bin `prisma`) quanto pelo Bun (`bunx prisma`). `process.loadEnvFile`
@@ -12,14 +12,14 @@ try {
 }
 
 export default defineConfig({
-  schema: "prisma/schema.prisma",
+  schema: 'prisma/schema.prisma',
   migrations: {
-    path: "prisma/migrations",
-    seed: "bun prisma/seed.js",
+    path: 'prisma/migrations',
+    seed: 'bun prisma/seed.js',
   },
   datasource: {
     // Usa process.env em vez do helper env() porque `prisma generate` também lê
     // este arquivo e precisa funcionar sem DATABASE_URL (build Docker).
-    url: process.env.DATABASE_URL ?? "",
+    url: process.env.DATABASE_URL ?? '',
   },
 });

@@ -1,6 +1,6 @@
-import type { Metadata } from "next";
-import type { ReactNode } from "react";
-import { PAGE_TITLES } from "@/shared/page-title";
+import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
+import { PAGE_TITLES } from '@/shared/page-title';
 
 /**
  * Metadados da rota `/home`.
@@ -11,9 +11,13 @@ import { PAGE_TITLES } from "@/shared/page-title";
  * layout raiz completa com o nome do sistema.
  */
 export const metadata: Metadata = {
-  title: PAGE_TITLES["/home"],
+  title: PAGE_TITLES['/home'],
 };
 
-export default function HomeLayout({ children }: { readonly children: ReactNode }) {
+export default function HomeLayout({
+  children,
+}: {
+  readonly children: ReactNode;
+}) {
   return <>{children}</>;
 }

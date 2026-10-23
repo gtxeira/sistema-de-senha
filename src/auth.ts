@@ -6,4 +6,10 @@
  * `/api/auth/[...nextauth]` importam `@/auth`. Mantê-lo como reexport fino
  * deixa a fronteira explícita: nada de lógica aqui.
  */
-export { SESSION_COOKIE_NAME, handlers, auth, signIn, signOut } from "@/server/auth/config";
+export {
+  SESSION_COOKIE_NAME,
+  handlers,
+  auth,
+  signIn,
+  signOut,
+} from '@/server/auth/config';

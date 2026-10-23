@@ -1,21 +1,17 @@
-import "server-only";
+import 'server-only';
 
-import { prisma } from "@/server/db/prisma-client";
-import { routeError, RouteError } from "@/server/http/errors";
-import { isAllowedImageType, isValidFileSize } from "@/shared/validation";
-import { errorMessage } from "@/shared/errors";
-import { NEWS_MAX_ACTIVE } from "@/shared/constants";
+import { prisma } from '@/server/db/prisma-client';
+import { routeError, RouteError } from '@/server/http/errors';
+import { isAllowedImageType, isValidFileSize } from '@/shared/validation';
+import { errorMessage } from '@/shared/errors';
+import { NEWS_MAX_ACTIVE } from '@/shared/constants';
 import {
   uploadToS3,
   deleteFromS3,
   getPublicUrl,
   extractKeyFromUrl,
-} from "@/server/storage/s3-client";
-import type {
-  CreateNewsInput,
-  NewsItem,
-  NewsRepository,
-} from "./types";
+} from '@/server/storage/s3-client';
+import type { CreateNewsInput, NewsItem, NewsRepository } from './types';
 
 export class PostgresNewsRepository implements NewsRepository {
   /** Create a news item (upload image to S3 + save to db) */
@@ -23,27 +19,30 @@ export class PostgresNewsRepository implements NewsRepository {
     title,
     image,
   }: CreateNewsInput): Promise<{ success: true; news: NewsItem }> {
-    if (!title || typeof title !== "string" || !(title = title.trim())) {
-      throw routeError(400, "Informe um título.");
+    if (!title || typeof title !== 'string' || !(title = title.trim())) {
+      throw routeError(400, 'Informe um título.');
     }
-    if (!image || typeof image === "string") {
-      throw routeError(400, "Envie um arquivo de imagem.");
+    if (!image || typeof image === 'string') {
+      throw routeError(400, 'Envie um arquivo de imagem.');
     }
     if (!isAllowedImageType(image.type)) {
-      throw routeError(400, "Formato inválido. Use JPG, PNG, WEBP ou GIF.");
+      throw routeError(400, 'Formato inválido. Use JPG, PNG, WEBP ou GIF.');
     }
     if (!isValidFileSize(image.size)) {
-      throw routeError(400, "Imagem deve ter no máximo 5 MB.");
+      throw routeError(400, 'Imagem deve ter no máximo 5 MB.');
     }
 
-    const ext = (image.name.split(".").pop() || "jpg").toLowerCase();
+    const ext = (image.name.split('.').pop() || 'jpg').toLowerCase();
     const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
     const buffer = Buffer.from(await image.arrayBuffer());
 
     try {
       await uploadToS3(fileName, buffer, image.type);
     } catch (err) {
-      throw routeError(500, errorMessage(err, "Erro ao fazer upload da imagem."));
+      throw routeError(
+        500,
+        errorMessage(err, 'Erro ao fazer upload da imagem.'),
+      );
     }
 
     const imageUrl = getPublicUrl(fileName);
@@ -66,14 +65,14 @@ export class PostgresNewsRepository implements NewsRepository {
       // Rollback: delete from S3 if DB write fails
       await deleteFromS3(fileName);
       if (err instanceof RouteError) throw err;
-      throw routeError(500, errorMessage(err, "Erro ao salvar notícia."));
+      throw routeError(500, errorMessage(err, 'Erro ao salvar notícia.'));
     }
   }
 
   /** Delete a news item (soft delete + remove image from S3) */
   async remove(id: string | number): Promise<{ success: true }> {
     if (!Number.isInteger(Number(id)) || Number(id) < 1) {
-      throw routeError(400, "ID inválido.");
+      throw routeError(400, 'ID inválido.');
     }
 
     try {
@@ -83,7 +82,7 @@ export class PostgresNewsRepository implements NewsRepository {
       });
 
       if (!row) {
-        throw routeError(404, "Notícia não encontrada.");
+        throw routeError(404, 'Notícia não encontrada.');
       }
 
       await prisma.news.update({
@@ -98,7 +97,7 @@ export class PostgresNewsRepository implements NewsRepository {
       return { success: true };
     } catch (err) {
       if (err instanceof RouteError) throw err;
-      throw routeError(500, errorMessage(err, "Erro ao excluir."));
+      throw routeError(500, errorMessage(err, 'Erro ao excluir.'));
     }
   }
 
@@ -108,7 +107,7 @@ export class PostgresNewsRepository implements NewsRepository {
       const rows = await prisma.news.findMany({
         where: { active: true },
         select: { id: true, title: true, image_url: true },
-        orderBy: { created_at: "desc" },
+        orderBy: { created_at: 'desc' },
         take: NEWS_MAX_ACTIVE,
       });
 

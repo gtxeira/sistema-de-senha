@@ -1,20 +1,20 @@
-"use client"
+'use client';
 
-import { Label } from "@/components/ui/label"
+import { Label } from '@/components/ui/label';
 import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarInput,
-} from "@/components/ui/sidebar"
-import { SearchIcon } from "lucide-react"
+} from '@/components/ui/sidebar';
+import { SearchIcon } from 'lucide-react';
 
 export function SearchForm({
   value,
   onValueChange,
   ...props
-}: React.ComponentProps<"form"> & {
-  value: string
-  onValueChange: (value: string) => void
+}: React.ComponentProps<'form'> & {
+  value: string;
+  onValueChange: (value: string) => void;
 }) {
   return (
     <form {...props} onSubmit={(e) => e.preventDefault()}>
@@ -34,5 +34,5 @@ export function SearchForm({
         </SidebarGroupContent>
       </SidebarGroup>
     </form>
-  )
+  );
 }

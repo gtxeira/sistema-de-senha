@@ -1,18 +1,18 @@
 // ── Tipos de domínio ──────────────────────────────────────────
 // Chaves válidas das entidades do sistema. Servem de fonte única para os
 // unions usados por repositórios, rotas e componentes.
-export type SectorId = "farmacia" | "recepcao";
+export type SectorId = 'farmacia' | 'recepcao';
 /**
  * Escopo de setor selecionado numa tela: um setor real ou o pseudo-setor
  * "Todos" (`ALL_SECTORS`) — a visão agregada de todos os setores, que só
  * faz sentido para quem tem `setores.todos.ver`.
  */
 export type SectorScope = SectorId | typeof ALL_SECTORS;
-export type RoleKey = "admin" | "attendant";
-export type CallType = "normal" | "preferencial" | "preferential";
+export type RoleKey = 'admin' | 'attendant';
+export type CallType = 'normal' | 'preferencial' | 'preferential';
 // Tipo da sequência (banco) — diferente de `callType`: o banco guarda a
 // grafia "preferencial" enquanto o cliente envia "preferential".
-export type SequenceType = "normal" | "preferencial";
+export type SequenceType = 'normal' | 'preferencial';
 
 export interface SectorInfo {
   readonly id: SectorScope;
@@ -22,11 +22,11 @@ export interface SectorInfo {
 
 // ── Setores ──
 export const SECTORS = {
-  farmacia: { id: "farmacia", name: "Farmácia", shortName: "FARMÁCIA" },
-  recepcao: { id: "recepcao", name: "Recepção Saúde", shortName: "RECEPÇÃO" },
+  farmacia: { id: 'farmacia', name: 'Farmácia', shortName: 'FARMÁCIA' },
+  recepcao: { id: 'recepcao', name: 'Recepção Saúde', shortName: 'RECEPÇÃO' },
 } as const satisfies Record<SectorId, SectorInfo>;
-export const DEFAULT_SECTOR = "farmacia";
-export const ALL_SECTORS = "all";
+export const DEFAULT_SECTOR = 'farmacia';
+export const ALL_SECTORS = 'all';
 
 /**
  * Info do pseudo-setor "Todos". Ele não existe no banco — é a visão
@@ -36,8 +36,8 @@ export const ALL_SECTORS = "all";
  */
 export const ALL_SECTORS_INFO: SectorInfo = {
   id: ALL_SECTORS,
-  name: "Todos os Setores",
-  shortName: "TODOS",
+  name: 'Todos os Setores',
+  shortName: 'TODOS',
 };
 
 /**
@@ -50,7 +50,7 @@ export const ALL_SECTORS_INFO: SectorInfo = {
  * costuma vir de `request.json()`.
  */
 export function isSectorId(value: unknown): value is SectorId {
-  return typeof value === "string" && Object.hasOwn(SECTORS, value);
+  return typeof value === 'string' && Object.hasOwn(SECTORS, value);
 }
 
 /** Lookup tolerante: `undefined` para setor inválido, em vez de estourar. */
@@ -75,32 +75,33 @@ export function isSectorScope(value: unknown): value is SectorScope {
 }
 
 // ── Roles ──
-export const ROLES = { ADMIN: "admin", ATTENDANT: "attendant" } as const satisfies Record<
-  string,
-  RoleKey
->;
+export const ROLES = {
+  ADMIN: 'admin',
+  ATTENDANT: 'attendant',
+} as const satisfies Record<string, RoleKey>;
 export const DEFAULT_ROLE = ROLES.ATTENDANT;
 
 // ── Tipos de chamada ──
 export const CALL_TYPES = {
-  NORMAL: "normal",
-  PREFERENCIAL: "preferencial",
-  PREFERENTIAL: "preferential",
+  NORMAL: 'normal',
+  PREFERENCIAL: 'preferencial',
+  PREFERENTIAL: 'preferential',
 } as const satisfies Record<string, CallType>;
 export const TYPE_FIELDS = {
-  preferencial: "priorityCurrent",
-  preferential: "priorityCurrent",
-  normal: "normalCurrent",
+  preferencial: 'priorityCurrent',
+  preferential: 'priorityCurrent',
+  normal: 'normalCurrent',
 } as const satisfies Record<CallType, string>;
 export const TYPE_LABELS = {
-  preferencial: "Preferencial",
-  preferential: "Preferencial",
-  normal: "Normal",
+  preferencial: 'Preferencial',
+  preferential: 'Preferencial',
+  normal: 'Normal',
 } as const satisfies Record<CallType, string>;
-export const TYPE_PREFIXES = { preferencial: "P", preferential: "P", normal: "N" } as const satisfies Record<
-  CallType,
-  string
->;
+export const TYPE_PREFIXES = {
+  preferencial: 'P',
+  preferential: 'P',
+  normal: 'N',
+} as const satisfies Record<CallType, string>;
 
 // ── Fila ──
 export const MIN_QUEUE_NUMBER = 0;
@@ -135,15 +136,19 @@ export const SSE_BACKOFF_MAX = 30000;
 export const MAX_SSE_CONNECTIONS_PER_SECTOR = 50;
 
 // ── Eventos SSE ──
-export const SSE_EVENT_TYPES = { CALL: "call", RECALL: "recall", RESET: "reset" } as const;
+export const SSE_EVENT_TYPES = {
+  CALL: 'call',
+  RECALL: 'recall',
+  RESET: 'reset',
+} as const;
 
 // ── Auth ──
 export const USERNAME_REGEX = /^[a-z0-9]+(?:[._][a-z0-9]+)*$/;
-export const USERNAME_REGEX_LABEL = "Use o formato nome.sobrenome";
+export const USERNAME_REGEX_LABEL = 'Use o formato nome.sobrenome';
 export const BCRYPT_SALT_ROUNDS = 10;
-export const EMAIL_DOMAIN = "@central-atendimento.local";
-export const DEFAULT_INITIALS = "AT";
-export const DEFAULT_NAME = "Atendente";
+export const EMAIL_DOMAIN = '@central-atendimento.local';
+export const DEFAULT_INITIALS = 'AT';
+export const DEFAULT_NAME = 'Atendente';
 
 // Sessão em dois níveis:
 // - access token = JWT de sessão do Auth.js, validade de 15min (rotaciona a
@@ -159,41 +164,41 @@ export const REFRESH_TOKEN_MAX_AGE = 12 * 60 * 60; // segundos: janela absoluta 
 // graça o reuso NÃO revoga a família — apenas sinaliza "outro fluxo já
 // renovou". Fora da graça é tratado como roubo de token.
 export const REFRESH_REUSE_GRACE = 10; // segundos
-export const REFRESH_COOKIE_NAME = "app.refresh-token";
+export const REFRESH_COOKIE_NAME = 'app.refresh-token';
 // Rota de login — a página de sign-in do Auth.js.
 //
 // Vive no código (e não só em `pages.signIn`, no config do Auth.js) porque
 // o `proxy.ts` precisa dela em dois pontos: para não redirecionar o
 // usuário para a própria página de login (auto-loop) e para devolver quem
 // já está autenticado para a home.
-export const SIGN_IN_PATH = "/login";
+export const SIGN_IN_PATH = '/login';
 // Intervalo de renovação proativa no client (menor que PERMISSIONS_MAX_AGE
 // para que o refresh nunca fique stale com a aba aberta).
 export const SESSION_REFRESH_INTERVAL = 10 * 60 * 1000; // ms
 
 // ── Guichê ──
-export const DEFAULT_GUICHE = "none";
+export const DEFAULT_GUICHE = 'none';
 
 // ── Notícia ──
 export const NEWS_ALLOWED_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-  "image/avif",
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/avif',
 ];
 export const NEWS_MAX_FILE_SIZE = 5 * 1024 * 1024;
-export const NEWS_BUCKET = "news-images";
-export const NEWS_DIR = "public/news";
+export const NEWS_BUCKET = 'news-images';
+export const NEWS_DIR = 'public/news';
 export const NEWS_MAX_ACTIVE = 10;
 
 // ── Locale / Timezone ──
-export const LOCALE = "pt-BR";
-export const APP_TIMEZONE = "America/Sao_Paulo";
+export const LOCALE = 'pt-BR';
+export const APP_TIMEZONE = 'America/Sao_Paulo';
 export const SERVER_TIME_SYNC_INTERVAL = 60000; // 60s entre sincronizações com servidor
 
 // ── Draft ──
-export const DRAFT_PREFIX = "draft-";
+export const DRAFT_PREFIX = 'draft-';
 
 // ── Speech/TTS ──
 export const TTS_MAX_NUMBER = 1000;
@@ -215,47 +220,47 @@ export const TTS_PRE_SPEECH_PAUSE = 250;
 
 // ── Rotas ──
 export const API_ROUTES = {
-  QUEUE_CALL: "/api/queue/call",
-  QUEUE_RECENT: "/api/queue/recent",
-  QUEUE_EVENTS: "/api/queue/events",
-  QUEUE_SYNC: "/api/queue/sync",
-  QUEUE_RESET: "/api/queue/reset",
-  QUEUE_RECALL: "/api/queue/recall",
-  AUTH: "/api/auth",
-  LOGIN: "/login",
-  HOME: "/home",
-  TIME: "/api/time",
+  QUEUE_CALL: '/api/queue/call',
+  QUEUE_RECENT: '/api/queue/recent',
+  QUEUE_EVENTS: '/api/queue/events',
+  QUEUE_SYNC: '/api/queue/sync',
+  QUEUE_RESET: '/api/queue/reset',
+  QUEUE_RECALL: '/api/queue/recall',
+  AUTH: '/api/auth',
+  LOGIN: '/login',
+  HOME: '/home',
+  TIME: '/api/time',
 } as const;
 
 // ── Navegação ──
 export const NAV_ITEMS = [
-  { label: "Home", href: "/home", icon: "Home" },
-  { label: "Administração", href: "/admin", icon: "Settings", onlyAdmin: true },
-  { label: "Chamadas", href: "/painel", icon: "Monitor" },
-  { label: "Histórico", href: "/historico", icon: "History" },
+  { label: 'Home', href: '/home', icon: 'Home' },
+  { label: 'Administração', href: '/admin', icon: 'Settings', onlyAdmin: true },
+  { label: 'Chamadas', href: '/painel', icon: 'Monitor' },
+  { label: 'Histórico', href: '/historico', icon: 'History' },
 ];
 
 // ── Atalhos de teclado ──
 export const KEYBOARD_SHORTCUTS = {
-  INPUT_TAGS: ["INPUT", "SELECT", "TEXTAREA", "BUTTON"],
-  NORMAL_CALL: ["ArrowRight", "PageDown", "Enter", " "],
-  PRIORITY_CALL: ["ArrowLeft", "PageUp"],
-  RECALL: ["ArrowUp", "Home"],
+  INPUT_TAGS: ['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON'],
+  NORMAL_CALL: ['ArrowRight', 'PageDown', 'Enter', ' '],
+  PRIORITY_CALL: ['ArrowLeft', 'PageUp'],
+  RECALL: ['ArrowUp', 'Home'],
 };
 
 // ── Chaves de armazenamento ──
-export const QUEUE_KEY = "saude-queue-state";
+export const QUEUE_KEY = 'saude-queue-state';
 // Último marcador de reset visto por setor. Persistido para que um reload
 // consiga comparar com o servidor — sem isso, um monitor que ficou desligado
 // durante o reset adotaria o marcador novo e jamais invalidaria a fila velha.
-export const RESET_MARKER_KEY = "saude-queue-reset-markers";
-export const SESSION_KEY = "saude-attendant-session";
+export const RESET_MARKER_KEY = 'saude-queue-reset-markers';
+export const SESSION_KEY = 'saude-attendant-session';
 
 // ── Guichês ──
 export const GUICHES = [
-  { id: "none", name: "Sem guichê" },
-  { id: "guiche-1", name: "Guichê 1" },
-  { id: "guiche-2", name: "Guichê 2" },
-  { id: "guiche-3", name: "Guichê 3" },
-  { id: "guiche-4", name: "Guichê 4" },
+  { id: 'none', name: 'Sem guichê' },
+  { id: 'guiche-1', name: 'Guichê 1' },
+  { id: 'guiche-2', name: 'Guichê 2' },
+  { id: 'guiche-3', name: 'Guichê 3' },
+  { id: 'guiche-4', name: 'Guichê 4' },
 ];

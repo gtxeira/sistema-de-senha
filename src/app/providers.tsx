@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useEffect, type ReactNode } from "react";
-import { Toaster } from "sonner";
-import { startSessionRefresh } from "@/client/session/session-refresh";
-import { readCachedSession, useSessionStore } from "@/stores/use-session-store";
+import { useEffect, type ReactNode } from 'react';
+import { Toaster } from 'sonner';
+import { startSessionRefresh } from '@/client/session/session-refresh';
+import { readCachedSession, useSessionStore } from '@/stores/use-session-store';
 
 export default function Providers({ children }: { children: ReactNode }) {
   // Access token de 15min + refresh de 12h: mantém a sessão viva com a aba

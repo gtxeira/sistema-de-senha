@@ -1,12 +1,17 @@
-import "server-only";
+import 'server-only';
 
-import NextAuth from "next-auth";
-import Credentials from "next-auth/providers/credentials";
-import bcrypt from "bcryptjs";
-import { USERNAME_REGEX, DEFAULT_GUICHE, ACCESS_TOKEN_MAX_AGE, SIGN_IN_PATH } from "@/shared/constants";
-import { computeEffectivePermissions } from "@/shared/permissions";
-import { initials } from "@/shared/format";
-import type { PrismaClient } from "@/server/generated/prisma/client";
+import NextAuth from 'next-auth';
+import Credentials from 'next-auth/providers/credentials';
+import bcrypt from 'bcryptjs';
+import {
+  USERNAME_REGEX,
+  DEFAULT_GUICHE,
+  ACCESS_TOKEN_MAX_AGE,
+  SIGN_IN_PATH,
+} from '@/shared/constants';
+import { computeEffectivePermissions } from '@/shared/permissions';
+import { initials } from '@/shared/format';
+import type { PrismaClient } from '@/server/generated/prisma/client';
 
 // Nome fixo do cookie de sessão (e `salt` do JWE do Auth.js). Fixá-lo no
 // config garante que o `encode()` da rota de refresh derive a mesma chave
@@ -14,7 +19,7 @@ import type { PrismaClient } from "@/server/generated/prisma/client";
 // (prefixo __Secure- dependente da URL) os dois poderiam divergir.
 // O prefixo __Secure- só impede cookies injetados por canal inseguro; aqui
 // o cookie continua httpOnly + secure (a flag segue a URL da request).
-export const SESSION_COOKIE_NAME = "authjs.session-token";
+export const SESSION_COOKIE_NAME = 'authjs.session-token';
 
 // O client gerado pelo Prisma 7 importa `node:path`/`node:url`, que não existem no
 // Edge Runtime. `src/proxy.ts` importa este módulo antes de cada request: aqui dentro
@@ -30,13 +35,13 @@ let prismaPromise: Promise<PrismaClient> | undefined;
 
 function getPrisma(): Promise<PrismaClient> {
   prismaPromise ??= Promise.all([
-    import("@/server/generated/prisma/client"),
-    import("@prisma/adapter-pg"),
+    import('@/server/generated/prisma/client'),
+    import('@prisma/adapter-pg'),
   ]).then(
     ([{ PrismaClient }, { PrismaPg }]) =>
       new PrismaClient({
         adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
-      })
+      }),
   );
   return prismaPromise;
 }
@@ -47,7 +52,7 @@ function getPrisma(): Promise<PrismaClient> {
  * `String()` — cobre as duas formas sem stringificar um objeto.
  */
 function asCredential(value: unknown): string {
-  return typeof value === "string" ? value : "";
+  return typeof value === 'string' ? value : '';
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -68,8 +73,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
       credentials: {
-        username: { label: "Usuário", type: "text" },
-        password: { label: "Senha", type: "password" },
+        username: { label: 'Usuário', type: 'text' },
+        password: { label: 'Senha', type: 'password' },
       },
       async authorize(credentials) {
         const username = asCredential(credentials?.username)
@@ -137,7 +142,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       user.permissions = token.permissions ?? [];
       user.authAt = token.authAt;
       user.permsAt = token.permsAt;
-      user.initials = user.name ? initials(user.name) : "";
+      user.initials = user.name ? initials(user.name) : '';
       return session;
     },
     authorized({ auth }) {

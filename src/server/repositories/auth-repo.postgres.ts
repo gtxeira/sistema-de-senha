@@ -1,8 +1,8 @@
-import "server-only";
+import 'server-only';
 
-import { prisma } from "@/server/db/prisma-client";
-import { routeError } from "@/server/http/errors";
-import type { AuthRepository } from "./types";
+import { prisma } from '@/server/db/prisma-client';
+import { routeError } from '@/server/http/errors';
+import type { AuthRepository } from './types';
 
 /**
  * Data access for authentication-adjacent lookups.
@@ -20,7 +20,7 @@ export class PostgresAuthRepository implements AuthRepository {
     });
 
     if (!user) {
-      throw routeError(404, "Usuário não encontrado");
+      throw routeError(404, 'Usuário não encontrado');
     }
 
     return user.email;

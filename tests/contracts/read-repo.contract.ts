@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import type { ReadRepository } from "@/server/repositories/types";
+import { beforeEach, describe, expect, it } from 'vitest';
+import type { ReadRepository } from '@/server/repositories/types';
 
 /**
  * Linha de entrada para o seed de chamadas — mais solta que o registro gravado:
@@ -28,9 +28,9 @@ export interface ReadRepoContext {
 export function readRepoContract(
   createRepo: () => ReadRepoContext | Promise<ReadRepoContext>,
 ): void {
-  describe("ReadRepository contract", () => {
+  describe('ReadRepository contract', () => {
     let repo: ReadRepository;
-    let seedCalls: ReadRepoContext["seedCalls"];
+    let seedCalls: ReadRepoContext['seedCalls'];
 
     beforeEach(async () => {
       const ctx = await createRepo();
@@ -38,12 +38,12 @@ export function readRepoContract(
       seedCalls = ctx.seedCalls;
     });
 
-    describe("getStats()", () => {
-      it("retorna estrutura válida com campos obrigatórios", async () => {
+    describe('getStats()', () => {
+      it('retorna estrutura válida com campos obrigatórios', async () => {
         const stats = await repo.getStats();
-        expect(stats).toHaveProperty("days");
-        expect(stats).toHaveProperty("summary");
-        expect(stats).toHaveProperty("calls");
+        expect(stats).toHaveProperty('days');
+        expect(stats).toHaveProperty('summary');
+        expect(stats).toHaveProperty('calls');
         expect(stats.pagination).toEqual({
           page: 1,
           pageSize: 20,
@@ -52,11 +52,11 @@ export function readRepoContract(
         });
       });
 
-      it("summary.total é soma de preferencial + normal", async () => {
+      it('summary.total é soma de preferencial + normal', async () => {
         await seedCalls([
-          { sector: "farmacia", type: "normal", number: 1 },
-          { sector: "farmacia", type: "preferencial", number: 1 },
-          { sector: "recepcao", type: "normal", number: 1 },
+          { sector: 'farmacia', type: 'normal', number: 1 },
+          { sector: 'farmacia', type: 'preferencial', number: 1 },
+          { sector: 'recepcao', type: 'normal', number: 1 },
         ]);
         const stats = await repo.getStats();
         expect(stats.summary.total).toBe(
@@ -64,23 +64,23 @@ export function readRepoContract(
         );
       });
 
-      it("filtra por sector quando informado", async () => {
+      it('filtra por sector quando informado', async () => {
         await seedCalls([
-          { sector: "farmacia", type: "normal", number: 1 },
-          { sector: "recepcao", type: "normal", number: 1 },
-          { sector: "recepcao", type: "normal", number: 2 },
+          { sector: 'farmacia', type: 'normal', number: 1 },
+          { sector: 'recepcao', type: 'normal', number: 1 },
+          { sector: 'recepcao', type: 'normal', number: 2 },
         ]);
-        const stats = await repo.getStats({ sector: "farmacia" });
+        const stats = await repo.getStats({ sector: 'farmacia' });
         expect(stats.summary.total).toBe(1);
       });
 
-      it("pagina no servidor: pageSize limita e total conta a janela", async () => {
+      it('pagina no servidor: pageSize limita e total conta a janela', async () => {
         // `created_at` distintos: em empate a ordem depende do `id` (uuid no
         // Postgres, string sequencial no in-memory) — o contrato não afirma
         // ordem nesse caso.
         const calls = Array.from({ length: 5 }, (_, i) => ({
-          sector: "farmacia",
-          type: "normal",
+          sector: 'farmacia',
+          type: 'normal',
           number: i + 1,
           created_at: `2026-10-22T1${i}:00:00.000Z`,
         }));
@@ -89,7 +89,7 @@ export function readRepoContract(
         const stats = await repo.getStats({
           days: 30,
           pageSize: 2,
-          now: new Date("2026-10-22T23:00:00.000Z"),
+          now: new Date('2026-10-22T23:00:00.000Z'),
         });
 
         expect(stats.calls).toHaveLength(2);
@@ -106,17 +106,17 @@ export function readRepoContract(
           days: 30,
           pageSize: 2,
           page: 2,
-          now: new Date("2026-10-22T23:00:00.000Z"),
+          now: new Date('2026-10-22T23:00:00.000Z'),
         });
         expect(page2.pagination.page).toBe(2);
         expect(page2.calls.map((c) => c.number)).toEqual([3, 2]);
       });
 
-      it("página além do fim é clampada na última", async () => {
+      it('página além do fim é clampada na última', async () => {
         await seedCalls(
           Array.from({ length: 3 }, (_, i) => ({
-            sector: "farmacia",
-            type: "normal",
+            sector: 'farmacia',
+            type: 'normal',
             number: i + 1,
             created_at: `2026-10-22T1${i}:00:00.000Z`,
           })),
@@ -126,7 +126,7 @@ export function readRepoContract(
           days: 30,
           pageSize: 2,
           page: 99,
-          now: new Date("2026-10-22T23:00:00.000Z"),
+          now: new Date('2026-10-22T23:00:00.000Z'),
         });
 
         expect(stats.pagination.page).toBe(2);
@@ -134,7 +134,7 @@ export function readRepoContract(
         expect(stats.calls).toHaveLength(1);
       });
 
-      it("normaliza pageSize (default 20, teto 100)", async () => {
+      it('normaliza pageSize (default 20, teto 100)', async () => {
         const fallback = await repo.getStats();
         expect(fallback.pagination.pageSize).toBe(20);
 
@@ -142,17 +142,32 @@ export function readRepoContract(
         expect(capped.pagination.pageSize).toBe(100);
       });
 
-      it("filtro de tipo afeta a tabela, mas não o resumo", async () => {
+      it('filtro de tipo afeta a tabela, mas não o resumo', async () => {
         await seedCalls([
-          { sector: "farmacia", type: "normal", number: 1, created_at: "2026-10-22T13:00:00.000Z" },
-          { sector: "farmacia", type: "preferencial", number: 1, created_at: "2026-10-22T14:00:00.000Z" },
-          { sector: "farmacia", type: "preferencial", number: 2, created_at: "2026-10-22T15:00:00.000Z" },
+          {
+            sector: 'farmacia',
+            type: 'normal',
+            number: 1,
+            created_at: '2026-10-22T13:00:00.000Z',
+          },
+          {
+            sector: 'farmacia',
+            type: 'preferencial',
+            number: 1,
+            created_at: '2026-10-22T14:00:00.000Z',
+          },
+          {
+            sector: 'farmacia',
+            type: 'preferencial',
+            number: 2,
+            created_at: '2026-10-22T15:00:00.000Z',
+          },
         ]);
 
         const stats = await repo.getStats({
           days: 30,
-          type: "preferencial",
-          now: new Date("2026-10-22T23:00:00.000Z"),
+          type: 'preferencial',
+          now: new Date('2026-10-22T23:00:00.000Z'),
         });
 
         // Cards: janela inteira, sem o filtro.
@@ -162,40 +177,50 @@ export function readRepoContract(
 
         // Tabela: só o tipo pedido.
         expect(stats.pagination.total).toBe(2);
-        expect(stats.calls.every((c) => c.type === "preferencial")).toBe(true);
+        expect(stats.calls.every((c) => c.type === 'preferencial')).toBe(true);
         expect(stats.calls.map((c) => c.number)).toEqual([2, 1]);
       });
 
-      it("calls têm formato correto", async () => {
-        await seedCalls([{ sector: "farmacia", type: "normal", number: 1 }]);
+      it('calls têm formato correto', async () => {
+        await seedCalls([{ sector: 'farmacia', type: 'normal', number: 1 }]);
         const stats = await repo.getStats();
         if (stats.calls.length > 0) {
           const call = stats.calls[0];
-          expect(call).toHaveProperty("id");
-          expect(call).toHaveProperty("number");
-          expect(call).toHaveProperty("type");
+          expect(call).toHaveProperty('id');
+          expect(call).toHaveProperty('number');
+          expect(call).toHaveProperty('type');
           // O INSTANTE (ISO), não "HH:mm": um horário sem data não diz de
           // que dia a chamada foi.
-          expect(call).toHaveProperty("createdAt");
-          expect(typeof call.number).toBe("number");
+          expect(call).toHaveProperty('createdAt');
+          expect(typeof call.number).toBe('number');
           expect(Number.isNaN(Date.parse(call.createdAt))).toBe(false);
         }
       });
 
-      it("summary.today conta o dia BRT, não o dia UTC", async () => {
+      it('summary.today conta o dia BRT, não o dia UTC', async () => {
         // 02:30 UTC = 23:30 do dia ANTERIOR em BRT (UTC−03:00).
-        const yesterdayBrt = "2026-10-21T02:30:00.000Z";
+        const yesterdayBrt = '2026-10-21T02:30:00.000Z';
         // 13:00 UTC = 10:00 de HOJE em BRT.
-        const todayBrt = "2026-10-22T13:00:00.000Z";
+        const todayBrt = '2026-10-22T13:00:00.000Z';
 
         await seedCalls([
-          { sector: "farmacia", type: "normal", number: 1, created_at: yesterdayBrt },
-          { sector: "farmacia", type: "normal", number: 2, created_at: todayBrt },
+          {
+            sector: 'farmacia',
+            type: 'normal',
+            number: 1,
+            created_at: yesterdayBrt,
+          },
+          {
+            sector: 'farmacia',
+            type: 'normal',
+            number: 2,
+            created_at: todayBrt,
+          },
         ]);
 
         const stats = await repo.getStats({
           days: 30,
-          now: new Date("2026-10-22T16:00:00.000Z"),
+          now: new Date('2026-10-22T16:00:00.000Z'),
         });
 
         // Só a chamada das 13:00 UTC pertence a "hoje" (BRT).
@@ -205,17 +230,27 @@ export function readRepoContract(
 
       it("a janela de 'Hoje' é o dia-calendário BRT", async () => {
         // 02:30 UTC = 23:30 de ONTEM em BRT → fora da janela de "Hoje".
-        const yesterdayBrt = "2026-10-21T02:30:00.000Z";
-        const todayBrt = "2026-10-22T13:00:00.000Z";
+        const yesterdayBrt = '2026-10-21T02:30:00.000Z';
+        const todayBrt = '2026-10-22T13:00:00.000Z';
 
         await seedCalls([
-          { sector: "farmacia", type: "normal", number: 1, created_at: yesterdayBrt },
-          { sector: "farmacia", type: "normal", number: 2, created_at: todayBrt },
+          {
+            sector: 'farmacia',
+            type: 'normal',
+            number: 1,
+            created_at: yesterdayBrt,
+          },
+          {
+            sector: 'farmacia',
+            type: 'normal',
+            number: 2,
+            created_at: todayBrt,
+          },
         ]);
 
         const stats = await repo.getStats({
           days: 1,
-          now: new Date("2026-10-22T16:00:00.000Z"),
+          now: new Date('2026-10-22T16:00:00.000Z'),
         });
 
         expect(stats.summary.total).toBe(1);
@@ -223,13 +258,13 @@ export function readRepoContract(
         expect(stats.calls[0].number).toBe(2);
       });
 
-      it("`since` é inclusivo e `until` é exclusivo", async () => {
-        const t0 = "2026-10-22T13:00:00.000Z";
-        const t1 = "2026-10-22T14:00:00.000Z";
+      it('`since` é inclusivo e `until` é exclusivo', async () => {
+        const t0 = '2026-10-22T13:00:00.000Z';
+        const t1 = '2026-10-22T14:00:00.000Z';
 
         await seedCalls([
-          { sector: "farmacia", type: "normal", number: 1, created_at: t0 },
-          { sector: "farmacia", type: "normal", number: 2, created_at: t1 },
+          { sector: 'farmacia', type: 'normal', number: 1, created_at: t0 },
+          { sector: 'farmacia', type: 'normal', number: 2, created_at: t1 },
         ]);
 
         const stats = await repo.getStats({
@@ -237,7 +272,7 @@ export function readRepoContract(
           // Exclusivo: a chamada DAS 14:00 não entra — é o limite da
           // meia-noite BRT do dia seguinte, que não pertence ao dia.
           until: new Date(t1),
-          now: new Date("2026-10-22T16:00:00.000Z"),
+          now: new Date('2026-10-22T16:00:00.000Z'),
         });
 
         expect(stats.summary.total).toBe(1);
@@ -246,18 +281,18 @@ export function readRepoContract(
       });
 
       it("`until: null` significa 'sem limite superior'", async () => {
-        const t0 = "2026-10-22T13:00:00.000Z";
-        const t1 = "2026-10-22T14:00:00.000Z";
+        const t0 = '2026-10-22T13:00:00.000Z';
+        const t1 = '2026-10-22T14:00:00.000Z';
 
         await seedCalls([
-          { sector: "farmacia", type: "normal", number: 1, created_at: t0 },
-          { sector: "farmacia", type: "normal", number: 2, created_at: t1 },
+          { sector: 'farmacia', type: 'normal', number: 1, created_at: t0 },
+          { sector: 'farmacia', type: 'normal', number: 2, created_at: t1 },
         ]);
 
         const stats = await repo.getStats({
           since: new Date(t0),
           until: null,
-          now: new Date("2026-10-22T16:00:00.000Z"),
+          now: new Date('2026-10-22T16:00:00.000Z'),
         });
 
         expect(stats.summary.total).toBe(2);
