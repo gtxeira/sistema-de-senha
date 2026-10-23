@@ -26,7 +26,7 @@ function fakeUser(overrides: Partial<User> = {}): User {
     permsAt: 1,
     sector: 'farmacia',
     ...overrides,
-  } as User;
+  };
 }
 
 beforeEach(() => {

@@ -69,8 +69,8 @@ if (imgA.width !== imgB.width || imgA.height !== imgB.height) {
 }
 
 /* ── 2. Diferença nas métricas (caixas + estilos computados) ── */
-const metA: Item[] = JSON.parse(ler(antes, 'json').toString('utf8'));
-const metB: Item[] = JSON.parse(ler(depois, 'json').toString('utf8'));
+const metA: Item[] = JSON.parse(ler(antes, 'json').toString('utf8')) as Item[];
+const metB: Item[] = JSON.parse(ler(depois, 'json').toString('utf8')) as Item[];
 
 const GEO = new Set(['x', 'y', 'w', 'h']);
 const IGNORAR = new Set(['i', 'sel']); // sel muda na migração (classes novas)

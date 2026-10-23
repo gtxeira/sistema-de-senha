@@ -18,7 +18,7 @@ export function formatNumberString(num: number, type: CallType): string {
 }
 
 /** Número cru zero-padded, sem prefixo (`001`), com o teto da fila. */
-export function formatQueueNumber(num?: null | undefined | number): string {
+export function formatQueueNumber(num?: null | number): string {
   if (!num || num <= 0) return '---';
   if (num >= MAX_QUEUE_NUMBER + 1) return String(MAX_QUEUE_NUMBER);
   return String(num).padStart(3, '0');
@@ -28,7 +28,7 @@ export function formatQueueNumber(num?: null | undefined | number): string {
  * Normaliza o tipo recebido na borda para o par
  * `sequenceType` (banco) / `callType` (wire).
  */
-export function normalizeCallType(type?: undefined | string): {
+export function normalizeCallType(type?: string): {
   callType: CallType;
   sequenceType: SequenceType;
 } {

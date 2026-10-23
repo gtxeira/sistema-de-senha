@@ -37,7 +37,7 @@ export async function deleteFromS3(key: string): Promise<void> {
  * @returns The object key, or null if not an S3 URL
  */
 export function extractKeyFromUrl(
-  imageUrl?: null | undefined | string,
+  imageUrl?: null | string,
 ): null | string {
   const publicUrl = getS3PublicUrl();
   if (!imageUrl || !publicUrl) return null;

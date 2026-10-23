@@ -120,4 +120,4 @@ main()
     console.error('Erro no seed:', error);
     process.exit(1);
   })
-  .finally(() => prisma.$disconnect());
+  .finally(() => { void prisma.$disconnect(); });

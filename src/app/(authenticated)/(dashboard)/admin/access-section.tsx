@@ -477,7 +477,7 @@ export function AccessSection() {
 
   return (
     <section className={sectionStyle}>
-      <Tabs value={tab} onValueChange={(v) => setTab(v)} className="w-full">
+      <Tabs value={tab} onValueChange={setTab} className="w-full">
         <div className={sectionTitleStyle}>
           <div>
             <p className={sectionEyebrowStyle}>ACESSO</p>
