@@ -1,31 +1,33 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { CallType } from '@/shared/constants';
-import {
-  SECTORS,
-  GUICHES,
-  QUEUE_KEY,
-  formatQueueNumber,
-  nextQueueNumber,
-  getInitialState,
-  readQueueState,
-  saveQueueState,
-  invalidateQueueState,
-  normalizeQueue,
-  clearHistoryFromNewDay,
-  cleanHistory,
-  reconcileQueueFromCalls,
-  subscribeQueue,
-  withQueueLock,
-  getQueueSnapshot,
-  NO_PASSWORD,
-} from '@/client/queue/queue';
-import { addDays, dayKey as dayKeyBrt, startOfDay } from '@/shared/time';
 import type {
   CurrentPassword,
   QueueEntry,
   QueueHistoryEntry,
   QueueState,
 } from '@/client/queue/queue';
+import type { CallType } from '@/shared/constants';
+
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import {
+  cleanHistory,
+  clearHistoryFromNewDay,
+  formatQueueNumber,
+  getInitialState,
+  getQueueSnapshot,
+  GUICHES,
+  invalidateQueueState,
+  nextQueueNumber,
+  NO_PASSWORD,
+  normalizeQueue,
+  QUEUE_KEY,
+  readQueueState,
+  reconcileQueueFromCalls,
+  saveQueueState,
+  SECTORS,
+  subscribeQueue,
+  withQueueLock,
+} from '@/client/queue/queue';
+import { addDays, dayKey as dayKeyBrt, startOfDay } from '@/shared/time';
 
 /** Entrada de histórico pronta — `type`/`time` são obrigatórios no tipo. */
 const call = (
@@ -91,7 +93,7 @@ describe('nextQueueNumber', () => {
   it('trata valor ausente como 0 (primeira senha = 000)', () => {
     expect(nextQueueNumber()).toBe(0);
     expect(nextQueueNumber(null)).toBe(0);
-    expect(nextQueueNumber(undefined)).toBe(0);
+    expect(nextQueueNumber()).toBe(0);
   });
 });
 
@@ -132,7 +134,7 @@ describe('getInitialState', () => {
 
 describe('normalizeQueue', () => {
   it('preenche defaults (null = sem senha) quando faltam campos', () => {
-    expect(normalizeQueue(undefined)).toEqual({
+    expect(normalizeQueue()).toEqual({
       normalCurrent: null,
       priorityCurrent: null,
       history: [],
@@ -441,7 +443,7 @@ function seedSector(
 
 describe('cleanHistory', () => {
   it('devolve [] para entrada não-array', () => {
-    expect(cleanHistory(undefined)).toEqual([]);
+    expect(cleanHistory()).toEqual([]);
     expect(cleanHistory(untypedJson<QueueHistoryEntry[]>('"nada"'))).toEqual(
       [],
     );
@@ -592,7 +594,7 @@ describe('reconcileQueueFromCalls', () => {
   it('aceita um retrato ausente (undefined) como vazio', () => {
     seedSector('farmacia', { normalCurrent: 42, history: [call(42)] });
 
-    reconcileQueueFromCalls('farmacia', undefined);
+    reconcileQueueFromCalls('farmacia');
 
     expect(readQueueState().farmacia.normalCurrent).toBeNull();
   });

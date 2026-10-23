@@ -1,8 +1,14 @@
 'use client';
 
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
+import type { User } from 'next-auth';
+import type {
+  ApiErrorBody,
+  NewsCreateBody,
+  NewsListBody,
+  QueueSyncBody,
+} from '@/shared/types/api';
+import type { NewsItem } from '@/shared/types/domain';
+
 import {
   AlertTriangle,
   ImagePlus,
@@ -11,7 +17,18 @@ import {
   Save,
   Trash2,
 } from 'lucide-react';
-import type { User } from 'next-auth';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { toast } from 'sonner';
+
+import { AccessSection } from '@/app/(authenticated)/(dashboard)/admin/access-section';
+import {
+  sectionEyebrowStyle,
+  sectionHeadingStyle,
+  sectionStyle,
+  sectionTitleStyle,
+} from '@/app/(authenticated)/(dashboard)/admin/admin-styles';
 import {
   getQueueSnapshot,
   getServerQueueSnapshot,
@@ -20,37 +37,10 @@ import {
   saveQueueState,
   subscribeQueue,
 } from '@/client/queue/queue';
-import {
-  CALL_TYPES,
-  DEFAULT_SECTOR,
-  getSector,
-  MAX_QUEUE_NUMBER,
-  NO_PASSWORD,
-  SECTORS,
-} from '@/shared/constants';
-import type { NewsItem } from '@/shared/types/domain';
-import { errorMessage } from '@/shared/errors';
-import { readJson } from '@/shared/json';
-import type {
-  ApiErrorBody,
-  NewsCreateBody,
-  NewsListBody,
-  QueueSyncBody,
-} from '@/shared/types/api';
-import {
-  canAccessSector,
-  hasPermission,
-  NEWS_CREATE,
-  NEWS_DELETE,
-  QUEUE_RESET,
-  QUEUE_SYNC,
-  SCREEN_ADMIN_FILAS,
-  SCREEN_ADMIN_NOTICIAS,
-  SCREEN_ADMIN_USUARIOS,
-  SECTORS_MANAGE_ALL,
-} from '@/shared/permissions';
-import { useEffectiveSession } from '@/hooks/use-effective-session';
-import { toast } from 'sonner';
+import { cn } from '@/client/utils';
+import { FilterGroup } from '@/components/filter-group';
+import { PageHeader } from '@/components/page-header';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -63,7 +53,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   Select,
   SelectContent,
@@ -73,16 +62,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { FilterGroup } from '@/components/filter-group';
+import { useEffectiveSession } from '@/hooks/use-effective-session';
 import {
-  sectionEyebrowStyle,
-  sectionHeadingStyle,
-  sectionStyle,
-  sectionTitleStyle,
-} from '@/app/(authenticated)/(dashboard)/admin/admin-styles';
-import { AccessSection } from '@/app/(authenticated)/(dashboard)/admin/access-section';
-import { cn } from '@/client/utils';
-import { PageHeader } from '@/components/page-header';
+  CALL_TYPES,
+  DEFAULT_SECTOR,
+  getSector,
+  MAX_QUEUE_NUMBER,
+  NO_PASSWORD,
+  SECTORS,
+} from '@/shared/constants';
+import { errorMessage } from '@/shared/errors';
+import { readJson } from '@/shared/json';
+import {
+  canAccessSector,
+  hasPermission,
+  NEWS_CREATE,
+  NEWS_DELETE,
+  QUEUE_RESET,
+  QUEUE_SYNC,
+  SCREEN_ADMIN_FILAS,
+  SCREEN_ADMIN_NOTICIAS,
+  SCREEN_ADMIN_USUARIOS,
+  SECTORS_MANAGE_ALL,
+} from '@/shared/permissions';
 
 /* ── classes locais desta tela (as comuns vêm de ./admin-styles) ── */
 
@@ -205,9 +207,9 @@ export default function AdminPage() {
      quando o usuário confirma. */
   const resetIsAll = resetPending === 'all';
   const resetLabel = resetPending
-    ? resetIsAll
+    ? (resetIsAll
       ? 'TODOS os setores (Farmácia e Recepção)'
-      : getSector(resetPending)?.name || resetPending
+      : getSector(resetPending)?.name || resetPending)
     : '';
 
   async function confirmReset() {
@@ -331,8 +333,8 @@ export default function AdminPage() {
       refreshNews((v) => v + 1);
       window.dispatchEvent(new Event('news-updated'));
       toast.success(`${created.length} notícia(s) salva(s) com sucesso.`);
-    } catch (err) {
-      toast.error(errorMessage(err, 'Não foi possível salvar as notícias.'));
+    } catch (error) {
+      toast.error(errorMessage(error, 'Não foi possível salvar as notícias.'));
     } finally {
       setSavingNews(false);
     }
@@ -634,7 +636,7 @@ function SyncSection({ session, canSync }: SyncSectionProps) {
     setSyncing(true);
 
     try {
-      const num = parseInt(syncNumber, 10);
+      const num = Number.parseInt(syncNumber, 10);
       if (!num || num < 1 || num > MAX_QUEUE_NUMBER) {
         toast.error('Use um número entre 1 e 999.');
         return;
@@ -655,8 +657,8 @@ function SyncSection({ session, canSync }: SyncSectionProps) {
 
       toast.success(data.message || `Próxima senha: ${data.numberStr}`);
       setSyncNumber('');
-    } catch (err) {
-      toast.error(errorMessage(err, 'Erro ao sincronizar senha.'));
+    } catch (error) {
+      toast.error(errorMessage(error, 'Erro ao sincronizar senha.'));
     } finally {
       setSyncing(false);
     }
@@ -755,7 +757,7 @@ function SyncSection({ session, canSync }: SyncSectionProps) {
             <Button
               type="submit"
               disabled={syncing || !syncNumber}
-              className="mb-[1px] self-end"
+              className="mb-px self-end"
             >
               {syncing ? 'Sincronizando…' : 'Sincronizar'}
             </Button>

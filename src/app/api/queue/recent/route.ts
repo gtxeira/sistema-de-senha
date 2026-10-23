@@ -1,5 +1,5 @@
-import { getRecent } from '@/server/services/queue-service';
 import { assertSectorAccess, requireSession } from '@/server/http/api-auth';
+import { getRecent } from '@/server/services/queue-service';
 import { DEFAULT_RECENT_LIMIT, isSectorId } from '@/shared/constants';
 
 /**
@@ -19,7 +19,7 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const sector = searchParams.get('sector');
-  const limit = parseInt(
+  const limit = Number.parseInt(
     searchParams.get('limit') || String(DEFAULT_RECENT_LIMIT),
     10,
   );

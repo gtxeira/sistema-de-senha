@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
+
+import { requirePermission, requireSession } from '@/server/http/api-auth';
 import {
   createNews,
   listNews,
   removeNews,
 } from '@/server/services/news-service';
-import { requireSession, requirePermission } from '@/server/http/api-auth';
 import { errorMessage, errorStatus } from '@/shared/errors';
 import { NEWS_CREATE, NEWS_DELETE } from '@/shared/permissions';
 
@@ -53,10 +54,10 @@ export async function POST(request: Request) {
 
     const result = await createNews({ title, image });
     return NextResponse.json(result);
-  } catch (err) {
+  } catch (error) {
     return NextResponse.json(
-      { error: errorMessage(err, 'Erro ao salvar notícia') },
-      { status: errorStatus(err, 500) },
+      { error: errorMessage(error, 'Erro ao salvar notícia') },
+      { status: errorStatus(error, 500) },
     );
   }
 }
@@ -82,10 +83,10 @@ export async function DELETE(request: Request) {
 
     await removeNews(id);
     return NextResponse.json({ success: true });
-  } catch (err) {
+  } catch (error) {
     return NextResponse.json(
-      { error: errorMessage(err, 'Erro ao excluir notícia') },
-      { status: errorStatus(err, 500) },
+      { error: errorMessage(error, 'Erro ao excluir notícia') },
+      { status: errorStatus(error, 500) },
     );
   }
 }

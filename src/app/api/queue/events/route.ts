@@ -1,11 +1,12 @@
-import { eventManager } from '@/server/realtime/event-manager';
 import type { Unsubscribe } from '@/server/realtime/event-manager';
+
 import { assertSectorAccess, requireSession } from '@/server/http/api-auth';
+import { eventManager } from '@/server/realtime/event-manager';
 import {
+  isSectorId,
   KEEPALIVE_INTERVAL,
   MAX_SSE_CONNECTIONS_PER_SECTOR,
   SSE_EVENT_TYPES,
-  isSectorId,
 } from '@/shared/constants';
 
 /**

@@ -1,5 +1,9 @@
 'use client';
 
+import type { CallType, SectorId, SectorScope } from '@/shared/constants';
+
+import { Bell, CheckCircle2, RotateCcw } from 'lucide-react';
+import Link from 'next/link';
 import {
   useCallback,
   useEffect,
@@ -7,8 +11,7 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
-import Link from 'next/link';
-import { Bell, CheckCircle2, RotateCcw } from 'lucide-react';
+
 import {
   callNextNumber,
   formatQueueNumber,
@@ -21,25 +24,10 @@ import {
   saveQueueState,
   subscribeQueue,
 } from '@/client/queue/queue';
-import {
-  SECTORS,
-  CALL_TYPES,
-  TYPE_FIELDS,
-  TYPE_LABELS,
-  HISTORY_LIMITS,
-  PAGE_SIZES,
-  DEFAULT_SECTOR,
-  DEFAULT_NAME,
-  KEYBOARD_SHORTCUTS,
-  API_ROUTES,
-  isSectorId,
-  getSector,
-} from '@/shared/constants';
-import type { CallType, SectorId, SectorScope } from '@/shared/constants';
-import { SECTORS_VIEW_ALL, hasPermission } from '@/shared/permissions';
-import { useEffectiveSession } from '@/hooks/use-effective-session';
-import { useQueueEvents } from '@/hooks/use-queue-events';
-import { formatClock } from '@/shared/time';
+import { cn } from '@/client/utils';
+import { PageHeader } from '@/components/page-header';
+import { Pagination } from '@/components/pagination';
+import { SectorSelect } from '@/components/sector-select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -51,11 +39,25 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Pagination } from '@/components/pagination';
-import { SectorSelect } from '@/components/sector-select';
-import { PageHeader } from '@/components/page-header';
-import { cn } from '@/client/utils';
+import { useEffectiveSession } from '@/hooks/use-effective-session';
+import { useQueueEvents } from '@/hooks/use-queue-events';
 import { useSetDashboardLayoutInfo } from '@/hooks/use-set-dashboard-layout-info';
+import {
+  API_ROUTES,
+  CALL_TYPES,
+  DEFAULT_NAME,
+  DEFAULT_SECTOR,
+  getSector,
+  HISTORY_LIMITS,
+  isSectorId,
+  KEYBOARD_SHORTCUTS,
+  PAGE_SIZES,
+  SECTORS,
+  TYPE_FIELDS,
+  TYPE_LABELS,
+} from '@/shared/constants';
+import { hasPermission, SECTORS_VIEW_ALL } from '@/shared/permissions';
+import { formatClock } from '@/shared/time';
 
 const HISTORY_LIMIT = HISTORY_LIMITS.painel;
 const ITEMS_PER_PAGE = PAGE_SIZES.painel;

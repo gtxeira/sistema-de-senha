@@ -1,7 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { prisma } from '@/server/db/prisma-client';
-import type { SequenceType } from '@/shared/constants';
 import type { ReadRepository } from '@/server/repositories/types';
+import type { SequenceType } from '@/shared/constants';
+
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { prisma } from '@/server/db/prisma-client';
 import {
   readRepoContract,
   type SeedCall,

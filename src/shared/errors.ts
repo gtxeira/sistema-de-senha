@@ -56,8 +56,8 @@ export function isInvalidApiKeyError(error: unknown): boolean {
   const text =
     typeof message === 'string' && message !== ''
       ? message
-      : typeof error === 'string'
+      : (typeof error === 'string'
         ? error
-        : '';
+        : '');
   return /invalid api key/i.test(text);
 }

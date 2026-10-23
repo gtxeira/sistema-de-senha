@@ -1,4 +1,5 @@
-import { describe, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe } from 'vitest';
+
 import { prisma } from '@/server/db/prisma-client';
 import { queueRepoContract } from '../../contracts/queue-repo.contract';
 

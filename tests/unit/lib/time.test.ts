@@ -1,4 +1,6 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
+
+import { APP_TIMEZONE } from '@/shared/constants';
 import {
   addDays,
   dayKey,
@@ -12,7 +14,6 @@ import {
   formatLongDate,
   startOfDay,
 } from '@/shared/time';
-import { APP_TIMEZONE } from '@/shared/constants';
 
 /**
  * O sistema inteiro trabalha em America/Sao_Paulo (UTC−03:00).
@@ -45,7 +46,7 @@ describe('dayKey — o dia é o do Brasil, não o do UTC', () => {
   it('dayKeyOrNull devolve null em vez de lançar', () => {
     expect(dayKeyOrNull('lixo')).toBeNull();
     expect(dayKeyOrNull(null)).toBeNull();
-    expect(dayKeyOrNull(undefined)).toBeNull();
+    expect(dayKeyOrNull()).toBeNull();
     expect(dayKeyOrNull(NOW)).toBe('2026-10-22');
   });
 });

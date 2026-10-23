@@ -14,7 +14,7 @@ export function loadEnvFile(filePath) {
       envVars[key.trim()] = values
         .join('=')
         .trim()
-        .replace(/^["']|["']$/g, '');
+        .replaceAll(/^["']|["']$/g, '');
     }
   }
   return envVars;

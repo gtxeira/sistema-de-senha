@@ -1,6 +1,8 @@
 'use client';
 
+import type { Route } from 'next';
 import type { ReactNode } from 'react';
+
 import {
   CheckCircle2,
   Headphones,
@@ -10,15 +12,9 @@ import {
   Settings2,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
+
+import { ServerClock } from '@/components/server-clock';
 import { AppSidebar } from '@/components/sidebar/app-sidebar';
-import { useDashboardLayoutStore } from '@/stores/use-dashboard-layout-store';
-import { useEffectiveSession } from '@/hooks/use-effective-session';
-import { Separator } from '@/components/ui/separator';
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from '@/components/ui/sidebar';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -27,9 +23,15 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
+import { Separator } from '@/components/ui/separator';
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from '@/components/ui/sidebar';
+import { useEffectiveSession } from '@/hooks/use-effective-session';
 import { hasPermission, SCREEN_ADMIN } from '@/shared/permissions';
-import type { Route } from 'next';
-import { ServerClock } from '@/components/server-clock';
+import { useDashboardLayoutStore } from '@/stores/use-dashboard-layout-store';
 
 export interface NavItem {
   readonly route: string;
@@ -129,7 +131,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
           largura do conteúdo e a página inteira passa a vazar na
           horizontal quando há sidebar aberta. */}
       <SidebarInset className="min-w-0">
-        <header className="sticky top-0 flex shrink-0 flex-wrap items-center justify-between gap-x-2 gap-y-2 border-b bg-background p-3 sm:px-6">
+        <header className="sticky top-0 flex shrink-0 flex-wrap items-center justify-between gap-2 border-b bg-background p-3 sm:px-6">
           <div className="flex min-w-0 items-center gap-2">
             <SidebarTrigger className="mt-1 -ml-1 shrink-0" />
 

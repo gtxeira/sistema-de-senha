@@ -1,5 +1,5 @@
-import path from 'node:path';
 import { app, BrowserWindow, globalShortcut } from 'electron';
+import path from 'node:path';
 
 /** O Electron é um kiosk em cima da aplicação publicada. */
 const APP_URL = 'https://sistemadesenha-1w3x.vercel.app/login';

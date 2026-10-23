@@ -1,11 +1,12 @@
-import React, { useState, forwardRef } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
+import React, { forwardRef, useState } from 'react';
+
 import {
   InputGroup,
-  InputGroupInput,
   InputGroupAddon,
   InputGroupButton,
+  InputGroupInput,
 } from '@/components/ui/input-group';
-import { Eye, EyeOff } from 'lucide-react';
 
 export interface PasswordInputProps extends Omit<
   React.InputHTMLAttributes<HTMLInputElement>,

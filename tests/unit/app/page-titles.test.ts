@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest';
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
+
 import {
   APP_NAME,
   APP_TITLE_SEPARATOR,
@@ -67,7 +68,7 @@ function layoutOf(pageFile: string): string | undefined {
 }
 
 const pageFiles = findPageFiles(APP_DIR);
-const routePatterns = pageFiles.map(routePattern);
+const routePatterns = pageFiles.map((file) => routePattern(file));
 
 describe('título de aba — montagem', () => {
   it('o template é o nome da tela + separador + nome do sistema', () => {

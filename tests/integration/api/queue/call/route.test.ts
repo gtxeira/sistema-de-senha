@@ -1,14 +1,16 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import type { QueueCallEvent } from '@/server/realtime/event-manager';
+import type { QueueCallBody } from '@/shared/types/api';
+
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+
+import { eventManager } from '@/server/realtime/event-manager';
+import { readJson } from '@/shared/json';
+import { routeRequest } from '../../../../helpers/http';
 import {
   cleanupQueueTestData,
-  seedTestUser,
   cleanupTestUsers,
+  seedTestUser,
 } from '../../../postgres-setup';
-import { eventManager } from '@/server/realtime/event-manager';
-import type { QueueCallEvent } from '@/server/realtime/event-manager';
-import { routeRequest } from '../../../../helpers/http';
-import { readJson } from '@/shared/json';
-import type { QueueCallBody } from '@/shared/types/api';
 
 const MOCK_USER_ID = 'c0f4795e-f467-4695-b479-5ef467c695a6';
 const MOCK_USERNAME = 'test.attendant.call';

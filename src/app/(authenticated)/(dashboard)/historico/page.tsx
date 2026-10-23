@@ -1,5 +1,9 @@
 'use client';
 
+import type { SectorScope } from '@/shared/constants';
+import type { QueueStats } from '@/shared/types/domain';
+
+import { Filter } from 'lucide-react';
 import {
   useCallback,
   useEffect,
@@ -7,24 +11,14 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
-import { Filter } from 'lucide-react';
+
 import { formatQueueNumber, TYPE_LABELS } from '@/client/queue/queue';
-import {
-  SECTORS,
-  CALL_TYPES,
-  PAGE_SIZES,
-  DEFAULT_SECTOR,
-  ALL_SECTORS,
-  getSector,
-  getSectorScope,
-  isSectorId,
-} from '@/shared/constants';
-import type { SectorScope } from '@/shared/constants';
-import { readJson } from '@/shared/json';
-import type { QueueStats } from '@/shared/types/domain';
-import { SECTORS_VIEW_ALL, hasPermission } from '@/shared/permissions';
-import { useEffectiveSession } from '@/hooks/use-effective-session';
-import { formatClock, formatDay } from '@/shared/time';
+import { cn } from '@/client/utils';
+import { FilterGroup } from '@/components/filter-group';
+import { PageHeader } from '@/components/page-header';
+import { Pagination } from '@/components/pagination';
+import { SectorSelect } from '@/components/sector-select';
+import { StatCard } from '@/components/stat-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -44,13 +38,21 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { FilterGroup } from '@/components/filter-group';
-import { Pagination } from '@/components/pagination';
-import { SectorSelect } from '@/components/sector-select';
-import { StatCard } from '@/components/stat-card';
-import { PageHeader } from '@/components/page-header';
-import { cn } from '@/client/utils';
+import { useEffectiveSession } from '@/hooks/use-effective-session';
 import { useSetDashboardLayoutInfo } from '@/hooks/use-set-dashboard-layout-info';
+import {
+  ALL_SECTORS,
+  CALL_TYPES,
+  DEFAULT_SECTOR,
+  getSector,
+  getSectorScope,
+  isSectorId,
+  PAGE_SIZES,
+  SECTORS,
+} from '@/shared/constants';
+import { readJson } from '@/shared/json';
+import { hasPermission, SECTORS_VIEW_ALL } from '@/shared/permissions';
+import { formatClock, formatDay } from '@/shared/time';
 
 const ITEMS_PER_PAGE = PAGE_SIZES.historico;
 
@@ -111,9 +113,9 @@ export default function HistoricoPage() {
 
   const initialSector: SectorScope = canViewAllSectors
     ? ALL_SECTORS
-    : !canViewAllSectors && isSectorId(sessionSector)
+    : (!canViewAllSectors && isSectorId(sessionSector)
       ? sessionSector
-      : DEFAULT_SECTOR;
+      : DEFAULT_SECTOR);
 
   // Escopo ativo: um setor real ou "Todos" (visão agregada).
   const [activeSector, setActiveSector] = useState<SectorScope>(initialSector);

@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it } from 'vitest';
 import type { ReadRepository } from '@/server/repositories/types';
+
+import { beforeEach, describe, expect, it } from 'vitest';
 
 /**
  * Linha de entrada para o seed de chamadas — mais solta que o registro gravado:

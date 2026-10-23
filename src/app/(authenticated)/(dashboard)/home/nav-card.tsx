@@ -1,13 +1,15 @@
+import type { Route } from 'next';
+
 import Link from 'next/link';
+import React from 'react';
+
+import { cn } from '@/client/utils';
 import {
   Card,
   CardContent,
   CardDescription,
   CardTitle,
 } from '@/components/ui/card';
-import { cn } from '@/client/utils';
-import React from 'react';
-import type { Route } from 'next';
 
 export interface NavCardProps {
   readonly href: Route;

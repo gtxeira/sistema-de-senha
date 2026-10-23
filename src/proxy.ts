@@ -1,15 +1,17 @@
-import { auth, SESSION_COOKIE_NAME } from '@/auth';
+import type { NextAuthRequest } from 'next-auth';
+import type { PermissionCarrier } from '@/shared/permissions';
+
 import { NextResponse } from 'next/server';
+
+import { auth, SESSION_COOKIE_NAME } from '@/auth';
 import { REFRESH_COOKIE_NAME, SIGN_IN_PATH } from '@/shared/constants';
 import {
-  SCREEN_HOME,
   canAccessSector,
   hasPermission,
   matchRoute,
+  SCREEN_HOME,
   sessionFreshnessProblem,
 } from '@/shared/permissions';
-import type { PermissionCarrier } from '@/shared/permissions';
-import type { NextAuthRequest } from 'next-auth';
 
 /**
  * Sem sessão válida (ou stale/expirada): se existe um refresh cookie,

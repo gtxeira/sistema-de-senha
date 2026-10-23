@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+
 import {
   refreshSession,
   startSessionRefresh,
@@ -28,9 +29,9 @@ function installNet(routes: Record<string, RouteEntry>) {
     const url =
       typeof input === 'string'
         ? input
-        : 'url' in input
+        : ('url' in input
           ? input.url
-          : String(input);
+          : String(input));
     calls.push(url);
     const handler = routes[url];
     if (!handler) return jsonResponse({ notFound: true }, 404);

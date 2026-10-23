@@ -1,7 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { routeRequest } from '../../../../helpers/http';
-import { readJson } from '@/shared/json';
 import type { QueueSyncBody } from '@/shared/types/api';
+
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+
+import { readJson } from '@/shared/json';
+import { routeRequest } from '../../../../helpers/http';
 import { cleanupQueueTestData, prisma } from '../../../postgres-setup';
 
 async function importRoute() {

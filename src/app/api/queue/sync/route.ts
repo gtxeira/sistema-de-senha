@@ -1,11 +1,13 @@
-import { NextResponse } from 'next/server';
-import { syncNext } from '@/server/services/queue-service';
-import { errorMessage, errorStatus } from '@/shared/errors';
-import { assertSectorAccess, requirePermission } from '@/server/http/api-auth';
-import { QUEUE_SYNC } from '@/shared/permissions';
-import { readJson } from '@/shared/json';
 import type { SyncRequestBody } from '@/shared/types/api';
+
+import { NextResponse } from 'next/server';
+
+import { assertSectorAccess, requirePermission } from '@/server/http/api-auth';
+import { syncNext } from '@/server/services/queue-service';
 import { isSectorId } from '@/shared/constants';
+import { errorMessage, errorStatus } from '@/shared/errors';
+import { readJson } from '@/shared/json';
+import { QUEUE_SYNC } from '@/shared/permissions';
 
 /* ─────────────────────────────────────────────────
    POST — sincroniza a fila para um número específico
@@ -35,10 +37,10 @@ export async function POST(request: Request) {
     const result = await syncNext({ sector, type, nextNumber });
 
     return NextResponse.json({ success: true, ...result });
-  } catch (err) {
+  } catch (error) {
     return NextResponse.json(
-      { error: errorMessage(err, 'Erro ao sincronizar fila') },
-      { status: errorStatus(err, 500) },
+      { error: errorMessage(error, 'Erro ao sincronizar fila') },
+      { status: errorStatus(error, 500) },
     );
   }
 }

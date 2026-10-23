@@ -1,14 +1,23 @@
 'use client';
 
-import * as React from 'react';
-import Link from 'next/link';
 import type { Route } from 'next';
-import { ChevronRight, Monitor } from 'lucide-react';
-import { SearchForm } from '@/components/search-form';
-import { SECTORS } from '@/shared/constants';
-import type { SectorInfo } from '@/shared/constants';
-import { canAccessSector } from '@/shared/permissions';
 import type { User } from 'next-auth';
+import type { RouteGroup } from '@/components/sidebar/sidebar-layout';
+import type { SectorInfo } from '@/shared/constants';
+
+import { ChevronRight, Monitor } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import * as React from 'react';
+
+import brandIcon from '@/app/icon.ico';
+import { SearchForm } from '@/components/search-form';
+import { NavUser } from '@/components/sidebar/nav-user';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import {
   Sidebar,
   SidebarContent,
@@ -25,19 +34,12 @@ import {
   SidebarMenuSubItem,
   SidebarRail,
 } from '@/components/ui/sidebar';
-import brandIcon from '@/app/icon.ico';
-import Image from 'next/image';
-import { NavUser } from '@/components/sidebar/nav-user';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
-import type { RouteGroup } from '@/components/sidebar/sidebar-layout';
+import { SECTORS } from '@/shared/constants';
+import { canAccessSector } from '@/shared/permissions';
 
 /** Busca sem acento/caixa: "hist" e "Histórico" casam. */
 const normalize = (value: string) =>
-  value.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+  value.normalize('NFD').replaceAll(/\p{M}/gu, '').toLowerCase();
 
 export function AppSidebar({
   session,

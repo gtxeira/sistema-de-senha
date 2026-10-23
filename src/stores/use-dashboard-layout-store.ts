@@ -1,6 +1,7 @@
-import { create } from 'zustand';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import type { SectorInfo } from '@/shared/constants';
+
+import { create } from 'zustand';
 
 /**
  * Estado do "casco" do dashboard que as páginas publicam.

@@ -1,12 +1,14 @@
-import { NextResponse } from 'next/server';
-import { resetSectors } from '@/server/services/queue-service';
-import { errorMessage, errorStatus } from '@/shared/errors';
-import { assertSectorAccess, requirePermission } from '@/server/http/api-auth';
-import { QUEUE_RESET } from '@/shared/permissions';
-import { readJson } from '@/shared/json';
-import type { ResetRequestBody } from '@/shared/types/api';
-import { SECTORS, ALL_SECTORS, isSectorId } from '@/shared/constants';
 import type { SectorId } from '@/shared/constants';
+import type { ResetRequestBody } from '@/shared/types/api';
+
+import { NextResponse } from 'next/server';
+
+import { assertSectorAccess, requirePermission } from '@/server/http/api-auth';
+import { resetSectors } from '@/server/services/queue-service';
+import { ALL_SECTORS, isSectorId, SECTORS } from '@/shared/constants';
+import { errorMessage, errorStatus } from '@/shared/errors';
+import { readJson } from '@/shared/json';
+import { QUEUE_RESET } from '@/shared/permissions';
 
 /* ─────────────────────────────────────────────────
    POST — reseta a sequência de senhas de um setor
@@ -53,10 +55,10 @@ export async function POST(request: Request) {
       success: true,
       sectors: result.sectors,
     });
-  } catch (err) {
-    const status = errorStatus(err, 0);
+  } catch (error) {
+    const status = errorStatus(error, 0);
     if (status) {
-      return NextResponse.json({ error: errorMessage(err) }, { status });
+      return NextResponse.json({ error: errorMessage(error) }, { status });
     }
     return NextResponse.json(
       { error: 'Não foi possível zerar a fila.' },

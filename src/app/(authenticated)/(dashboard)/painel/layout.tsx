@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+
 import { PAGE_TITLES } from '@/shared/page-title';
 
 /**

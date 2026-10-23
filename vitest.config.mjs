@@ -1,6 +1,7 @@
-import { defineConfig } from 'vitest/config';
-import { fileURLToPath, URL } from 'node:url';
 import { resolve } from 'node:path';
+import { fileURLToPath, URL } from 'node:url';
+import { defineConfig } from 'vitest/config';
+
 import { checkIsRunningInDocker } from './scripts/check-is-running-in-docker.js';
 import { loadEnvFile } from './scripts/load-env-file.js';
 

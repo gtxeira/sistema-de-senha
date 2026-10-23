@@ -1,8 +1,10 @@
 import 'server-only';
 
-import { EventEmitter } from 'node:events';
-import { MAX_SSE_CONNECTIONS_PER_SECTOR } from '@/shared/constants';
 import type { CallType } from '@/shared/constants';
+
+import { EventEmitter } from 'node:events';
+
+import { MAX_SSE_CONNECTIONS_PER_SECTOR } from '@/shared/constants';
 
 /**
  * Payload serializado no SSE. `wraparound` só existe na chamada corrente

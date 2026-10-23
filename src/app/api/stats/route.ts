@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getStats, parseStatsQuery } from '@/server/services/stats-service';
+
 import { assertSectorAccess, requireSession } from '@/server/http/api-auth';
+import { getStats, parseStatsQuery } from '@/server/services/stats-service';
 import { hasPermission, SECTORS_VIEW_ALL } from '@/shared/permissions';
 
 /* ─────────────────────────────────────────────────

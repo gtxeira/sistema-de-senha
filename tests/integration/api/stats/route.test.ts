@@ -1,7 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { cleanupQueueTestData } from '../../postgres-setup';
-import { readJson } from '@/shared/json';
 import type { StatsBody } from '@/shared/types/api';
+
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+
+import { readJson } from '@/shared/json';
+import { cleanupQueueTestData } from '../../postgres-setup';
 
 async function importRoute() {
   return import('@/app/api/stats/route');

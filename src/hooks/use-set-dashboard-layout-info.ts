@@ -1,7 +1,10 @@
 'use client';
 
-import { useEffect, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import type { SectorInfo } from '@/shared/constants';
+
+import { useEffect } from 'react';
+
 import { useDashboardLayoutStore } from '@/stores/use-dashboard-layout-store';
 
 interface SetDashboardLayoutOptions {

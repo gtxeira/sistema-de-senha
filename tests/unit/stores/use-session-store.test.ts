@@ -1,7 +1,9 @@
+import type { User } from 'next-auth';
+
 import { beforeEach, describe, expect, it } from 'vitest';
+
 import { SESSION_KEY } from '@/shared/constants';
 import { readCachedSession, useSessionStore } from '@/stores/use-session-store';
-import type { User } from 'next-auth';
 
 /**
  * A store de sessão é a fonte única da sessão no client.

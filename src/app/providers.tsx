@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, type ReactNode } from 'react';
+import { type ReactNode, useEffect } from 'react';
 import { Toaster } from 'sonner';
+
 import { startSessionRefresh } from '@/client/session/session-refresh';
 import { readCachedSession, useSessionStore } from '@/stores/use-session-store';
 

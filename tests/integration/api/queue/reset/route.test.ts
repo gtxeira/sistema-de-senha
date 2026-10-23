@@ -1,13 +1,15 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import type { QueueResetBody } from '@/shared/types/api';
+
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+
+import { eventManager } from '@/server/realtime/event-manager';
+import { readJson } from '@/shared/json';
+import { routeRequest } from '../../../../helpers/http';
 import {
   cleanupQueueTestData,
-  seedTestQueueSequence,
   prisma,
+  seedTestQueueSequence,
 } from '../../../postgres-setup';
-import { eventManager } from '@/server/realtime/event-manager';
-import { routeRequest } from '../../../../helpers/http';
-import { readJson } from '@/shared/json';
-import type { QueueResetBody } from '@/shared/types/api';
 
 async function importRoute() {
   return import('@/app/api/queue/reset/route');

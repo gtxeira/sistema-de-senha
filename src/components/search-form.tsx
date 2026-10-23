@@ -1,12 +1,13 @@
 'use client';
 
+import { SearchIcon } from 'lucide-react';
+
 import { Label } from '@/components/ui/label';
 import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarInput,
 } from '@/components/ui/sidebar';
-import { SearchIcon } from 'lucide-react';
 
 export function SearchForm({
   value,

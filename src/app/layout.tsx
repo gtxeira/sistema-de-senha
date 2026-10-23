@@ -1,10 +1,12 @@
 import './globals.css';
-import Providers from './providers';
-import type { ReactNode } from 'react';
 import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
+
 import { Geist } from 'next/font/google';
+
 import { cn } from '@/client/utils';
 import { APP_NAME, APP_TITLE_TEMPLATE } from '@/shared/page-title';
+import Providers from './providers';
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-sans' });
 

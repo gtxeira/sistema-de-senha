@@ -1,15 +1,16 @@
+import type { CallType, SectorId } from '@/shared/constants';
+
 import {
+  API_ROUTES,
+  HISTORY_LIMITS,
   POLLING_INTERVAL,
+  RESET_MARKER_KEY,
   SSE_BACKOFF_BASE,
   SSE_BACKOFF_MAX,
   SSE_EVENT_TYPES,
-  API_ROUTES,
-  HISTORY_LIMITS,
-  RESET_MARKER_KEY,
 } from '@/shared/constants';
-import type { CallType, SectorId } from '@/shared/constants';
-import { invalidateQueueState } from './queue';
 import { parseJson, readJson } from '@/shared/json';
+import { invalidateQueueState } from './queue';
 
 /**
  * Module-level owner of the realtime queue connections.
@@ -272,7 +273,7 @@ function mergeCalls(
   cached: readonly ClientQueueCall[] | null | undefined,
 ): ClientQueueCall[] {
   const out = [...serverCalls];
-  const seen = new Set(out.map(callKey));
+  const seen = new Set(out.map((call) => callKey(call)));
   for (const call of cached ?? []) {
     const key = callKey(call);
     if (seen.has(key)) continue;
@@ -283,7 +284,7 @@ function mergeCalls(
 }
 
 function refreshConnected(): void {
-  const anyOpen = Array.from(connections.values()).some((conn) => conn.open);
+  const anyOpen = [...connections.values()].some((conn) => conn.open);
   if (anyOpen !== snapshot.connected) {
     setSnapshot({ connected: anyOpen });
   }

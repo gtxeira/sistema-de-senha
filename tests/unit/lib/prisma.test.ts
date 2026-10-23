@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import { formatQueueNumber } from '@/shared/queue-format';
 
 describe('prisma#formatQueueNumber', () => {
@@ -6,8 +7,8 @@ describe('prisma#formatQueueNumber', () => {
     expect(formatQueueNumber(0)).toBe('---');
     expect(formatQueueNumber(-1)).toBe('---');
     expect(formatQueueNumber(null)).toBe('---');
-    expect(formatQueueNumber(undefined)).toBe('---');
-    expect(formatQueueNumber(NaN)).toBe('---');
+    expect(formatQueueNumber()).toBe('---');
+    expect(formatQueueNumber(Number.NaN)).toBe('---');
   });
 
   it("retorna '999' para valores >= 1000", () => {

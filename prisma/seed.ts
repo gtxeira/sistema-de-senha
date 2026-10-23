@@ -1,7 +1,9 @@
-import { PrismaClient } from '../src/server/generated/prisma/client';
 import type { rolesModel } from '../src/server/generated/prisma/models/roles';
+
 import { PrismaPg } from '@prisma/adapter-pg';
 import bcrypt from 'bcryptjs';
+
+import { PrismaClient } from '../src/server/generated/prisma/client';
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
@@ -114,8 +116,8 @@ async function main() {
 }
 
 main()
-  .catch((e) => {
-    console.error('Erro no seed:', e);
+  .catch((error) => {
+    console.error('Erro no seed:', error);
     process.exit(1);
   })
   .finally(() => prisma.$disconnect());

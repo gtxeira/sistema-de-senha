@@ -1,5 +1,7 @@
-import { beforeEach, describe, expect, it } from 'vitest';
 import type { UsersRepository } from '@/server/repositories/types';
+
+import { beforeEach, describe, expect, it } from 'vitest';
+
 import { errorStatus } from '@/shared/errors';
 
 /** Subconjunto do seed que os testes de contrato usam. */
@@ -83,8 +85,8 @@ export function usersRepoContract(
             full_name: 'Teste Inválido',
           });
           expect.fail('Should have thrown');
-        } catch (err) {
-          expect(errorStatus(err)).toBe(400);
+        } catch (error) {
+          expect(errorStatus(error)).toBe(400);
         }
 
         // "user name" has space — should be rejected
@@ -95,8 +97,8 @@ export function usersRepoContract(
             full_name: 'Teste Espaço',
           });
           expect.fail('Should have thrown');
-        } catch (err) {
-          expect(errorStatus(err)).toBe(400);
+        } catch (error) {
+          expect(errorStatus(error)).toBe(400);
         }
       });
 

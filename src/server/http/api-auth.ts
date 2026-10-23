@@ -1,14 +1,16 @@
 import 'server-only';
 
-import { NextResponse } from 'next/server';
 import type { Session } from 'next-auth';
+import type { Permission, PermissionCarrier } from '@/shared/permissions';
+
+import { NextResponse } from 'next/server';
+
 import { auth } from '@/auth';
 import {
   canAccessSector,
   hasPermission,
   sessionFreshnessProblem,
 } from '@/shared/permissions';
-import type { Permission, PermissionCarrier } from '@/shared/permissions';
 
 /**
  * Authorization helpers for route handlers.

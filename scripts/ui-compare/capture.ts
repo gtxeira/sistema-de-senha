@@ -1,3 +1,6 @@
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 /**
  * Captura screenshot + métricas de uma rota para comparação antes/depois.
  *
@@ -24,9 +27,6 @@
  * viram Dialog no Admin) ficam fora da comparação.
  */
 import { chromium } from 'playwright';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 const SHOTS = join(dirname(fileURLToPath(import.meta.url)), 'shots');
 
@@ -151,7 +151,7 @@ const metricas = await pagina.evaluate(() => {
     itens.push({
       i: i++,
       sel: caminho(el),
-      txt: (el.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 80),
+      txt: (el.textContent ?? '').replaceAll(/\s+/g, ' ').trim().slice(0, 80),
       x: +r.x.toFixed(1),
       y: +r.y.toFixed(1),
       w: +r.width.toFixed(1),

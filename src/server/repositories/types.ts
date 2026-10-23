@@ -34,17 +34,17 @@ import type {
  */
 
 export type {
-  QueueCallRecord,
-  RecentCall,
-  HistoryCall,
-  QueueStats,
-  UserRecord,
-  CreateUserInput,
-  UpdateUserInput,
-  RoleRecord,
   CreateRoleInput,
-  UpdateRoleInput,
+  CreateUserInput,
+  HistoryCall,
   NewsItem,
+  QueueCallRecord,
+  QueueStats,
+  RecentCall,
+  RoleRecord,
+  UpdateRoleInput,
+  UpdateUserInput,
+  UserRecord,
 } from '@/shared/types/domain';
 
 /* ── Queue ──────────────────────────────────────────────────────── */

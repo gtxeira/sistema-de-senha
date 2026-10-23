@@ -1,17 +1,19 @@
 import 'server-only';
 
+import type { PrismaClient } from '@/server/generated/prisma/client';
+
+import bcrypt from 'bcryptjs';
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
-import bcrypt from 'bcryptjs';
+
 import {
-  USERNAME_REGEX,
-  DEFAULT_GUICHE,
   ACCESS_TOKEN_MAX_AGE,
+  DEFAULT_GUICHE,
   SIGN_IN_PATH,
+  USERNAME_REGEX,
 } from '@/shared/constants';
-import { computeEffectivePermissions } from '@/shared/permissions';
 import { initials } from '@/shared/format';
-import type { PrismaClient } from '@/server/generated/prisma/client';
+import { computeEffectivePermissions } from '@/shared/permissions';
 
 // Nome fixo do cookie de sessão (e `salt` do JWE do Auth.js). Fixá-lo no
 // config garante que o `encode()` da rota de refresh derive a mesma chave

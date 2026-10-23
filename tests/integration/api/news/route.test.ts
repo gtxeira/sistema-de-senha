@@ -1,20 +1,22 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import {
-  seedTestNews,
-  cleanupTestNews,
-  cleanupAllNews,
-} from '../../postgres-setup';
-import {
-  objectExistsInS3,
-  extractKeyFromUrl,
-  deleteFromS3,
-} from '@/server/storage/s3-client';
-import { readJson } from '@/shared/json';
 import type {
   NewsCreateBody,
   NewsListBody,
   SuccessBody,
 } from '@/shared/types/api';
+
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+
+import {
+  deleteFromS3,
+  extractKeyFromUrl,
+  objectExistsInS3,
+} from '@/server/storage/s3-client';
+import { readJson } from '@/shared/json';
+import {
+  cleanupAllNews,
+  cleanupTestNews,
+  seedTestNews,
+} from '../../postgres-setup';
 
 const S3_PUBLIC_URL = process.env.S3_PUBLIC_URL;
 
@@ -229,7 +231,7 @@ describe('/api/news — integration', () => {
       expect(body.news.id).toBeDefined();
       expect(body.news.image).toMatch(
         new RegExp(
-          `^${String(S3_PUBLIC_URL).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/`,
+          `^${String(S3_PUBLIC_URL).replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')}/`,
         ),
       );
 

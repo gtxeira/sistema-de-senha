@@ -1,11 +1,13 @@
-import { NextResponse } from 'next/server';
-import { recallLast } from '@/server/services/queue-service';
-import { errorMessage, errorStatus } from '@/shared/errors';
-import { assertSectorAccess, requirePermission } from '@/server/http/api-auth';
-import { QUEUE_RECALL } from '@/shared/permissions';
-import { readJson } from '@/shared/json';
 import type { RecallRequestBody } from '@/shared/types/api';
+
+import { NextResponse } from 'next/server';
+
+import { assertSectorAccess, requirePermission } from '@/server/http/api-auth';
+import { recallLast } from '@/server/services/queue-service';
 import { isSectorId } from '@/shared/constants';
+import { errorMessage, errorStatus } from '@/shared/errors';
+import { readJson } from '@/shared/json';
+import { QUEUE_RECALL } from '@/shared/permissions';
 
 /* ─────────────────────────────────────────────────
    POST — repete a última senha chamada de um setor
@@ -32,10 +34,10 @@ export async function POST(request: Request) {
     const result = await recallLast(sector);
 
     return NextResponse.json({ success: true, ...result });
-  } catch (err) {
+  } catch (error) {
     return NextResponse.json(
-      { error: errorMessage(err, 'Erro ao repetir senha') },
-      { status: errorStatus(err, 500) },
+      { error: errorMessage(error, 'Erro ao repetir senha') },
+      { status: errorStatus(error, 500) },
     );
   }
 }

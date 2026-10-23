@@ -1,7 +1,7 @@
 import 'server-only';
+import { PrismaPg } from '@prisma/adapter-pg';
 
 import { PrismaClient } from '@/server/generated/prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
 
 /**
  * Singleton por processo. Sem isso, cada hot-reload do dev cria um client novo

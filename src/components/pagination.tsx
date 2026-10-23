@@ -1,6 +1,7 @@
-import * as React from 'react';
-import { Button } from '@/components/ui/button';
 import { cn } from 'cn';
+import * as React from 'react';
+
+import { Button } from '@/components/ui/button';
 
 /**
  * Navegação "← Anterior · Página X de Y · Próxima →" — padrão de

@@ -1,9 +1,11 @@
-import { create } from 'zustand';
 import type { User } from 'next-auth';
+import type { Permission } from '@/shared/permissions';
+
+import { create } from 'zustand';
+
 import { SESSION_KEY } from '@/shared/constants';
 import { parseJson } from '@/shared/json';
 import { hasPermission } from '@/shared/permissions';
-import type { Permission } from '@/shared/permissions';
 
 /**
  * Fonte única da sessão no cliente.

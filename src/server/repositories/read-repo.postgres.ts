@@ -1,22 +1,23 @@
 import 'server-only';
 
-import { prisma } from '@/server/db/prisma-client';
 import type { Prisma } from '@/server/generated/prisma/client';
-import {
-  MIN_DAYS,
-  MAX_DAYS,
-  DEFAULT_DAYS,
-  CALL_TYPES,
-  PAGE_SIZES,
-} from '@/shared/constants';
-import { dayWindow, startOfDay } from '@/shared/time';
-import { normalizePage, normalizePageSize } from '@/shared/validation';
 import type {
   HistoryCall,
   QueueStats,
   ReadRepository,
   StatsOptions,
 } from './types';
+
+import { prisma } from '@/server/db/prisma-client';
+import {
+  CALL_TYPES,
+  DEFAULT_DAYS,
+  MAX_DAYS,
+  MIN_DAYS,
+  PAGE_SIZES,
+} from '@/shared/constants';
+import { dayWindow, startOfDay } from '@/shared/time';
+import { normalizePage, normalizePageSize } from '@/shared/validation';
 
 /** Linha como o `findMany` de `getRecentCalls` devolve. */
 type RecentRow = Prisma.queue_callsGetPayload<{
@@ -163,9 +164,9 @@ export class PostgresReadRepository implements ReadRepository {
       // tipo informado ele sai do agrupamento acima; sem tipo, é o próprio
       // `total` da janela — nenhuma contagem extra.
       const filteredTotal = type
-        ? type === CALL_TYPES.PREFERENCIAL
+        ? (type === CALL_TYPES.PREFERENCIAL
           ? prefCount
-          : normalCount
+          : normalCount)
         : total;
 
       const totalPages = Math.max(1, Math.ceil(filteredTotal / pageSize));
@@ -211,7 +212,7 @@ export class PostgresReadRepository implements ReadRepository {
           preferencial: prefCount,
           normal: normalCount,
         },
-        calls: calls.map(formatCallRecord),
+        calls: calls.map((call) => formatCallRecord(call)),
         pagination: {
           page,
           pageSize,

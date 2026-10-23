@@ -1,7 +1,3 @@
-import { normalizeCallType } from '@/shared/queue-format';
-import { normalizePage, normalizePageSize } from '@/shared/validation';
-import { MIN_DAYS, MAX_DAYS } from '@/shared/constants';
-import { dayWindow, startOfDay } from '@/shared/time';
 import type {
   HistoryCall,
   QueueStats,
@@ -9,6 +5,11 @@ import type {
   StatsOptions,
 } from '@/server/repositories/types';
 import type { SeedCall } from '../../contracts/read-repo.contract';
+
+import { MAX_DAYS, MIN_DAYS } from '@/shared/constants';
+import { normalizeCallType } from '@/shared/queue-format';
+import { dayWindow, startOfDay } from '@/shared/time';
+import { normalizePage, normalizePageSize } from '@/shared/validation';
 
 /** Linha interna: o seed de contrato com o timestamp já preenchido. */
 interface StoredCall {
@@ -99,7 +100,7 @@ export class InMemoryReadRepository implements ReadRepository {
         const byTime =
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         if (byTime !== 0) return byTime;
-        return a.id < b.id ? 1 : a.id > b.id ? -1 : 0;
+        return a.id < b.id ? 1 : (a.id > b.id ? -1 : 0);
       })
       .slice((page - 1) * pageSize, page * pageSize)
       .map((c) => ({

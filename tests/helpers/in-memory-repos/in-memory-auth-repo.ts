@@ -1,7 +1,9 @@
-import crypto from 'node:crypto';
 import type { AuthRepository } from '@/server/repositories/types';
-import { RouteError } from '@/server/http/errors';
 import type { AuthSeedUserInput } from '../../contracts/auth-repo.contract';
+
+import crypto from 'node:crypto';
+
+import { RouteError } from '@/server/http/errors';
 
 /** Registro guardado no Map — só `email` é lido, o resto é o seed original. */
 interface StoredUser {

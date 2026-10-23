@@ -1,12 +1,14 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { seedTestUser, cleanupAllTestUsers } from '../../postgres-setup';
-import { routeRequest } from '../../../helpers/http';
-import { readJson } from '@/shared/json';
 import type {
   SuccessBody,
   UserSaveBody,
   UsersListBody,
 } from '@/shared/types/api';
+
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+
+import { readJson } from '@/shared/json';
+import { routeRequest } from '../../../helpers/http';
+import { cleanupAllTestUsers, seedTestUser } from '../../postgres-setup';
 
 let createdUsernames = [];
 

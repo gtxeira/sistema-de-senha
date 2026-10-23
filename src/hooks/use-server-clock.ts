@@ -1,20 +1,22 @@
 'use client';
 
+import type { TimeBody } from '@/shared/types/api';
+
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
-  useCallback,
   useSyncExternalStore,
 } from 'react';
+
 import {
+  API_ROUTES,
   CLOCK_INTERVAL,
   SERVER_TIME_SYNC_INTERVAL,
-  API_ROUTES,
 } from '@/shared/constants';
-import { formatClock, formatClockSeconds, formatLongDate } from '@/shared/time';
 import { readJson } from '@/shared/json';
-import type { TimeBody } from '@/shared/types/api';
+import { formatClock, formatClockSeconds, formatLongDate } from '@/shared/time';
 
 /* ─────────────────────────────────────────────────
    useServerClock — relógio sincronizado com o servidor

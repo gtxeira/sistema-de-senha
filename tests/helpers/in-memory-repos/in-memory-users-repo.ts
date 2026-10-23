@@ -1,18 +1,20 @@
-import crypto from 'node:crypto';
-import { DEFAULT_GUICHE } from '@/shared/constants';
-import {
-  ALL_PERMISSIONS,
-  computeEffectivePermissions,
-} from '@/shared/permissions';
-import type { Permission, PermissionOverride } from '@/shared/permissions';
 import type {
   CreateUserInput,
   UpdateUserInput,
   UserRecord,
   UsersRepository,
 } from '@/server/repositories/types';
-import { RouteError } from '@/server/http/errors';
+import type { Permission, PermissionOverride } from '@/shared/permissions';
 import type { UsersSeedUserInput } from '../../contracts/users-repo.contract';
+
+import crypto from 'node:crypto';
+
+import { RouteError } from '@/server/http/errors';
+import { DEFAULT_GUICHE } from '@/shared/constants';
+import {
+  ALL_PERMISSIONS,
+  computeEffectivePermissions,
+} from '@/shared/permissions';
 
 /**
  * Mesmo truque de `PERMISSION_SET` em `permissions.ts`: guardado como
@@ -94,7 +96,7 @@ export class InMemoryUsersRepository implements UsersRepository {
   }
 
   async list(): Promise<UserRecord[]> {
-    return Array.from(this.#users.values()).map(toUserRecord);
+    return [...this.#users.values()].map((user) => toUserRecord(user));
   }
 
   async create(

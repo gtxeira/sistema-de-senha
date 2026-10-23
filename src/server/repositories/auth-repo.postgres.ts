@@ -1,8 +1,9 @@
 import 'server-only';
 
+import type { AuthRepository } from './types';
+
 import { prisma } from '@/server/db/prisma-client';
 import { routeError } from '@/server/http/errors';
-import type { AuthRepository } from './types';
 
 /**
  * Data access for authentication-adjacent lookups.

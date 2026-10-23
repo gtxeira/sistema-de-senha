@@ -1,6 +1,7 @@
-import { describe, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe } from 'vitest';
+
 import { usersRepoContract } from '../../contracts/users-repo.contract';
-import { seedTestUser, cleanupTestUsers } from '../postgres-setup';
+import { cleanupTestUsers, seedTestUser } from '../postgres-setup';
 
 describe('UsersRepository — Postgres integration', () => {
   let seededUsernames: string[] = [];

@@ -1,9 +1,9 @@
-import type { SequenceType } from '@/shared/constants';
 import type {
   QueueCallInput,
   QueueRepository,
   RecentCall,
 } from '@/server/repositories/types';
+import type { SequenceType } from '@/shared/constants';
 
 /** Linha persistida: o input da chamada + id gerado e timestamp monotônico. */
 interface StoredCall extends QueueCallInput {

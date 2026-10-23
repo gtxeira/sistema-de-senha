@@ -1,17 +1,18 @@
 import 'server-only';
 
-import { queue } from '@/server/repositories';
-import { eventManager } from '@/server/realtime/event-manager';
 import type { QueueCallEvent } from '@/server/realtime/event-manager';
+import type { SectorId, SequenceType } from '@/shared/constants';
+import type { RecentCall } from '@/shared/types/domain';
+
 import { routeError } from '@/server/http/errors';
-import { formatNumberString, normalizeCallType } from '@/shared/queue-format';
+import { eventManager } from '@/server/realtime/event-manager';
+import { queue } from '@/server/repositories';
 import {
   MAX_QUEUE_NUMBER,
   MIN_QUEUE_NUMBER,
   SECTORS,
 } from '@/shared/constants';
-import type { SectorId, SequenceType } from '@/shared/constants';
-import type { RecentCall } from '@/shared/types/domain';
+import { formatNumberString, normalizeCallType } from '@/shared/queue-format';
 
 /**
  * Use cases da fila.

@@ -1,39 +1,19 @@
 'use client';
 
+import type { CallType, SectorId } from '@/shared/constants';
+import type { NewsListBody } from '@/shared/types/api';
+import type { NewsItem } from '@/shared/types/domain';
+
+import { Clock3 } from 'lucide-react';
 import {
+  memo,
   use,
   useCallback,
   useEffect,
   useState,
   useSyncExternalStore,
-  memo,
 } from 'react';
-import { Clock3 } from 'lucide-react';
-import {
-  callNextNumber,
-  cleanHistory,
-  getQueueSnapshot,
-  normalizeQueue,
-  reconcileQueueFromCalls,
-  saveQueueState,
-  subscribeQueue,
-  type QueueState,
-} from '@/client/queue/queue';
-import {
-  SECTORS,
-  DEFAULT_SECTOR,
-  CALL_TYPES,
-  TYPE_FIELDS,
-  NEWS_CAROUSEL_INTERVAL,
-  HISTORY_LIMITS,
-  NO_PASSWORD,
-  isSectorId,
-  getSector,
-} from '@/shared/constants';
-import type { CallType, SectorId } from '@/shared/constants';
-import type { NewsItem } from '@/shared/types/domain';
-import { useQueueEvents } from '@/hooks/use-queue-events';
-import { useServerClock } from '@/hooks/use-server-clock';
+
 import {
   forceAnnounce,
   monitorSpeak,
@@ -41,9 +21,31 @@ import {
   speakText,
   unlockSpeech,
 } from '@/client/audio/speech';
-import { formatClock } from '@/shared/time';
+import {
+  callNextNumber,
+  cleanHistory,
+  getQueueSnapshot,
+  normalizeQueue,
+  type QueueState,
+  reconcileQueueFromCalls,
+  saveQueueState,
+  subscribeQueue,
+} from '@/client/queue/queue';
+import { useQueueEvents } from '@/hooks/use-queue-events';
+import { useServerClock } from '@/hooks/use-server-clock';
+import {
+  CALL_TYPES,
+  DEFAULT_SECTOR,
+  getSector,
+  HISTORY_LIMITS,
+  isSectorId,
+  NEWS_CAROUSEL_INTERVAL,
+  NO_PASSWORD,
+  SECTORS,
+  TYPE_FIELDS,
+} from '@/shared/constants';
 import { readJson } from '@/shared/json';
-import type { NewsListBody } from '@/shared/types/api';
+import { formatClock } from '@/shared/time';
 
 /* ─── notícias ─── */
 let newsSnapshot: NewsItem[] = [];
@@ -82,7 +84,7 @@ function formatMonitorNumber(number: number | string | null | undefined) {
 }
 
 /* ─── carrossel de notícias isolado (evita re-render da voz) ─── */
-const NewsCarousel = memo(function NewsCarousel() {
+const NewsCarousel = memo(() => {
   const news = useSyncExternalStore(
     subscribeNews,
     getNewsSnapshot,
@@ -112,7 +114,7 @@ const NewsCarousel = memo(function NewsCarousel() {
 
   if (!news?.length) {
     return (
-      <div className="relative z-[1] flex h-full flex-col items-center justify-center p-[4vw] text-[#173b51]">
+      <div className="relative z-1 flex h-full flex-col items-center justify-center p-[4vw] text-[#173b51]">
         <strong className="mt-2 block max-w-[850px] text-[clamp(20px,3vw,48px)] leading-[1.1] text-[#173b51]">
           INFORMAÇÕES DA UNIDADE
         </strong>
@@ -128,10 +130,10 @@ const NewsCarousel = memo(function NewsCarousel() {
         <img
           src={item.image}
           alt={item.title || ''}
-          className="absolute inset-0 h-full w-full object-cover"
+          className="absolute inset-0 size-full object-cover"
         />
       )}
-      <div className="relative z-[1] w-full p-6 text-white">
+      <div className="relative z-1 w-full p-6 text-white">
         <div className="flex gap-[7px]">
           {news.map((_, i) => (
             <i
@@ -139,7 +141,7 @@ const NewsCarousel = memo(function NewsCarousel() {
               className={
                 i === newsIndex
                   ? 'h-2 w-6 rounded-[5px] bg-[#8fe2d2]'
-                  : 'h-2 w-2 rounded-[50%] bg-[#ffffff66]'
+                  : 'size-2 rounded-[50%] bg-[#ffffff66]'
               }
             />
           ))}
@@ -148,6 +150,8 @@ const NewsCarousel = memo(function NewsCarousel() {
     </>
   );
 });
+
+NewsCarousel.displayName = 'NewsCarousel';
 
 /* ══════════════════════════════════════════════
    MONITOR — tela pública de senhas
@@ -361,7 +365,7 @@ export default function MonitorPage({ params }: MonitorPageProps) {
   const hasNoPassword = latest.number === null || latest.number === undefined;
 
   return (
-    <main className="grid h-[100dvh] w-screen grid-rows-[88px_1fr] overflow-hidden bg-[#f5f8f9] text-[#173b51] max-[900px]:block max-[900px]:h-auto max-[900px]:min-h-screen max-[900px]:overflow-auto">
+    <main className="grid h-dvh w-screen grid-rows-[88px_1fr] overflow-hidden bg-[#f5f8f9] text-[#173b51] max-[900px]:block max-[900px]:h-auto max-[900px]:min-h-screen max-[900px]:overflow-auto">
       {/* `grid-cols-2` do Tailwind é `minmax(0,1fr)` e corta o header nos
           220/220; o `1fr 1fr` antigo expandia a coluna do relógio com o
           conteúdo nowrap (260px) e encolhia a do setor. */}
@@ -388,7 +392,7 @@ export default function MonitorPage({ params }: MonitorPageProps) {
         </div>
       </header>
 
-      <div className="grid h-full min-h-0 w-full grid-cols-[40%_60%] max-[900px]:flex max-[900px]:h-auto max-[900px]:flex-col">
+      <div className="grid size-full min-h-0 grid-cols-[40%_60%] max-[900px]:flex max-[900px]:h-auto max-[900px]:flex-col">
         <section className="grid h-full min-h-0 grid-rows-[62%_38%] max-[900px]:flex max-[900px]:h-auto max-[900px]:flex-col">
           <section
             className={`box-border flex h-full min-h-0 flex-col items-center justify-center border-r border-current border-r-[#cadde2] p-3 ${
@@ -402,9 +406,9 @@ export default function MonitorPage({ params }: MonitorPageProps) {
               className={`text-[clamp(110px,12vw,240px)] leading-none tracking-[5px] ${
                 hasNoPassword
                   ? 'text-[#b0bec5]'
-                  : isPriority
+                  : (isPriority
                     ? 'text-[#d63838]'
-                    : 'text-[#1972a0]'
+                    : 'text-[#1972a0]')
               } max-[500px]:text-[88px]`}
             >
               {formatMonitorNumber(latest?.number ?? NO_PASSWORD)}
@@ -413,7 +417,7 @@ export default function MonitorPage({ params }: MonitorPageProps) {
               <span className="mt-3 text-[14px] font-extrabold tracking-[1.5px] text-[#1972a0]">
                 NENHUMA SENHA CHAMADA
               </span>
-            ) : isPriority ? (
+            ) : (isPriority ? (
               <span className="mt-2 inline-block rounded-[12px] bg-[#ef4444] px-6 py-[10px] text-[1.2rem] font-extrabold tracking-[1.5px] text-white shadow-[0_4px_10px_rgba(239,68,68,0.3)]">
                 ATENDIMENTO PREFERENCIAL
               </span>
@@ -421,7 +425,7 @@ export default function MonitorPage({ params }: MonitorPageProps) {
               <span className="mt-3 text-[14px] font-extrabold tracking-[1.5px] text-[#1972a0]">
                 ATENDIMENTO
               </span>
-            )}
+            ))}
             <small className="mt-2 text-[11px] text-[#8aa0ab]">
               {hasNoPassword
                 ? 'Aguardando primeiras chamadas'
@@ -469,7 +473,7 @@ export default function MonitorPage({ params }: MonitorPageProps) {
           </section>
         </section>
 
-        <section className="relative flex h-full min-h-0 w-full items-end overflow-hidden border-current bg-[#dce9eb] after:absolute after:inset-[40%_0_0] after:bg-[linear-gradient(transparent,#092f43dc)] after:content-[''] max-[900px]:order-first max-[900px]:h-[420px]">
+        <section className="relative flex size-full min-h-0 items-end overflow-hidden border-current bg-[#dce9eb] after:absolute after:inset-[40%_0_0] after:bg-[linear-gradient(transparent,#092f43dc)] after:content-[''] max-[900px]:order-first max-[900px]:h-[420px]">
           <NewsCarousel />
         </section>
       </div>

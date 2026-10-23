@@ -225,7 +225,7 @@ export function dayKey(
 
 /** Como `dayKey`, mas devolve `null` em vez de lançar para data inválida. */
 export function dayKeyOrNull(
-  value: DateInput | null | undefined,
+  value?: DateInput | null | undefined,
   timeZone: string = APP_TIMEZONE,
 ): string | null {
   if (value === null || value === undefined) return null;

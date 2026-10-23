@@ -1,6 +1,7 @@
 'use client';
 
 import { Clock3 } from 'lucide-react';
+
 import { useServerClock } from '@/hooks/use-server-clock';
 
 export function ServerClock() {

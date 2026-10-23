@@ -1,23 +1,24 @@
 import { describe, expect, it } from 'vitest';
+
+import {
+  PERMISSIONS_MAX_AGE,
+  SESSION_ABSOLUTE_MAX_AGE,
+} from '@/shared/constants';
 import {
   ALL_PERMISSIONS,
+  canAccessSector,
+  computeEffectivePermissions,
+  hasPermission,
+  matchRoute,
   QUEUE_CALL,
   QUEUE_RESET,
   SCREEN_ADMIN,
   SCREEN_HOME,
   SECTORS_MANAGE_ALL,
   SECTORS_VIEW_ALL,
-  USERS_VIEW,
-  canAccessSector,
-  computeEffectivePermissions,
-  hasPermission,
-  matchRoute,
   sessionFreshnessProblem,
+  USERS_VIEW,
 } from '@/shared/permissions';
-import {
-  PERMISSIONS_MAX_AGE,
-  SESSION_ABSOLUTE_MAX_AGE,
-} from '@/shared/constants';
 
 describe('computeEffectivePermissions', () => {
   it('retorna a união das permissões do cargo', () => {

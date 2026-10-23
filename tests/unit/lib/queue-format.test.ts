@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+
 import { isInvalidApiKeyError } from '@/shared/errors';
 import { formatNumberString, normalizeCallType } from '@/shared/queue-format';
 
@@ -32,7 +33,7 @@ describe('normalizeCallType', () => {
       sequenceType: 'normal',
       callType: 'normal',
     });
-    expect(normalizeCallType(undefined)).toEqual({
+    expect(normalizeCallType()).toEqual({
       sequenceType: 'normal',
       callType: 'normal',
     });

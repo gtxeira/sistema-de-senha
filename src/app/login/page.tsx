@@ -1,19 +1,21 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
-import { signIn } from 'next-auth/react';
-import { LockKeyhole } from 'lucide-react';
-import { readJson } from '@/shared/json';
-import { useSessionStore } from '@/stores/use-session-store';
 import type { AuthSessionBody } from '@/shared/types/api';
-import brandIcon from '@/app/icon.ico';
+
+import { LockKeyhole } from 'lucide-react';
+import { signIn } from 'next-auth/react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { type FormEvent, useState } from 'react';
+
+import brandIcon from '@/app/icon.ico';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
+import { readJson } from '@/shared/json';
+import { useSessionStore } from '@/stores/use-session-store';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -54,10 +56,10 @@ export default function LoginPage() {
       }
 
       router.push('/home');
-    } catch (err) {
+    } catch (error_) {
       setError(
-        err instanceof Error && err.message
-          ? err.message
+        error_ instanceof Error && error_.message
+          ? error_.message
           : 'Usuário ou senha inválidos.',
       );
     } finally {
@@ -69,7 +71,7 @@ export default function LoginPage() {
     <main className="flex min-h-dvh">
       {/* ── Hero ── */}
       <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-[linear-gradient(160deg,#061e32_0%,#0b3555_45%,#0e5070_100%)] px-12 py-[60px] before:absolute before:-top-30 before:-right-25 before:size-[480px] before:rounded-full before:bg-white before:opacity-[0.07] before:content-[''] after:absolute after:-bottom-20 after:-left-15 after:size-[300px] after:rounded-full after:bg-white after:opacity-[0.07] after:content-[''] max-md:hidden">
-        <div className="relative z-[1] max-w-[380px] text-white">
+        <div className="relative z-1 max-w-[380px] text-white">
           <div className="mb-[15px] size-16 overflow-hidden">
             <Image
               src={brandIcon}
@@ -112,7 +114,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <h2 className="mb-1.5 text-2xl leading-normal font-black text-[#0d2d47] max-md:text-white">
+          <h2 className="mb-1.5 text-2xl/normal font-black text-[#0d2d47] max-md:text-white">
             Entrar no sistema
           </h2>
           <p className="mb-7 text-[13px] text-[#7a9aad] max-md:text-[#8eb8cc]">
@@ -164,7 +166,7 @@ export default function LoginPage() {
             {error && (
               <Alert
                 variant="destructive"
-                className="rounded-[7px] px-3.5 py-2.75 text-xs leading-normal font-semibold"
+                className="rounded-[7px] px-3.5 py-2.75 text-xs/normal font-semibold"
               >
                 {error}
               </Alert>
@@ -173,7 +175,7 @@ export default function LoginPage() {
             <Button
               type="submit"
               disabled={loading}
-              className="mt-1 h-auto w-full rounded-[9px] px-2.5 py-3.75 text-sm leading-normal font-extrabold shadow-[0_4px_16px_rgba(2,132,199,0.3)]"
+              className="mt-1 h-auto w-full rounded-[9px] px-2.5 py-3.75 text-sm/normal font-extrabold shadow-[0_4px_16px_rgba(2,132,199,0.3)]"
             >
               <LockKeyhole data-icon="inline-start" />
               {loading ? 'Entrando…' : 'Entrar'}

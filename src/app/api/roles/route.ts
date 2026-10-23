@@ -1,15 +1,17 @@
+import type { CreateRoleRequest, RolePatchBody } from '@/shared/types/api';
+
 import { NextResponse } from 'next/server';
+
+import { requirePermission } from '@/server/http/api-auth';
 import {
   createRole,
   listRoles,
   removeRole,
   updateRole,
 } from '@/server/services/roles-service';
-import { requirePermission } from '@/server/http/api-auth';
 import { errorMessage, errorStatus } from '@/shared/errors';
-import { ROLES_MANAGE, USERS_VIEW } from '@/shared/permissions';
 import { readJson } from '@/shared/json';
-import type { CreateRoleRequest, RolePatchBody } from '@/shared/types/api';
+import { ROLES_MANAGE, USERS_VIEW } from '@/shared/permissions';
 
 /* ─────────────────────────────────────────────────
    Cargos e permissões (RBAC).
@@ -27,10 +29,10 @@ export async function GET() {
 
     const roleList = await listRoles();
     return NextResponse.json({ roles: roleList });
-  } catch (err) {
+  } catch (error) {
     return NextResponse.json(
-      { error: errorMessage(err, 'Erro ao listar cargos') },
-      { status: errorStatus(err, 500) },
+      { error: errorMessage(error, 'Erro ao listar cargos') },
+      { status: errorStatus(error, 500) },
     );
   }
 }
@@ -43,10 +45,10 @@ export async function POST(request: Request) {
     const body = await readJson<CreateRoleRequest>(request);
     const role = await createRole(body);
     return NextResponse.json({ success: true, role });
-  } catch (err) {
+  } catch (error) {
     return NextResponse.json(
-      { error: errorMessage(err, 'Erro ao criar cargo') },
-      { status: errorStatus(err, 500) },
+      { error: errorMessage(error, 'Erro ao criar cargo') },
+      { status: errorStatus(error, 500) },
     );
   }
 }
@@ -71,10 +73,10 @@ export async function PATCH(request: Request) {
 
     const role = await updateRole(body.id, body);
     return NextResponse.json({ success: true, role });
-  } catch (err) {
+  } catch (error) {
     return NextResponse.json(
-      { error: errorMessage(err, 'Erro ao atualizar cargo') },
-      { status: errorStatus(err, 500) },
+      { error: errorMessage(error, 'Erro ao atualizar cargo') },
+      { status: errorStatus(error, 500) },
     );
   }
 }
@@ -95,10 +97,10 @@ export async function DELETE(request: Request) {
 
     await removeRole(id);
     return NextResponse.json({ success: true });
-  } catch (err) {
+  } catch (error) {
     return NextResponse.json(
-      { error: errorMessage(err, 'Erro ao excluir cargo') },
-      { status: errorStatus(err, 500) },
+      { error: errorMessage(error, 'Erro ao excluir cargo') },
+      { status: errorStatus(error, 500) },
     );
   }
 }

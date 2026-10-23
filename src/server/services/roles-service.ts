@@ -1,11 +1,12 @@
 import 'server-only';
 
-import { roles } from '@/server/repositories';
 import type {
   CreateRoleInput,
   RoleRecord,
   UpdateRoleInput,
 } from '@/shared/types/domain';
+
+import { roles } from '@/server/repositories';
 
 /**
  * Use cases de cargos.

@@ -8,6 +8,7 @@ vi.mock('@/server/generated/prisma/client', () => ({
 
 vi.mock('@prisma/adapter-pg', () => ({
   // função comum (não arrow): o código real instancia com `new`
+  // eslint-disable-next-line prefer-arrow-callback
   PrismaPg: vi.fn(function PrismaPg() {
     return { __adapter: true };
   }),

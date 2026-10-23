@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
+import { describe, expect, it } from 'vitest';
 
 /**
  * Guarda de fuso horário.

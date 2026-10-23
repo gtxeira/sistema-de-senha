@@ -1,6 +1,8 @@
-import { describe, it, expect } from 'vitest';
-import { readJson } from '@/shared/json';
 import type { AuthUsersBody } from '@/shared/types/api';
+
+import { describe, expect, it } from 'vitest';
+
+import { readJson } from '@/shared/json';
 
 async function importRoute() {
   return import('@/app/api/auth/route');

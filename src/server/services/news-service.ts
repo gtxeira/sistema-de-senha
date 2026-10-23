@@ -1,8 +1,9 @@
 import 'server-only';
 
-import { news } from '@/server/repositories';
 import type { CreateNewsInput } from '@/server/repositories/types';
 import type { NewsItem } from '@/shared/types/domain';
+
+import { news } from '@/server/repositories';
 
 /**
  * Use cases de notícias.

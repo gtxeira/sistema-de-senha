@@ -1,10 +1,9 @@
 import 'server-only';
-
 import {
-  S3Client,
-  PutObjectCommand,
   DeleteObjectCommand,
   HeadObjectCommand,
+  PutObjectCommand,
+  S3Client,
 } from '@aws-sdk/client-s3';
 
 function getEnv(): NodeJS.ProcessEnv {
@@ -118,7 +117,7 @@ export function getPublicUrl(key: string): string {
  * @returns The object key, or null if not an S3 URL
  */
 export function extractKeyFromUrl(
-  imageUrl: string | null | undefined,
+  imageUrl?: string | null | undefined,
 ): string | null {
   const publicUrl = getS3PublicUrl();
   if (!imageUrl || !publicUrl) return null;
@@ -143,8 +142,8 @@ export async function objectExistsInS3(key: string): Promise<boolean> {
       }),
     );
     return true;
-  } catch (err) {
-    if (isNotFound(err)) return false;
-    throw err; // Lança novamente se for erro de conexão/credencial
+  } catch (error) {
+    if (isNotFound(error)) return false;
+    throw error; // Lança novamente se for erro de conexão/credencial
   }
 }

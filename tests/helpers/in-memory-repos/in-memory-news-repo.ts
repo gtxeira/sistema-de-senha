@@ -3,8 +3,9 @@ import type {
   NewsItem,
   NewsRepository,
 } from '@/server/repositories/types';
-import { RouteError } from '@/server/http/errors';
 import type { NewsSeedInput } from '../../contracts/news-repo.contract';
+
+import { RouteError } from '@/server/http/errors';
 
 /**
  * Allowed image MIME types.
@@ -106,7 +107,7 @@ export class InMemoryNewsRepository implements NewsRepository {
   }
 
   async listActive(): Promise<NewsItem[]> {
-    return Array.from(this.#news.values())
+    return [...this.#news.values()]
       .filter((n) => n.active)
       .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
       .map((n) => ({

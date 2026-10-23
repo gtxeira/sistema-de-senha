@@ -1,47 +1,39 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import type {
+  LucideIcon} from 'lucide-react';
+import type {
+  RoleSaveBody,
+  RolesListBody,
+  SuccessBody,
+  UserSaveBody,
+  UsersListBody,
+} from '@/shared/types/api';
+import type { RoleRecord, UserRecord } from '@/shared/types/domain';
+
 import {
   Check,
+  ChevronDown,
+  Eye,
+  Headset,
   Minus,
   Pencil,
   Plus,
   ShieldCheck,
   Trash2,
   UserCheck,
-  Headset,
-  LucideIcon,
-  ChevronDown,
-  Eye,
 } from 'lucide-react';
-import {
-  SECTORS,
-  USERNAME_REGEX,
-  USERNAME_REGEX_LABEL,
-  getSector,
-} from '@/shared/constants';
-import { errorMessage } from '@/shared/errors';
-import { readJson } from '@/shared/json';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import type {
-  RolesListBody,
-  RoleSaveBody,
-  SuccessBody,
-  UsersListBody,
-  UserSaveBody,
-} from '@/shared/types/api';
-import type { RoleRecord, UserRecord } from '@/shared/types/domain';
+
 import {
-  ALL_PERMISSIONS,
-  PERMISSION_GROUPS,
-  ROLES_MANAGE,
-  USERS_CREATE,
-  USERS_DELETE,
-  USERS_EDIT,
-  USERS_VIEW,
-  computeEffectivePermissions,
-} from '@/shared/permissions';
-import { useCan } from '@/stores/use-session-store';
+  sectionEyebrowStyle,
+  sectionHeadingStyle,
+  sectionStyle,
+  sectionTitleStyle,
+} from '@/app/(authenticated)/(dashboard)/admin/admin-styles';
+import { cn } from '@/client/utils';
+import { FilterGroup } from '@/components/filter-group';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -56,12 +48,18 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import {
   Select,
   SelectContent,
@@ -79,23 +77,28 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { FilterGroup } from '@/components/filter-group';
 import {
-  sectionEyebrowStyle,
-  sectionHeadingStyle,
-  sectionStyle,
-  sectionTitleStyle,
-} from '@/app/(authenticated)/(dashboard)/admin/admin-styles';
-import { cn } from '@/client/utils';
+  getSector,
+  SECTORS,
+  USERNAME_REGEX,
+  USERNAME_REGEX_LABEL,
+} from '@/shared/constants';
+import { errorMessage } from '@/shared/errors';
+import { readJson } from '@/shared/json';
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PasswordInput } from '@/components/ui/password-input';
+  ALL_PERMISSIONS,
+  computeEffectivePermissions,
+  PERMISSION_GROUPS,
+  ROLES_MANAGE,
+  USERS_CREATE,
+  USERS_DELETE,
+  USERS_EDIT,
+  USERS_VIEW,
+} from '@/shared/permissions';
+import { useCan } from '@/stores/use-session-store';
 
 const INHERIT = 'inherit';
 const GRANT = 'grant';
@@ -244,8 +247,8 @@ export function AccessSection() {
       const data = await readJson<UsersListBody>(res);
       if (!res.ok) throw new Error(data.error);
       setUsers(data.users || []);
-    } catch (err) {
-      toast.error(errorMessage(err, 'Erro ao carregar usuários'));
+    } catch (error) {
+      toast.error(errorMessage(error, 'Erro ao carregar usuários'));
     } finally {
       setLoading(false);
     }
@@ -257,8 +260,8 @@ export function AccessSection() {
       const data = await readJson<RolesListBody>(res);
       if (!res.ok) throw new Error(data.error);
       setRoles(data.roles || []);
-    } catch (err) {
-      toast.error(errorMessage(err, 'Erro ao carregar cargos'));
+    } catch (error) {
+      toast.error(errorMessage(error, 'Erro ao carregar cargos'));
     }
   }
 
@@ -347,8 +350,8 @@ export function AccessSection() {
       );
       closeUserForm();
       await loadUsers();
-    } catch (err) {
-      toast.error(errorMessage(err, 'Erro ao salvar usuário'));
+    } catch (error) {
+      toast.error(errorMessage(error, 'Erro ao salvar usuário'));
     } finally {
       setLoading(false);
     }
@@ -369,8 +372,8 @@ export function AccessSection() {
       if (!res.ok) throw new Error(data.error);
       toast.success(`Usuário ${target.full_name} excluído com sucesso.`);
       await loadUsers();
-    } catch (err) {
-      toast.error(errorMessage(err, 'Erro ao excluir usuário'));
+    } catch (error) {
+      toast.error(errorMessage(error, 'Erro ao excluir usuário'));
     } finally {
       setLoading(false);
     }
@@ -440,8 +443,8 @@ export function AccessSection() {
       closeRoleForm();
       await loadRoles();
       await loadUsers();
-    } catch (err) {
-      toast.error(errorMessage(err, 'Erro ao salvar cargo'));
+    } catch (error) {
+      toast.error(errorMessage(error, 'Erro ao salvar cargo'));
     } finally {
       setLoading(false);
     }
@@ -462,8 +465,8 @@ export function AccessSection() {
       toast.success('Cargo excluído.');
       await loadRoles();
       await loadUsers();
-    } catch (err) {
-      toast.error(errorMessage(err, 'Erro ao excluir cargo'));
+    } catch (error) {
+      toast.error(errorMessage(error, 'Erro ao excluir cargo'));
     } finally {
       setLoading(false);
     }
@@ -798,9 +801,9 @@ export function AccessSection() {
                   <Button type="submit" disabled={loading}>
                     {loading
                       ? 'Salvando…'
-                      : editingUserId
+                      : (editingUserId
                         ? 'Salvar alterações'
-                        : 'Criar usuário'}
+                        : 'Criar usuário')}
                   </Button>
                   <Button
                     type="button"
@@ -1063,9 +1066,9 @@ export function AccessSection() {
                     <Button type="submit" disabled={loading}>
                       {loading
                         ? 'Salvando…'
-                        : editingRoleId
+                        : (editingRoleId
                           ? 'Salvar cargo'
-                          : 'Criar cargo'}
+                          : 'Criar cargo')}
                     </Button>
                     <Button
                       type="button"

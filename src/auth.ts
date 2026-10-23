@@ -7,9 +7,9 @@
  * deixa a fronteira explícita: nada de lógica aqui.
  */
 export {
-  SESSION_COOKIE_NAME,
-  handlers,
   auth,
+  handlers,
+  SESSION_COOKIE_NAME,
   signIn,
   signOut,
 } from '@/server/auth/config';

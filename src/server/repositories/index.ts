@@ -1,5 +1,14 @@
 import 'server-only';
 
+import type {
+  AuthRepository,
+  NewsRepository,
+  QueueRepository,
+  ReadRepository,
+  RolesRepository,
+  UsersRepository,
+} from './types';
+
 /**
  * Repositórios de dados — implementações Postgres.
  *
@@ -14,15 +23,6 @@ import { PostgresQueueRepository } from './queue-repo.postgres';
 import { PostgresReadRepository } from './read-repo.postgres';
 import { PostgresRolesRepository } from './roles-repo.postgres';
 import { PostgresUsersRepository } from './users-repo.postgres';
-
-import type {
-  AuthRepository,
-  NewsRepository,
-  QueueRepository,
-  ReadRepository,
-  RolesRepository,
-  UsersRepository,
-} from './types';
 
 export interface DataLayer {
   readonly queue: QueueRepository;

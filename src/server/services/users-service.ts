@@ -1,9 +1,10 @@
 import 'server-only';
 
-import { users } from '@/server/repositories';
-import { routeError } from '@/server/http/errors';
-import type { CreateUserInput, UserRecord } from '@/shared/types/domain';
 import type { UserPatchBody } from '@/shared/types/api';
+import type { CreateUserInput, UserRecord } from '@/shared/types/domain';
+
+import { routeError } from '@/server/http/errors';
+import { users } from '@/server/repositories';
 
 /**
  * Use cases de usuários.

@@ -1,6 +1,8 @@
 'use client';
 
 import { ChevronsUpDown, LogOut } from 'lucide-react';
+import { signOut } from 'next-auth/react';
+import * as React from 'react';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -18,8 +20,6 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
-import * as React from 'react';
-import { signOut } from 'next-auth/react';
 import { useSessionStore } from '@/stores/use-session-store';
 
 export function NavUser({
@@ -112,13 +112,13 @@ function UserAvatar({
 }) {
   return (
     <>
-      <Avatar className="h-8 w-8">
+      <Avatar className="size-8">
         <AvatarFallback className="text-[11px] font-bold">
           {userInitials}
         </AvatarFallback>
       </Avatar>
 
-      <div className="grid flex-1 text-left text-sm leading-tight">
+      <div className="grid flex-1 text-left text-sm/tight">
         <span className="truncate text-xs font-semibold">{user.name}</span>
         <span className="truncate text-[11px]">{user.sector}</span>
       </div>

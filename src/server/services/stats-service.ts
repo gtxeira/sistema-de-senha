@@ -1,5 +1,8 @@
 import 'server-only';
 
+import type { SequenceType } from '@/shared/constants';
+import type { QueueStats } from '@/shared/types/domain';
+
 import { read } from '@/server/repositories';
 import {
   CALL_TYPES,
@@ -7,10 +10,8 @@ import {
   MAX_DAYS,
   MIN_DAYS,
 } from '@/shared/constants';
-import type { SequenceType } from '@/shared/constants';
 import { sanitizeNull } from '@/shared/sanitization';
 import { normalizePage, normalizePageSize } from '@/shared/validation';
-import type { QueueStats } from '@/shared/types/domain';
 
 /**
  * Use cases de estatísticas/histórico.
@@ -44,9 +45,9 @@ export function parseStatsQuery(searchParams: URLSearchParams): StatsQuery {
     typeParam === CALL_TYPES.PREFERENCIAL ||
     typeParam === CALL_TYPES.PREFERENTIAL
       ? CALL_TYPES.PREFERENCIAL
-      : typeParam === CALL_TYPES.NORMAL
+      : (typeParam === CALL_TYPES.NORMAL
         ? CALL_TYPES.NORMAL
-        : null;
+        : null);
 
   const page = normalizePage(Number(searchParams.get('page')));
   const pageSize = normalizePageSize(Number(searchParams.get('pageSize')));

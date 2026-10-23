@@ -1,9 +1,10 @@
-import { describe, expect, it } from 'vitest';
 import { readdirSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { matchRoute, ROUTE_RULES } from '@/shared/permissions';
+import { describe, expect, it } from 'vitest';
+
 import { SIGN_IN_PATH } from '@/shared/constants';
+import { matchRoute, ROUTE_RULES } from '@/shared/permissions';
 
 /**
  * Anti-drift entre o **filesystem** e o **registro de rotas**.
@@ -63,7 +64,7 @@ function routeUrl(file: string): string {
 }
 
 /** URLs de todas as páginas do app. */
-const pageUrls = findPageFiles(APP_DIR).map(routeUrl);
+const pageUrls = findPageFiles(APP_DIR).map((file) => routeUrl(file));
 
 describe('registro de rotas (anti-drift com src/app)', () => {
   it('o app tem páginas para conferir', () => {

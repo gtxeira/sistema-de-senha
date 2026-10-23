@@ -47,7 +47,7 @@ if (typeof window === 'undefined') {
       setItem: (key, value) => store.set(key, String(value)),
       removeItem: (key) => store.delete(key),
       clear: () => store.clear(),
-      key: (index) => Array.from(store.keys())[index] ?? null,
+      key: (index) => [...store.keys()][index] ?? null,
       get length() {
         return store.size;
       },
@@ -85,7 +85,7 @@ if (typeof window === 'undefined') {
    * as interfaces completas do DOM (`SpeechSynthesis`, `typeof AudioContext`) e
    * algumas dessas propriedades chegam como accessors de leitura.
    */
-  function overrideGlobal(target: object, key: string, value: unknown): void {
+  function overrideGlobal(target: object, key: string, value?: unknown): void {
     Object.defineProperty(target, key, {
       value,
       writable: true,
@@ -139,8 +139,8 @@ if (typeof window === 'undefined') {
       });
     }
 
-    overrideGlobal(window, 'AudioContext', undefined);
-    overrideGlobal(window, 'webkitAudioContext', undefined);
+    overrideGlobal(window, 'AudioContext');
+    overrideGlobal(window, 'webkitAudioContext');
   });
 
   overrideGlobal(globalThis, '__localStorage', localStorage);

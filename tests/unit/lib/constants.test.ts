@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
+
 import {
   ALL_SECTORS,
   ALL_SECTORS_INFO,
-  SECTORS,
   getSector,
   getSectorScope,
   isSectorId,
   isSectorScope,
+  SECTORS,
 } from '@/shared/constants';
 
 describe('escopo de setor', () => {
@@ -32,7 +33,7 @@ describe('escopo de setor', () => {
     expect(isSectorScope(ALL_SECTORS)).toBe(true);
     expect(isSectorScope('null')).toBe(false);
     expect(isSectorScope(null)).toBe(false);
-    expect(isSectorScope(undefined)).toBe(false);
+    expect(isSectorScope()).toBe(false);
   });
 
   it("isSectorId não aceita o pseudo-setor 'Todos'", () => {

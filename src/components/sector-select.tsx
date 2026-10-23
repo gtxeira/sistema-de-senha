@@ -1,5 +1,7 @@
 'use client';
 
+import type { SectorScope } from '@/shared/constants';
+
 import {
   Select,
   SelectContent,
@@ -10,7 +12,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ALL_SECTORS, ALL_SECTORS_INFO, SECTORS } from '@/shared/constants';
-import type { SectorScope } from '@/shared/constants';
 
 export interface SectorSelectProps {
   /** Escopo selecionado: um setor real ou "Todos". */

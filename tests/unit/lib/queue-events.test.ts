@@ -1,14 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import {
-  subscribeQueueSector,
-  subscribeQueueEvents,
-  getQueueEventsSnapshot,
-  __resetQueueEvents,
-} from '@/client/queue/queue-events';
 import type { ClientQueueCall } from '@/client/queue/queue-events';
-import { RESET_MARKER_KEY, SSE_EVENT_TYPES } from '@/shared/constants';
 import type { SectorId } from '@/shared/constants';
-import { formatClock } from '@/shared/time';
+
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import {
   getInitialState,
   normalizeQueue,
@@ -16,6 +10,14 @@ import {
   reconcileQueueFromCalls,
   saveQueueState,
 } from '@/client/queue/queue';
+import {
+  __resetQueueEvents,
+  getQueueEventsSnapshot,
+  subscribeQueueEvents,
+  subscribeQueueSector,
+} from '@/client/queue/queue-events';
+import { RESET_MARKER_KEY, SSE_EVENT_TYPES } from '@/shared/constants';
+import { formatClock } from '@/shared/time';
 
 /**
  * `global.fetch` é tipado como `typeof fetch`, que nenhum mock satisfaz.
@@ -45,7 +47,7 @@ class FakeEventSource {
   }
 
   static latest(): FakeEventSource {
-    return FakeEventSource.instances[FakeEventSource.instances.length - 1];
+    return FakeEventSource.instances.at(-1)!;
   }
 
   close(): void {

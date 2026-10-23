@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+
 import { DEFAULT_SECTOR, getSector } from '@/shared/constants';
 import { PAGE_TITLES } from '@/shared/page-title';
 

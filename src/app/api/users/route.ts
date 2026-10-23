@@ -1,20 +1,22 @@
+import type { CreateUserRequest, UserPatchBody } from '@/shared/types/api';
+
 import { NextResponse } from 'next/server';
+
+import { requirePermission } from '@/server/http/api-auth';
 import {
   createUser,
   deleteUser,
   listUsers,
   updateUser,
 } from '@/server/services/users-service';
-import { requirePermission } from '@/server/http/api-auth';
 import { errorMessage, errorStatus } from '@/shared/errors';
+import { readJson } from '@/shared/json';
 import {
   USERS_CREATE,
   USERS_DELETE,
   USERS_EDIT,
   USERS_VIEW,
 } from '@/shared/permissions';
-import { readJson } from '@/shared/json';
-import type { CreateUserRequest, UserPatchBody } from '@/shared/types/api';
 
 /* ─────────────────────────────────────────────────
    Gestão de usuários: cada operação exige a permissão
@@ -33,10 +35,10 @@ export async function GET() {
 
     const userList = await listUsers();
     return NextResponse.json({ users: userList });
-  } catch (err) {
+  } catch (error) {
     return NextResponse.json(
-      { error: errorMessage(err, 'Erro ao listar usuários') },
-      { status: errorStatus(err, 500) },
+      { error: errorMessage(error, 'Erro ao listar usuários') },
+      { status: errorStatus(error, 500) },
     );
   }
 }
@@ -52,10 +54,10 @@ export async function POST(request: Request) {
     const body = await readJson<CreateUserRequest>(request);
     const result = await createUser(body);
     return NextResponse.json(result);
-  } catch (err) {
+  } catch (error) {
     return NextResponse.json(
-      { error: errorMessage(err, 'Erro ao criar usuário') },
-      { status: errorStatus(err, 500) },
+      { error: errorMessage(error, 'Erro ao criar usuário') },
+      { status: errorStatus(error, 500) },
     );
   }
 }
@@ -81,10 +83,10 @@ export async function PATCH(request: Request) {
 
     const result = await updateUser(id, body, session.user.id);
     return NextResponse.json(result);
-  } catch (err) {
+  } catch (error) {
     return NextResponse.json(
-      { error: errorMessage(err, 'Erro ao atualizar usuário') },
-      { status: errorStatus(err, 500) },
+      { error: errorMessage(error, 'Erro ao atualizar usuário') },
+      { status: errorStatus(error, 500) },
     );
   }
 }
@@ -109,10 +111,10 @@ export async function DELETE(request: Request) {
 
     const result = await deleteUser(id, session.user.id);
     return NextResponse.json(result);
-  } catch (err) {
+  } catch (error) {
     return NextResponse.json(
-      { error: errorMessage(err, 'Erro ao excluir usuário') },
-      { status: errorStatus(err, 500) },
+      { error: errorMessage(error, 'Erro ao excluir usuário') },
+      { status: errorStatus(error, 500) },
     );
   }
 }

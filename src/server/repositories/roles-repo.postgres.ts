@@ -1,16 +1,17 @@
 import 'server-only';
 
-import { prisma } from '@/server/db/prisma-client';
 import type { Prisma } from '@/server/generated/prisma/client';
-import { routeError } from '@/server/http/errors';
-import { errorCode, errorStatus, errorMessage } from '@/shared/errors';
-import { ALL_PERMISSIONS } from '@/shared/permissions';
 import type {
   CreateRoleInput,
   RoleRecord,
   RolesRepository,
   UpdateRoleInput,
 } from './types';
+
+import { prisma } from '@/server/db/prisma-client';
+import { routeError } from '@/server/http/errors';
+import { errorCode, errorMessage, errorStatus } from '@/shared/errors';
+import { ALL_PERMISSIONS } from '@/shared/permissions';
 
 const PERMISSION_SET = new Set<string>(ALL_PERMISSIONS);
 const KEY_REGEX = /^[a-z][a-z0-9-]*$/;
@@ -80,7 +81,7 @@ export class PostgresRolesRepository implements RolesRepository {
       include: { permissions: true },
       orderBy: [{ built_in: 'desc' }, { created_at: 'asc' }],
     });
-    return roles.map(shapeRole);
+    return roles.map((role) => shapeRole(role));
   }
 
   /** Busca um cargo pela chave. */
@@ -122,12 +123,12 @@ export class PostgresRolesRepository implements RolesRepository {
         include: { permissions: true },
       });
       return shapeRole(role);
-    } catch (err) {
-      if (errorCode(err) === 'P2002')
+    } catch (error) {
+      if (errorCode(error) === 'P2002')
         throw routeError(409, 'Já existe um cargo com essa chave');
       throw routeError(
-        errorStatus(err),
-        errorMessage(err, 'Erro ao criar cargo'),
+        errorStatus(error),
+        errorMessage(error, 'Erro ao criar cargo'),
       );
     }
   }
@@ -177,12 +178,12 @@ export class PostgresRolesRepository implements RolesRepository {
         return fresh;
       });
       return shapeRole(role);
-    } catch (err) {
-      if (errorCode(err) === 'P2002')
+    } catch (error) {
+      if (errorCode(error) === 'P2002')
         throw routeError(409, 'Já existe um cargo com essa chave');
       throw routeError(
-        errorStatus(err),
-        errorMessage(err, 'Erro ao atualizar cargo'),
+        errorStatus(error),
+        errorMessage(error, 'Erro ao atualizar cargo'),
       );
     }
   }
@@ -197,19 +198,19 @@ export class PostgresRolesRepository implements RolesRepository {
 
     try {
       await prisma.roles.delete({ where: { id } });
-    } catch (err) {
+    } catch (error) {
       // FK users_role_id_fkey (ON DELETE RESTRICT)
-      if (errorCode(err) === 'P2003') {
+      if (errorCode(error) === 'P2003') {
         throw routeError(
           409,
           'Cargo em uso por usuários — troque o cargo deles antes de excluir',
         );
       }
-      if (errorCode(err) === 'P2025')
+      if (errorCode(error) === 'P2025')
         throw routeError(404, 'Cargo não encontrado');
       throw routeError(
-        errorStatus(err),
-        errorMessage(err, 'Erro ao excluir cargo'),
+        errorStatus(error),
+        errorMessage(error, 'Erro ao excluir cargo'),
       );
     }
   }

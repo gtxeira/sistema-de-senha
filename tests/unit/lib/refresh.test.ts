@@ -1,4 +1,7 @@
+import type { RefreshTokenRow, RotateResult } from '@/server/auth/refresh';
+
 import { beforeEach, describe, expect, it } from 'vitest';
+
 import {
   generateRefreshToken,
   hashRefreshToken,
@@ -6,7 +9,6 @@ import {
   revokeRefreshToken,
   rotateRefreshToken,
 } from '@/server/auth/refresh';
-import type { RefreshTokenRow, RotateResult } from '@/server/auth/refresh';
 import { REFRESH_REUSE_GRACE, REFRESH_TOKEN_MAX_AGE } from '@/shared/constants';
 
 /** Mesmo shape de `RefreshTokenRow`, mutável — o teste envelhece a linha. */

@@ -1,24 +1,26 @@
 import 'server-only';
 
-import bcrypt from 'bcryptjs';
-import { prisma } from '@/server/db/prisma-client';
 import type { Prisma } from '@/server/generated/prisma/client';
-import { routeError } from '@/server/http/errors';
-import { isValidUsername } from '@/shared/validation';
-import { generateEmail } from '@/shared/format';
-import { errorCode, errorStatus, errorMessage } from '@/shared/errors';
-import { DEFAULT_ROLE, BCRYPT_SALT_ROUNDS } from '@/shared/constants';
-import {
-  ALL_PERMISSIONS,
-  computeEffectivePermissions,
-} from '@/shared/permissions';
 import type { Permission, PermissionOverride } from '@/shared/permissions';
 import type {
   CreateUserInput,
   UpdateUserInput,
-  UsersRepository,
   UserRecord,
+  UsersRepository,
 } from './types';
+
+import bcrypt from 'bcryptjs';
+
+import { prisma } from '@/server/db/prisma-client';
+import { routeError } from '@/server/http/errors';
+import { BCRYPT_SALT_ROUNDS, DEFAULT_ROLE } from '@/shared/constants';
+import { errorCode, errorMessage, errorStatus } from '@/shared/errors';
+import { generateEmail } from '@/shared/format';
+import {
+  ALL_PERMISSIONS,
+  computeEffectivePermissions,
+} from '@/shared/permissions';
+import { isValidUsername } from '@/shared/validation';
 
 const PERMISSION_SET = new Set<string>(ALL_PERMISSIONS);
 
@@ -108,7 +110,7 @@ export class PostgresUsersRepository implements UsersRepository {
       orderBy: { created_at: 'desc' },
     });
 
-    const shapedUsers = users.map(shapeUser);
+    const shapedUsers = users.map((user) => shapeUser(user));
 
     return shapedUsers.sort((a, b) => {
       const aIsAdmin = a.role === 'admin';
@@ -158,16 +160,16 @@ export class PostgresUsersRepository implements UsersRepository {
       });
 
       return { success: true, user: shapeUser(user) };
-    } catch (err) {
-      if (errorCode(err) === 'P2002') {
+    } catch (error) {
+      if (errorCode(error) === 'P2002') {
         throw routeError(409, 'Nome de usuário já existe');
       }
-      if (errorCode(err) === 'P2003') {
+      if (errorCode(error) === 'P2003') {
         throw routeError(400, 'Cargo inválido');
       }
       throw routeError(
-        errorStatus(err),
-        errorMessage(err, 'Erro ao criar usuário'),
+        errorStatus(error),
+        errorMessage(error, 'Erro ao criar usuário'),
       );
     }
   }
@@ -213,13 +215,13 @@ export class PostgresUsersRepository implements UsersRepository {
         select: USER_SELECT,
       });
       return shapeUser(user);
-    } catch (err) {
-      if (errorCode(err) === 'P2025')
+    } catch (error) {
+      if (errorCode(error) === 'P2025')
         throw routeError(404, 'Usuário não encontrado');
-      if (errorCode(err) === 'P2003') throw routeError(400, 'Cargo inválido');
+      if (errorCode(error) === 'P2003') throw routeError(400, 'Cargo inválido');
       throw routeError(
-        errorStatus(err),
-        errorMessage(err, 'Erro ao atualizar usuário'),
+        errorStatus(error),
+        errorMessage(error, 'Erro ao atualizar usuário'),
       );
     }
   }
@@ -246,12 +248,12 @@ export class PostgresUsersRepository implements UsersRepository {
           : []),
       ]);
       return overrides;
-    } catch (err) {
-      if (errorCode(err) === 'P2025')
+    } catch (error) {
+      if (errorCode(error) === 'P2025')
         throw routeError(404, 'Usuário não encontrado');
       throw routeError(
-        errorStatus(err),
-        errorMessage(err, 'Erro ao salvar permissões'),
+        errorStatus(error),
+        errorMessage(error, 'Erro ao salvar permissões'),
       );
     }
   }
@@ -279,13 +281,13 @@ export class PostgresUsersRepository implements UsersRepository {
   async remove(id: string): Promise<void> {
     try {
       await prisma.users.delete({ where: { id } });
-    } catch (err) {
-      if (errorCode(err) === 'P2025') {
+    } catch (error) {
+      if (errorCode(error) === 'P2025') {
         throw routeError(404, 'Usuário não encontrado');
       }
       throw routeError(
-        errorStatus(err),
-        errorMessage(err, 'Erro ao excluir usuário'),
+        errorStatus(error),
+        errorMessage(error, 'Erro ao excluir usuário'),
       );
     }
   }

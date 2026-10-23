@@ -1,6 +1,7 @@
-import { describe, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe } from 'vitest';
+
 import { newsRepoContract } from '../../contracts/news-repo.contract';
-import { seedTestNews, cleanupTestNews } from '../postgres-setup';
+import { cleanupTestNews, seedTestNews } from '../postgres-setup';
 
 describe('NewsRepository — Postgres integration', () => {
   let seededIds: number[] = [];

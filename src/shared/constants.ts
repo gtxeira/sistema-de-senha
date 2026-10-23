@@ -64,13 +64,14 @@ export function getSector(id: string): SectorInfo | undefined {
  *
  * @returns `undefined` para valor inválido, em vez de estourar.
  */
-export function getSectorScope(id: string): SectorInfo | undefined {
+export function getSectorScope(id?: string): SectorInfo | undefined {
+  if (id === undefined) return undefined;
   if (id === ALL_SECTORS) return ALL_SECTORS_INFO;
   return getSector(id);
 }
 
 /** Predicado de escopo: setor real ou "Todos". */
-export function isSectorScope(value: unknown): value is SectorScope {
+export function isSectorScope(value?: unknown): value is SectorScope {
   return value === ALL_SECTORS || isSectorId(value);
 }
 

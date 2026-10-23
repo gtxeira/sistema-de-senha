@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it } from 'vitest';
 import type { NewsRepository } from '@/server/repositories/types';
+
+import { beforeEach, describe, expect, it } from 'vitest';
 
 /** Subconjunto do seed de notícia que os testes de contrato usam. */
 export interface NewsSeedInput {

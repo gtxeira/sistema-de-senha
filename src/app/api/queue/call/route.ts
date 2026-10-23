@@ -1,11 +1,13 @@
-import { NextResponse } from 'next/server';
-import { callNext } from '@/server/services/queue-service';
-import { errorMessage, errorStatus } from '@/shared/errors';
-import { assertSectorAccess, requirePermission } from '@/server/http/api-auth';
-import { QUEUE_CALL } from '@/shared/permissions';
-import { readJson } from '@/shared/json';
 import type { CallRequestBody } from '@/shared/types/api';
+
+import { NextResponse } from 'next/server';
+
+import { assertSectorAccess, requirePermission } from '@/server/http/api-auth';
+import { callNext } from '@/server/services/queue-service';
 import { isSectorId } from '@/shared/constants';
+import { errorMessage, errorStatus } from '@/shared/errors';
+import { readJson } from '@/shared/json';
+import { QUEUE_CALL } from '@/shared/permissions';
 
 /* ─────────────────────────────────────────────────
    POST — chama próxima senha de um setor
@@ -40,9 +42,9 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ success: true, ...result });
-  } catch (err) {
-    const status = errorStatus(err, 0);
-    const message = errorMessage(err);
+  } catch (error) {
+    const status = errorStatus(error, 0);
+    const message = errorMessage(error);
     if (
       status === 503 ||
       message.includes('not configured') ||

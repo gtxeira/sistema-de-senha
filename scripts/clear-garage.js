@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
-import { resolve, dirname } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
 import { checkIsRunningInDocker } from './check-is-running-in-docker';
 import { loadEnvFile } from './load-env-file';
 

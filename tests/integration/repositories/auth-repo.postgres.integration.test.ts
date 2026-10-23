@@ -1,6 +1,7 @@
-import { describe, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe } from 'vitest';
+
 import { authRepoContract } from '../../contracts/auth-repo.contract';
-import { seedTestUser, cleanupTestUsers } from '../postgres-setup';
+import { cleanupTestUsers, seedTestUser } from '../postgres-setup';
 
 describe('AuthRepository — Postgres integration', () => {
   let seededUsernames: string[] = [];

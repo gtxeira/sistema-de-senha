@@ -1,11 +1,13 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import type { ApiErrorBody } from '@/shared/types/api';
+
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import {
   getInitialState,
-  saveQueueState,
   readQueueState,
+  saveQueueState,
 } from '@/client/queue/queue';
 import { readJson } from '@/shared/json';
-import type { ApiErrorBody } from '@/shared/types/api';
 
 /**
  * Cobre a ordem das operações no handler de reset do admin.

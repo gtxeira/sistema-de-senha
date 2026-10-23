@@ -1,7 +1,17 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { authMock } from '../../helpers/auth-mock';
+import type { Session } from 'next-auth';
+import type { Permission } from '@/shared/permissions';
+import type {
+  ApiErrorBody,
+  RoleSaveBody,
+  RolesListBody,
+  UserSaveBody,
+} from '@/shared/types/api';
+
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { eventManager } from '@/server/realtime/event-manager';
 import { MAX_SSE_CONNECTIONS_PER_SECTOR, SECTORS } from '@/shared/constants';
+import { readJson } from '@/shared/json';
 import {
   ALL_PERMISSIONS,
   NEWS_CREATE,
@@ -18,16 +28,8 @@ import {
   USERS_EDIT,
   USERS_VIEW,
 } from '@/shared/permissions';
-import type { Permission } from '@/shared/permissions';
-import type { Session } from 'next-auth';
-import { readJson } from '@/shared/json';
-import type {
-  ApiErrorBody,
-  RoleSaveBody,
-  RolesListBody,
-  UserSaveBody,
-} from '@/shared/types/api';
-import { seedTestUser, cleanupAllTestUsers } from '../postgres-setup';
+import { authMock } from '../../helpers/auth-mock';
+import { cleanupAllTestUsers, seedTestUser } from '../postgres-setup';
 
 /**
  * Superfície de `Request` que os handlers de rota leem.

@@ -1,6 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { EventManager } from '../../../src/server/realtime/event-manager';
 import type { QueueCallEvent } from '../../../src/server/realtime/event-manager';
+
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { EventManager } from '../../../src/server/realtime/event-manager';
 
 describe('EventManager', () => {
   let manager: EventManager;
@@ -426,11 +428,12 @@ describe('EventManager', () => {
 
     it('funciona com subscriber removido no meio da emissão', () => {
       const results: string[] = [];
+      let unsub2: (() => void) | undefined;
       manager.subscribeToQueue('farmacia', () => {
         results.push('cb1');
-        unsub2(); // Remove o segundo callback durante a emissão
+        unsub2?.(); // Remove o segundo callback durante a emissão
       });
-      const unsub2 = manager.subscribeToQueue('farmacia', () => {
+      unsub2 = manager.subscribeToQueue('farmacia', () => {
         results.push('cb2');
       });
 

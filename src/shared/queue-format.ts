@@ -1,5 +1,6 @@
-import { CALL_TYPES, TYPE_PREFIXES, MAX_QUEUE_NUMBER } from './constants';
 import type { CallType, SequenceType } from './constants';
+
+import { CALL_TYPES, MAX_QUEUE_NUMBER, TYPE_PREFIXES } from './constants';
 
 /**
  * Formatação pura de números de senha — usada pelo servidor (respostas das
@@ -10,7 +11,7 @@ import type { CallType, SequenceType } from './constants';
  * Normaliza o tipo recebido na borda para o par
  * `sequenceType` (banco) / `callType` (wire).
  */
-export function normalizeCallType(type: string | undefined): {
+export function normalizeCallType(type?: string | undefined): {
   sequenceType: SequenceType;
   callType: CallType;
 } {
@@ -33,7 +34,7 @@ export function formatNumberString(num: number, type: CallType): string {
 }
 
 /** Número cru zero-padded, sem prefixo (`001`), com o teto da fila. */
-export function formatQueueNumber(num: number | null | undefined): string {
+export function formatQueueNumber(num?: number | null | undefined): string {
   if (!num || num <= 0) return '---';
   if (num >= MAX_QUEUE_NUMBER + 1) return String(MAX_QUEUE_NUMBER);
   return String(num).padStart(3, '0');

@@ -1,15 +1,16 @@
 import 'server-only';
 
-import { prisma } from '@/server/db/prisma-client';
 import type { Prisma } from '@/server/generated/prisma/client';
-import { normalizeCallType } from '@/shared/queue-format';
+import type { SequenceType } from '@/shared/constants';
+import type { QueueCallInput, QueueRepository, RecentCall } from './types';
+
+import { prisma } from '@/server/db/prisma-client';
 import {
   DEFAULT_RECENT_LIMIT,
   MAX_QUEUE_NUMBER,
   MIN_QUEUE_NUMBER,
 } from '@/shared/constants';
-import type { SequenceType } from '@/shared/constants';
-import type { QueueCallInput, QueueRepository, RecentCall } from './types';
+import { normalizeCallType } from '@/shared/queue-format';
 
 export class PostgresQueueRepository implements QueueRepository {
   /**

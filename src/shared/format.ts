@@ -1,4 +1,4 @@
-import { EMAIL_DOMAIN, DEFAULT_GUICHE } from './constants';
+import { DEFAULT_GUICHE, EMAIL_DOMAIN } from './constants';
 
 /**
  * Formatação pura de dados de usuário — compartilhada entre a UI (avatar) e

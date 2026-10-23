@@ -1,10 +1,11 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import {
-  LOCALE,
+  API_ROUTES,
   APP_TIMEZONE,
   CLOCK_INTERVAL,
+  LOCALE,
   SERVER_TIME_SYNC_INTERVAL,
-  API_ROUTES,
 } from '@/shared/constants';
 
 describe('useServerClock — constantes de sincronização', () => {

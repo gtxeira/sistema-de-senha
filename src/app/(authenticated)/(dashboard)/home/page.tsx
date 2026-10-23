@@ -1,19 +1,21 @@
 'use client';
 
-import { Monitor, Settings2, Headphones, History } from 'lucide-react';
-import { SECTORS } from '@/shared/constants';
-import {
-  SCREEN_ADMIN,
-  canAccessSector,
-  hasPermission,
-} from '@/shared/permissions';
-import { useEffectiveSession } from '@/hooks/use-effective-session';
-import { PageHeader } from '@/components/page-header';
+import type { Route } from 'next';
+
+import { Headphones, History, Monitor, Settings2 } from 'lucide-react';
+
 import {
   NavCard,
   type NavCardProps,
 } from '@/app/(authenticated)/(dashboard)/home/nav-card';
-import type { Route } from 'next';
+import { PageHeader } from '@/components/page-header';
+import { useEffectiveSession } from '@/hooks/use-effective-session';
+import { SECTORS } from '@/shared/constants';
+import {
+  canAccessSector,
+  hasPermission,
+  SCREEN_ADMIN,
+} from '@/shared/permissions';
 
 type NavItem = {
   id: string;

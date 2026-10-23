@@ -1,8 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import type { QueueRecentBody } from '@/shared/types/api';
+
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+
+import { readJson } from '@/shared/json';
 import { authMock } from '../../../../helpers/auth-mock';
 import { cleanupQueueTestData } from '../../../postgres-setup';
-import { readJson } from '@/shared/json';
-import type { QueueRecentBody } from '@/shared/types/api';
 
 async function importRoute() {
   return import('@/app/api/queue/recent/route');

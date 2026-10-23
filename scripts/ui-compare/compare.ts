@@ -1,3 +1,6 @@
+import { readFileSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 /**
  * Compara duas capturas feitas pelo capture.ts (antes vs depois).
  *
@@ -21,9 +24,6 @@
  */
 import pixelmatch from 'pixelmatch';
 import { PNG } from 'pngjs';
-import { readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 const SHOTS = join(dirname(fileURLToPath(import.meta.url)), 'shots');
 const args = process.argv.slice(2);

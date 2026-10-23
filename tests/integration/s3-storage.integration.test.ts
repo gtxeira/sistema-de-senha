@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { afterAll, describe, expect, it } from 'vitest';
+
 import {
   deleteFromS3,
   extractKeyFromUrl,
@@ -146,7 +147,7 @@ describe('S3 storage — integration', () => {
 
     it('extractKeyFromUrl retorna null para input inválido', () => {
       expect(extractKeyFromUrl(null)).toBeNull();
-      expect(extractKeyFromUrl(undefined)).toBeNull();
+      expect(extractKeyFromUrl()).toBeNull();
       expect(extractKeyFromUrl('')).toBeNull();
     });
   });

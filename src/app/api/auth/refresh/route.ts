@@ -1,20 +1,22 @@
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import type { RotateFailure } from '@/server/auth/refresh';
+import type { Permission } from '@/shared/permissions';
+
 import { encode } from 'next-auth/jwt';
+import { cookies } from 'next/headers';
+import { NextResponse } from 'next/server';
+
 import { auth, SESSION_COOKIE_NAME } from '@/auth';
-import { prisma } from '@/server/db/prisma-client';
 import {
-  REFRESH_COOKIE_NAME,
   clearRefreshCookieOptions,
   issueRefreshToken,
+  REFRESH_COOKIE_NAME,
   refreshCookieOptions,
   revokeRefreshToken,
   rotateRefreshToken,
 } from '@/server/auth/refresh';
-import type { RotateFailure } from '@/server/auth/refresh';
+import { prisma } from '@/server/db/prisma-client';
 import { ACCESS_TOKEN_MAX_AGE } from '@/shared/constants';
 import { computeEffectivePermissions } from '@/shared/permissions';
-import type { Permission } from '@/shared/permissions';
 
 /** `cookies()` é assíncrono e só existe dentro de um handler. */
 type CookieJar = Awaited<ReturnType<typeof cookies>>;

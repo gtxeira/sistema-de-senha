@@ -1,17 +1,18 @@
 import 'server-only';
 
+import type { CreateNewsInput, NewsItem, NewsRepository } from './types';
+
 import { prisma } from '@/server/db/prisma-client';
 import { routeError, RouteError } from '@/server/http/errors';
-import { isAllowedImageType, isValidFileSize } from '@/shared/validation';
-import { errorMessage } from '@/shared/errors';
-import { NEWS_MAX_ACTIVE } from '@/shared/constants';
 import {
-  uploadToS3,
   deleteFromS3,
-  getPublicUrl,
   extractKeyFromUrl,
+  getPublicUrl,
+  uploadToS3,
 } from '@/server/storage/s3-client';
-import type { CreateNewsInput, NewsItem, NewsRepository } from './types';
+import { NEWS_MAX_ACTIVE } from '@/shared/constants';
+import { errorMessage } from '@/shared/errors';
+import { isAllowedImageType, isValidFileSize } from '@/shared/validation';
 
 export class PostgresNewsRepository implements NewsRepository {
   /** Create a news item (upload image to S3 + save to db) */
@@ -38,10 +39,10 @@ export class PostgresNewsRepository implements NewsRepository {
 
     try {
       await uploadToS3(fileName, buffer, image.type);
-    } catch (err) {
+    } catch (error) {
       throw routeError(
         500,
-        errorMessage(err, 'Erro ao fazer upload da imagem.'),
+        errorMessage(error, 'Erro ao fazer upload da imagem.'),
       );
     }
 
@@ -61,11 +62,11 @@ export class PostgresNewsRepository implements NewsRepository {
           image: row.image_url,
         },
       };
-    } catch (err) {
+    } catch (error) {
       // Rollback: delete from S3 if DB write fails
       await deleteFromS3(fileName);
-      if (err instanceof RouteError) throw err;
-      throw routeError(500, errorMessage(err, 'Erro ao salvar notícia.'));
+      if (error instanceof RouteError) throw error;
+      throw routeError(500, errorMessage(error, 'Erro ao salvar notícia.'));
     }
   }
 
@@ -95,9 +96,9 @@ export class PostgresNewsRepository implements NewsRepository {
       if (key) await deleteFromS3(key);
 
       return { success: true };
-    } catch (err) {
-      if (err instanceof RouteError) throw err;
-      throw routeError(500, errorMessage(err, 'Erro ao excluir.'));
+    } catch (error) {
+      if (error instanceof RouteError) throw error;
+      throw routeError(500, errorMessage(error, 'Erro ao excluir.'));
     }
   }
 

@@ -1,9 +1,9 @@
 import {
-  USERNAME_REGEX,
+  MAX_PAGE_SIZE,
   NEWS_ALLOWED_TYPES,
   NEWS_MAX_FILE_SIZE,
   PAGE_SIZES,
-  MAX_PAGE_SIZE,
+  USERNAME_REGEX,
 } from './constants';
 
 /**

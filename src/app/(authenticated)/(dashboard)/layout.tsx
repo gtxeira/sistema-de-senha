@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+
 import { auth } from '@/auth';
 import { ServerSessionProvider } from '@/components/server-session-provider';
 import { SidebarLayout } from '@/components/sidebar/sidebar-layout';

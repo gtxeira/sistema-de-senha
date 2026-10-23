@@ -1,5 +1,7 @@
 'use client';
 
+import type { ApiErrorBody, AuthSessionBody } from '@/shared/types/api';
+
 /**
  * Renovação da sessão de curta duração no client (apenas navegador).
  *
@@ -16,7 +18,6 @@
 import { SESSION_REFRESH_INTERVAL } from '@/shared/constants';
 import { readJson } from '@/shared/json';
 import { useSessionStore } from '@/stores/use-session-store';
-import type { ApiErrorBody, AuthSessionBody } from '@/shared/types/api';
 
 let inflight: Promise<boolean> | null = null;
 

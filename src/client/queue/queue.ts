@@ -1,36 +1,37 @@
-import {
-  SECTORS,
-  GUICHES,
-  QUEUE_KEY,
-  DEFAULT_SECTOR,
-  ALL_SECTORS,
-  MAX_QUEUE_NUMBER,
-  MIN_QUEUE_NUMBER,
-  CALL_TYPES,
-  TYPE_FIELDS,
-  TYPE_LABELS,
-  TYPE_PREFIXES,
-  HISTORY_LIMITS,
-  NO_PASSWORD,
-} from '@/shared/constants';
 import type { CallType } from '@/shared/constants';
-import { parseJson, readJson } from '@/shared/json';
-import { dayKey, dayKeyOrNull, formatClock } from '@/shared/time';
 import type { QueueCallBody } from '@/shared/types/api';
 
-export {
-  SECTORS,
-  GUICHES,
-  QUEUE_KEY,
-  DEFAULT_SECTOR,
+import {
   ALL_SECTORS,
+  CALL_TYPES,
+  DEFAULT_SECTOR,
+  GUICHES,
+  HISTORY_LIMITS,
   MAX_QUEUE_NUMBER,
   MIN_QUEUE_NUMBER,
-  CALL_TYPES,
+  NO_PASSWORD,
+  QUEUE_KEY,
+  SECTORS,
   TYPE_FIELDS,
   TYPE_LABELS,
   TYPE_PREFIXES,
+} from '@/shared/constants';
+import { parseJson, readJson } from '@/shared/json';
+import { dayKey, dayKeyOrNull, formatClock } from '@/shared/time';
+
+export {
+  ALL_SECTORS,
+  CALL_TYPES,
+  DEFAULT_SECTOR,
+  GUICHES,
+  MAX_QUEUE_NUMBER,
+  MIN_QUEUE_NUMBER,
   NO_PASSWORD,
+  QUEUE_KEY,
+  SECTORS,
+  TYPE_FIELDS,
+  TYPE_LABELS,
+  TYPE_PREFIXES,
 };
 
 /* ─── Tipos ─────────────────────────────────────────────────────── */

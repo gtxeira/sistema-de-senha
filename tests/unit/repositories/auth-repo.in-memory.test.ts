@@ -1,5 +1,5 @@
-import { InMemoryAuthRepository } from '../../helpers/in-memory-repos/in-memory-auth-repo';
 import { authRepoContract } from '../../contracts/auth-repo.contract';
+import { InMemoryAuthRepository } from '../../helpers/in-memory-repos/in-memory-auth-repo';
 
 authRepoContract(() => {
   const repo = new InMemoryAuthRepository();
