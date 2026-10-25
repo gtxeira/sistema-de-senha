@@ -20,6 +20,18 @@ import { RESET_MARKER_KEY, SSE_EVENT_TYPES } from '@/shared/constants';
 import { formatClock } from '@/shared/time';
 
 /**
+ * O SSE chama `refreshSession` ao receber `session-expired`. O mock evita
+ * tocar em cookies/fetch reais e permite controlar o sucesso da renovação.
+ */
+const { refreshSessionMock } = vi.hoisted(() => ({
+  refreshSessionMock: vi.fn(async () => true),
+}));
+
+vi.mock('@/client/session/session-refresh', () => ({
+  refreshSession: refreshSessionMock,
+}));
+
+/**
  * `global.fetch` é tipado como `typeof fetch`, que nenhum mock satisfaz.
  * Escrever por este alias atinge o mesmo alvo em runtime e dispensa tanto o
  * cast no stub quanto `vi.stubGlobal` (que também mudaria a limpeza: o teste
@@ -135,6 +147,8 @@ describe('queue-events (singleton)', () => {
     __resetQueueEvents();
     fetchStub = undefined;
     FakeEventSource.instances = [];
+    refreshSessionMock.mockReset();
+    refreshSessionMock.mockResolvedValue(true);
     vi.stubGlobal('EventSource', FakeEventSource);
     window.localStorage.clear();
     vi.useFakeTimers();
@@ -874,6 +888,47 @@ describe('queue-events (singleton)', () => {
       await vi.advanceTimersByTimeAsync(1000);
 
       expect(FakeEventSource.instances.length).toBeGreaterThan(1);
+      unsub();
+    });
+
+    it('session-expired renova a sessão e reconecta', async () => {
+      globalScope.fetch = stubFetch();
+      const unsub = subscribeQueueSector('farmacia');
+      const first = FakeEventSource.latest();
+      first.open();
+
+      first.emit({
+        code: 'session_expired',
+        type: SSE_EVENT_TYPES.SESSION_EXPIRED,
+      });
+
+      expect(first.closed).toBe(true);
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(refreshSessionMock).toHaveBeenCalledTimes(1);
+      expect(FakeEventSource.instances).toHaveLength(2);
+
+      const renewed = FakeEventSource.latest();
+      renewed.open();
+      expect(getQueueEventsSnapshot().connected).toBe(true);
+
+      unsub();
+    });
+
+    it('session-expired sem renovação não reconecta', async () => {
+      globalScope.fetch = stubFetch();
+      refreshSessionMock.mockResolvedValueOnce(false);
+      const unsub = subscribeQueueSector('farmacia');
+      const first = FakeEventSource.latest();
+      first.open();
+
+      first.emit({ type: SSE_EVENT_TYPES.SESSION_EXPIRED });
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(refreshSessionMock).toHaveBeenCalledTimes(1);
+      expect(FakeEventSource.instances).toHaveLength(1);
+      expect(getQueueEventsSnapshot().connected).toBe(false);
+
       unsub();
     });
   });

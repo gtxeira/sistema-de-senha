@@ -102,6 +102,11 @@ SSE, proteção contra auto-lockout e fallbacks — as rotas só traduzem HTTP.
 - `server/auth/config.ts`: configuração do Auth.js. `src/auth.ts` só reexporta.
   A configuração precisa continuar Edge-safe: o Prisma é importado
   dinamicamente, e `refresh.ts` não pode ser reexportado por um barrel.
+- `server/auth/credentials.ts`: verificação de usuário/senha do login e claims
+  devolvidos ao Auth.js. Importa o Prisma só dentro de `authorize()`.
+- `server/auth/login-rate-limit.ts`: rate limit de login em memória (janela
+  fixa, por username e por IP). Sem `node:*` — é carregado no Edge via
+  `config.ts`.
 - `server/realtime/event-manager.ts`: hub do SSE.
 - `server/db/prisma-client.ts` e `server/storage/s3-client.ts`: clients de
   infraestrutura.

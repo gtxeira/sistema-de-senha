@@ -1,5 +1,6 @@
 import type { CallType, SectorId } from '@/shared/constants';
 
+import { refreshSession } from '@/client/session/session-refresh';
 import {
   API_ROUTES,
   HISTORY_LIMITS,
@@ -78,6 +79,8 @@ interface ConnectionState {
   lastCallId: null | string;
   open: boolean;
   pollTimer: ReturnType<typeof setInterval> | null;
+  /** Renovação de sessão em curso após `session-expired`. */
+  recovering: boolean;
   retryCount: number;
   retryTimer: ReturnType<typeof setTimeout> | null;
 }
@@ -235,6 +238,14 @@ function clearSector(sector: SectorId): void {
 function connect(sector: SectorId, conn: ConnectionState): void {
   if (!isClient() || !sector || conn.closed) return;
 
+  // Uma reconexão manual (ex.: após `session-expired`) não pode conviver
+  // com um retry agendado pelo `onerror`.
+  if (conn.retryTimer) {
+    clearTimeout(conn.retryTimer);
+    conn.retryTimer = null;
+  }
+  conn.recovering = false;
+
   if (conn.es) {
     conn.es.close();
     conn.es = null;
@@ -275,6 +286,14 @@ function connect(sector: SectorId, conn: ConnectionState): void {
       return;
     }
 
+    // O servidor avisa antes de fechar o stream quando o token da conexão
+    // vence. Fecha o EventSource, renova a sessão e reconecta com o cookie
+    // novo; se a renovação falhar, o `refreshSession` manda para /login.
+    if (data.type === SSE_EVENT_TYPES.SESSION_EXPIRED) {
+      handleSessionExpired(sector, conn);
+      return;
+    }
+
     // Invalidate before applying the call: a reset that immediately precedes a
     // call must clear the stale replica first, then layer the new call on top.
     applyResetMarker(sector, data.resetAt);
@@ -296,7 +315,7 @@ function connect(sector: SectorId, conn: ConnectionState): void {
   };
 
   es.onerror = () => {
-    if (conn.closed) return;
+    if (conn.closed || conn.recovering) return;
 
     es.close();
     conn.es = null;
@@ -328,6 +347,7 @@ function ensureConnection(sector: SectorId): ConnectionState {
     lastCallId: null,
     open: false,
     pollTimer: null,
+    recovering: false,
     retryCount: 0,
     retryTimer: null,
   };
@@ -376,6 +396,34 @@ async function fetchRecent(
   } catch {
     return null;
   }
+}
+
+/**
+ * Trata o evento `session-expired` enviado pelo servidor antes de encerrar
+ * o stream.
+ *
+ * O polling assume enquanto o refresh roda (a UI não fica sem atualizações).
+ * O `refreshSession` é single-flight: se outra aba/intervalo já estiver
+ * renovando, esta chamada reaproveita a mesma promise.
+ */
+function handleSessionExpired(sector: SectorId, conn: ConnectionState): void {
+  if (conn.closed || conn.recovering) return;
+  conn.recovering = true;
+
+  if (conn.es) {
+    conn.es.close();
+    conn.es = null;
+  }
+  conn.open = false;
+  refreshConnected();
+  startPolling(sector, conn);
+
+  void refreshSession().then((alive) => {
+    conn.recovering = false;
+    if (!alive || conn.closed) return;
+    conn.retryCount = 0;
+    connect(sector, conn);
+  });
 }
 
 async function initialSync(
@@ -534,6 +582,8 @@ function teardown(conn: ConnectionState): void {
     conn.es.close();
     conn.es = null;
   }
+  conn.closed = true;
   conn.open = false;
+  conn.recovering = false;
   refreshConnected();
 }

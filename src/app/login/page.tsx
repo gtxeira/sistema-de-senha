@@ -36,6 +36,13 @@ export default function LoginPage() {
         username: login,
       });
 
+      const retryMinutes = rateLimitRetryMinutes(result?.code);
+      if (retryMinutes !== null) {
+        throw new Error(
+          `Muitas tentativas. Tente novamente em ${retryMinutes} min.`,
+        );
+      }
+
       if (result?.error) {
         throw new Error('Usuário ou senha inválidos.');
       }
@@ -185,4 +192,20 @@ export default function LoginPage() {
       </div>
     </main>
   );
+}
+
+/**
+ * Traduz o `code` de rate limit devolvido pelo Auth.js
+ * (`rate_limited:<segundos>`) em minutos para a mensagem.
+ *
+ * `null` = não é bloqueio; qualquer `code` diferente segue o fluxo genérico
+ * de credencial inválida.
+ */
+function rateLimitRetryMinutes(code: undefined | string): null | number {
+  const prefix = 'rate_limited:';
+  if (!code?.startsWith(prefix)) return null;
+
+  const seconds = Number.parseInt(code.slice(prefix.length), 10);
+  if (!Number.isFinite(seconds) || seconds <= 0) return 1;
+  return Math.max(1, Math.ceil(seconds / 60));
 }

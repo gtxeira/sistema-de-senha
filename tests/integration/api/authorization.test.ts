@@ -10,7 +10,12 @@ import type {
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { eventManager } from '@/server/realtime/event-manager';
-import { MAX_SSE_CONNECTIONS_PER_SECTOR, SECTORS } from '@/shared/constants';
+import {
+  ACCESS_TOKEN_MAX_AGE,
+  MAX_SSE_CONNECTIONS_PER_SECTOR,
+  SECTORS,
+  SSE_EVENT_TYPES,
+} from '@/shared/constants';
 import { readJson } from '@/shared/json';
 import {
   ALL_PERMISSIONS,
@@ -220,6 +225,7 @@ describe('Autorização das rotas de API', () => {
       permission: ROLES_MANAGE,
     },
     { method: 'GET', path: '@/app/api/stats/route.ts', permission: null },
+    { method: 'GET', path: '@/app/api/time/route.ts', permission: null },
   ];
 
   const url = 'http://localhost/api/queue/recent?sector=farmacia&limit=1';
@@ -681,5 +687,77 @@ describe('/api/queue/events — limite de conexões', () => {
     for (const sector of ids) {
       expect(SECTORS[sector]).toBeDefined();
     }
+  });
+});
+
+describe('/api/queue/events — expiração da sessão', () => {
+  beforeEach(() => {
+    eventManager.removeAllListeners();
+  });
+
+  afterEach(() => {
+    eventManager.removeAllListeners();
+    vi.useRealTimers();
+    vi.clearAllMocks();
+  });
+
+  function streamReq(sector: string): Request {
+    return new Request(`http://localhost/api/queue/events?sector=${sector}`);
+  }
+
+  it('encerra o stream e avisa o client quando o token expira', async () => {
+    vi.useFakeTimers();
+
+    const now = Date.now();
+    // `perms_at` a 1s do limite: a sessão ainda é fresca na abertura, mas o
+    // token vence logo depois — o suficiente para o timer disparar sem
+    // esperar os 15min reais.
+    asSession({
+      authAt: now,
+      permissions: FULL,
+      permsAt: now - (ACCESS_TOKEN_MAX_AGE * 1000 - 1000),
+    });
+
+    const GET = await routeHandler('@/app/api/queue/events/route.ts', 'GET');
+    const res = await GET(streamReq('farmacia'));
+    expect(res.status).toBe(200);
+    if (!res.body) throw new Error('stream sem body');
+
+    const reader = res.body.getReader();
+
+    const connected = String((await reader.read()).value);
+    expect(connected).toContain(':connected');
+
+    await vi.advanceTimersByTimeAsync(2000);
+
+    let payload = '';
+    for (;;) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      payload += String(chunk.value);
+      if (payload.includes(SSE_EVENT_TYPES.SESSION_EXPIRED)) break;
+    }
+
+    expect(payload).toContain(`"type":"${SSE_EVENT_TYPES.SESSION_EXPIRED}"`);
+    expect(payload).toContain('"code":"session_expired"');
+    expect(eventManager.getSubscriberCount('farmacia')).toBe(0);
+
+    const tail = await reader.read();
+    expect(tail.done).toBe(true);
+
+    await reader.cancel();
+  });
+
+  it('cancelar o stream remove os listeners do setor', async () => {
+    asSession({ permissions: FULL });
+
+    const GET = await routeHandler('@/app/api/queue/events/route.ts', 'GET');
+    const res = await GET(streamReq('farmacia'));
+    expect(res.status).toBe(200);
+    expect(eventManager.getSubscriberCount('farmacia')).toBe(1);
+
+    await res.body?.cancel();
+
+    expect(eventManager.getSubscriberCount('farmacia')).toBe(0);
   });
 });

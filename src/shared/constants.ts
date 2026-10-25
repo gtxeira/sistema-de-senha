@@ -141,6 +141,9 @@ export const SSE_EVENT_TYPES = {
   CALL: 'call',
   RECALL: 'recall',
   RESET: 'reset',
+  // Enviado pelo servidor imediatamente antes de encerrar o stream quando
+  // o access token daquela conexão expira (ou perde o frescor).
+  SESSION_EXPIRED: 'session-expired',
 } as const;
 
 // ── Auth ──
@@ -150,6 +153,18 @@ export const BCRYPT_SALT_ROUNDS = 10;
 export const EMAIL_DOMAIN = '@central-atendimento.local';
 export const DEFAULT_INITIALS = 'AT';
 export const DEFAULT_NAME = 'Atendente';
+
+// ── Rate limit de login ──
+// Janela fixa em memória, por processo. O deploy atual é um container único;
+// múltiplas réplicas exigiriam um armazenamento compartilhado (Postgres/Redis).
+// O limite por usuário é a barreira principal; o por IP só entra quando a
+// request traz `x-forwarded-for`/`x-real-ip` (atrás do proxy reverso).
+export const LOGIN_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+export const LOGIN_RATE_LIMIT_MAX_ATTEMPTS = 5;
+export const LOGIN_RATE_LIMIT_MAX_ATTEMPTS_PER_IP = 20;
+// Teto de chaves vivas no Map. Um atacante pode variar usernames; o prune
+// descarta janelas vencidas e, se ainda estourar, as entradas mais antigas.
+export const LOGIN_RATE_LIMIT_MAX_KEYS = 10_000;
 
 // Sessão em dois níveis:
 // - access token = JWT de sessão do Auth.js, validade de 15min (rotaciona a

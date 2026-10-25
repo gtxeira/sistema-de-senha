@@ -3,9 +3,11 @@ import type { Unsubscribe } from '@/server/realtime/event-manager';
 import { assertSectorAccess, requireSession } from '@/server/http/api-auth';
 import { eventManager } from '@/server/realtime/event-manager';
 import {
+  ACCESS_TOKEN_MAX_AGE,
   isSectorId,
   KEEPALIVE_INTERVAL,
   MAX_SSE_CONNECTIONS_PER_SECTOR,
+  SESSION_ABSOLUTE_MAX_AGE,
   SSE_EVENT_TYPES,
 } from '@/shared/constants';
 
@@ -18,8 +20,12 @@ import {
  * monitors keep receiving their stream while unauthenticated callers do not.
  *
  * Escopo: checado na abertura da conexão (setor próprio ou
- * `setores.todos.ver`). Stream já aberto não é revalidado — revogações
- * valem para novas conexões.
+ * `setores.todos.ver`).
+ *
+ * Expiração: o stream não consegue reler o cookie depois de aberto, então o
+ * prazo é o do token capturado na abertura — `min(auth_at + 12h,
+ * perms_at + 15min)`. Ao vencer, o servidor envia `session-expired` e fecha
+ * o controller; o client reconecta com o cookie renovado (ou cai no login).
  */
 export async function GET(request: Request) {
   const { error, session } = await requireSession();
@@ -48,32 +54,78 @@ export async function GET(request: Request) {
     });
   }
 
+  const tokenExpiresAt = Math.min(
+    session.user.authAt + SESSION_ABSOLUTE_MAX_AGE * 1000,
+    session.user.permsAt + ACCESS_TOKEN_MAX_AGE * 1000,
+  );
+
   let unsubscribeCalls: Unsubscribe | undefined;
   let unsubscribeRecalls: Unsubscribe | undefined;
   let unsubscribeResets: Unsubscribe | undefined;
   let keepaliveTimer: ReturnType<typeof setInterval> | undefined;
+  let expiryTimer: ReturnType<typeof setTimeout> | undefined;
+  let controllerRef: ReadableStreamDefaultController | undefined;
+  let ended = false;
+
+  /** Libera timers e listeners uma única vez. Não fecha o controller. */
+  const cleanup = () => {
+    if (ended) return;
+    ended = true;
+    if (keepaliveTimer) clearInterval(keepaliveTimer);
+    if (expiryTimer) clearTimeout(expiryTimer);
+    unsubscribeCalls?.();
+    unsubscribeRecalls?.();
+    unsubscribeResets?.();
+  };
+
+  /** Avisa o client e encerra o stream (expiração). */
+  const end = () => {
+    if (ended) return;
+    try {
+      controllerRef?.enqueue(
+        `data: ${JSON.stringify({
+          code: 'session_expired',
+          type: SSE_EVENT_TYPES.SESSION_EXPIRED,
+        })}\n\n`,
+      );
+    } catch {
+      // Controller já fechado pelo consumidor.
+    }
+    cleanup();
+    try {
+      controllerRef?.close();
+    } catch {
+      // Idem.
+    }
+  };
 
   const stream = new ReadableStream({
     cancel() {
       // Cleanup when client disconnects
-      clearInterval(keepaliveTimer);
-      unsubscribeCalls?.();
-      unsubscribeRecalls?.();
-      unsubscribeResets?.();
+      cleanup();
     },
     start(controller) {
+      controllerRef = controller;
+
       // Send initial connection comment to establish the stream
       controller.enqueue(':connected\n\n');
 
-      // Keepalive comments to prevent proxy/browser timeouts
+      // Keepalive comments to prevent proxy/browser timeouts. A checagem de
+      // expiração aqui é uma rede de segurança caso o setTimeout atrase.
       keepaliveTimer = setInterval(() => {
+        if (Date.now() >= tokenExpiresAt) {
+          end();
+          return;
+        }
         try {
           controller.enqueue(':ping\n\n');
         } catch {
           // Controller may be closed
-          clearInterval(keepaliveTimer);
+          cleanup();
         }
       }, KEEPALIVE_INTERVAL);
+
+      expiryTimer = setTimeout(end, Math.max(0, tokenExpiresAt - Date.now()));
 
       // Subscribe to queue calls for this sector
       unsubscribeCalls = eventManager.subscribeToQueue(
@@ -125,12 +177,7 @@ export async function GET(request: Request) {
   });
 
   // Handle client disconnect via abort signal
-  request.signal.addEventListener('abort', () => {
-    clearInterval(keepaliveTimer);
-    unsubscribeCalls?.();
-    unsubscribeRecalls?.();
-    unsubscribeResets?.();
-  });
+  request.signal.addEventListener('abort', cleanup);
 
   return new Response(stream, {
     headers: {
