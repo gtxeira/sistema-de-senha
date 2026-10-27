@@ -11,7 +11,6 @@ import {
   objectExistsInS3,
   uploadToS3,
 } from '@/server/storage/s3';
-import { checkIsRunningInDocker } from '../scripts/check-is-running-in-docker';
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
@@ -81,8 +80,6 @@ async function ensureDefaultNewsImage(): Promise<string> {
 }
 
 async function main() {
-  normalizeS3EndpointForDocker();
-
   // ── Limpa usuários de teste e legados ────────────────────────
   const keepUsernames = USERS.map((u) => u.username);
   const deleted = await prisma.users.deleteMany({
@@ -160,21 +157,6 @@ async function main() {
   }
 
   console.log('\nSeed concluído.');
-}
-
-/**
- * O `.env.test` aponta o S3 para `localhost` porque é usado no host; dentro do
- * Docker o Garage responde pelo hostname `garage` (o Vitest faz o mesmo
- * ajuste). Nos ambientes de dev/produção o endpoint já vem correto.
- */
-function normalizeS3EndpointForDocker(): void {
-  const endpoint = process.env.S3_ENDPOINT;
-
-  if (!endpoint || !checkIsRunningInDocker()) return;
-
-  if (endpoint.includes('localhost')) {
-    process.env.S3_ENDPOINT = endpoint.replace('localhost', 'garage');
-  }
 }
 
 main()

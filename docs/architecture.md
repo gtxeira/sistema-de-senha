@@ -108,8 +108,12 @@ SSE, proteção contra auto-lockout e fallbacks — as rotas só traduzem HTTP.
   fixa, por username e por IP). Sem `node:*` — é carregado no Edge via
   `config.ts`.
 - `server/realtime/event-manager.ts`: hub do SSE.
-- `server/db/prisma-client.ts` e `server/storage/s3-client.ts`: clients de
-  infraestrutura.
+- `server/db/prisma-client.ts`: client do Prisma.
+- `server/storage/s3.ts`: implementação das operações de S3 (upload, delete,
+  existência e URL pública), sem `server-only` para poder ser reutilizada por
+  scripts como o seed.
+- `server/storage/s3-client.ts`: entrada usada pelo runtime da aplicação;
+  mantém o `server-only` e reexporta `s3.ts`.
 - `server/generated/prisma/`: Prisma Client produzido por `prisma generate`.
   Não é versionado nem editado à mão; fica fora do Oxlint e da cobertura.
 
@@ -140,18 +144,57 @@ resposta JSON ou no formulário, fica em `shared/types/domain.ts`.
    importando os módulos de servidor.
 4. **Typecheck, lint, testes e build** são a validação final:
    `bun run typecheck`, `bun run lint`, `bun run test:unit` e `bun run build`.
-   Os testes de integração precisam rodar dentro do Docker
-   (`docker compose exec -T app bun run test:run`), porque `.env.test` usa o
-   hostname `postgres`.
+   Os testes de integração precisam de Postgres e S3/Garage; veja
+   [Testes locais](#testes-locais).
 
-## Fases
+## Testes locais
 
-- **Fase 1 (concluída):** mover `lib` para `shared`/`client`/`server`, separar
-  tipos e helpers, marcar backend com `server-only` e adicionar as regras de
-  fronteira.
-- **Fase 2 (concluída):** extrair os serviços de `queue`, `news`, `users`,
-  `roles` e `stats`, deixar as rotas finas e remover o shim
-  `server/queue-server.ts`.
-- **Fase 3 (concluída):** mover `src/generated/prisma` para
-  `src/server/generated/prisma`, ajustando schema, Dockerfile, imports e
-  ignores. O client continua sendo gerado e não versionado.
+Os testes de integração usam Postgres e S3/Garage reais. O caminho suportado é
+rodar dentro do Docker, porque o `.env.test` usa os hostnames dos serviços do
+Compose (`postgres` e `garage`). O seed segue a mesma regra: ele lê apenas
+`S3_ENDPOINT` do ambiente e não conhece Docker nem Garage — a escolha do
+endpoint é responsabilidade da configuração.
+
+### Opção 1 — Docker (recomendada)
+
+```bash
+# reseta o banco de teste (migrations + seed) e abre o Vitest em watch
+just test
+
+# roda todos os testes uma vez, sem resetar o banco
+docker compose exec -T app bun run test:run
+
+# apenas os unitários (não precisam de banco nem de S3)
+bun run test:unit
+```
+
+### Opção 2 — Host
+
+Use quando precisar depurar fora do container. Os serviços precisam estar de
+pé com as portas publicadas pelo `compose.override.yaml` (`5432` para o
+Postgres e `3900`/`3902` para o Garage).
+
+```bash
+cp .env.test.host.example .env.test.host
+just test-host
+```
+
+O `just test-host` reseta o banco de teste (migrations + seed) antes de rodar.
+Para rodar sem resetar, use apenas `bun run test:host`.
+
+Ou, sem o `just`:
+
+```bash
+bun run db:reset:test:host
+bun run test:host
+```
+
+O `.env.test.host` é ignorado pelo git e contém apenas os overrides de host
+(`DATABASE_URL` e `S3_ENDPOINT` apontando para `localhost`). Credenciais,
+região, bucket e `S3_PUBLIC_URL` continuam vindo do `.env.test`.
+
+> **Atenção:** `bun run test:run` e os comandos `db:*:test` sem o sufixo
+> `:host` são para execução dentro do Docker. No host, use
+> `bun run test:host` / `bun run db:reset:test:host`; caso contrário, o
+> Vitest e o seed tentarão resolver `postgres` e `garage`, que só existem na
+> rede do Compose.

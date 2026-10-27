@@ -90,6 +90,11 @@ test:
     {{ _exec_app }} bun run db:reset:test
     {{ _exec_app }} bun run test
 
+# Executa os testes no host (requer .env.test.host; veja docs/architecture.md)
+test-host:
+    bun run db:reset:test:host
+    bun run test:host
+
 # Captura screenshot + métricas de uma rota para comparação visual (host)
 # ex.: just ui-capture /home home-antes
 ui-capture rota *args:

@@ -42,6 +42,7 @@ yarn-error.log*
 VERCEL_ENV.md
 .env
 .env.local
+.env.test.host
 
 # typescript
 *.tsbuildinfo

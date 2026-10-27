@@ -2,18 +2,18 @@ import { resolve } from 'node:path';
 import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
-import { checkIsRunningInDocker } from './scripts/check-is-running-in-docker.js';
 import { loadEnvFile } from './scripts/load-env-file.js';
 
 export default defineConfig(() => {
   const root = fileURLToPath(new URL('.', import.meta.url));
-  const testEnv = loadEnvFile(resolve(root, '.env.test'));
+  const baseEnv = loadEnvFile(resolve(root, '.env.test'));
 
-  const isDocker = checkIsRunningInDocker();
+  const hostEnv =
+    process.env.TEST_ENV === 'host'
+      ? loadEnvFile(resolve(root, '.env.test.host'))
+      : {};
 
-  const s3Endpoint = isDocker
-    ? testEnv.S3_ENDPOINT.replace('localhost', 'garage')
-    : testEnv.S3_ENDPOINT;
+  const testEnv = { ...baseEnv, ...hostEnv };
 
   return {
     resolve: {
@@ -38,7 +38,7 @@ export default defineConfig(() => {
         DATABASE_URL: testEnv.DATABASE_URL,
         S3_ACCESS_KEY: testEnv.S3_ACCESS_KEY,
         S3_BUCKET: testEnv.S3_BUCKET,
-        S3_ENDPOINT: s3Endpoint,
+        S3_ENDPOINT: testEnv.S3_ENDPOINT,
         S3_PUBLIC_URL: testEnv.S3_PUBLIC_URL,
         S3_REGION: testEnv.S3_REGION,
         S3_SECRET_KEY: testEnv.S3_SECRET_KEY,
