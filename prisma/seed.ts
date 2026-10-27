@@ -1,9 +1,17 @@
-import type { rolesModel } from '../src/server/generated/prisma/models/roles';
+import type { rolesModel } from '@/server/generated/prisma/models/roles';
 
 import { PrismaPg } from '@prisma/adapter-pg';
 import bcrypt from 'bcryptjs';
+import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 
-import { PrismaClient } from '../src/server/generated/prisma/client';
+import { PrismaClient } from '@/server/generated/prisma/client';
+import {
+  getPublicUrl,
+  objectExistsInS3,
+  uploadToS3,
+} from '@/server/storage/s3';
+import { checkIsRunningInDocker } from '../scripts/check-is-running-in-docker';
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
@@ -14,10 +22,17 @@ const SECTORS = [
   { id: 'recepcao', name: 'Recepção Saúde' },
 ];
 
-// TODO: Adicionar o seed diretamente no armazenamento S3
+// A chave é fixa para o seed ser idempotente (não gera uma notícia nova a cada
+// execução).
 const DEFAULT_NEWS = {
   title: 'Bem-vindo ao Sistema de Senhas',
-  image_url: '/news/1789083615350-os7rdzpymeb.jpeg',
+  contentType: 'image/jpeg',
+  filePath: fileURLToPath(
+    new URL('./assets/default-news.jpeg', import.meta.url),
+  ),
+  imageKey: 'default-news.jpeg',
+  // URL gravada pelo seed antigo, que servia a imagem de `public/news`.
+  legacyImageUrl: '/news/1789083615350-os7rdzpymeb.jpeg',
 };
 
 const USERS = [
@@ -47,7 +62,27 @@ const USERS = [
   },
 ];
 
+/**
+ * Garante a imagem padrão no bucket e devolve a URL pública a ser gravada.
+ */
+async function ensureDefaultNewsImage(): Promise<string> {
+  const imageUrl = getPublicUrl(DEFAULT_NEWS.imageKey);
+
+  if (await objectExistsInS3(DEFAULT_NEWS.imageKey)) {
+    console.log('  ✓ Imagem padrão já existe no S3');
+    return imageUrl;
+  }
+
+  const buffer = await readFile(DEFAULT_NEWS.filePath);
+  await uploadToS3(DEFAULT_NEWS.imageKey, buffer, DEFAULT_NEWS.contentType);
+  console.log('  ✓ Imagem padrão enviada ao S3');
+
+  return imageUrl;
+}
+
 async function main() {
+  normalizeS3EndpointForDocker();
+
   // ── Limpa usuários de teste e legados ────────────────────────
   const keepUsernames = USERS.map((u) => u.username);
   const deleted = await prisma.users.deleteMany({
@@ -83,12 +118,24 @@ async function main() {
   console.log(`  ✓ ${SECTORS.length} setores criados/verificados`);
 
   // ── Notícias ────────────────────────────────────────────────
+  const imageUrl = await ensureDefaultNewsImage();
   const existingNews = await prisma.news.findFirst({
-    where: { image_url: DEFAULT_NEWS.image_url },
+    where: {
+      image_url: { in: [imageUrl, DEFAULT_NEWS.legacyImageUrl] },
+    },
   });
+
   if (!existingNews) {
-    await prisma.news.create({ data: DEFAULT_NEWS });
-    console.log(`  ✓ Notícia padrão criada`);
+    await prisma.news.create({
+      data: { title: DEFAULT_NEWS.title, image_url: imageUrl },
+    });
+    console.log(`  ✓ Notícia padrão criada (${imageUrl})`);
+  } else if (existingNews.image_url !== imageUrl) {
+    await prisma.news.update({
+      data: { image_url: imageUrl },
+      where: { id: existingNews.id },
+    });
+    console.log(`  ✓ Notícia padrão migrada para o S3 (${imageUrl})`);
   } else {
     console.log(`  ✓ Notícia padrão já existe`);
   }
@@ -113,6 +160,21 @@ async function main() {
   }
 
   console.log('\nSeed concluído.');
+}
+
+/**
+ * O `.env.test` aponta o S3 para `localhost` porque é usado no host; dentro do
+ * Docker o Garage responde pelo hostname `garage` (o Vitest faz o mesmo
+ * ajuste). Nos ambientes de dev/produção o endpoint já vem correto.
+ */
+function normalizeS3EndpointForDocker(): void {
+  const endpoint = process.env.S3_ENDPOINT;
+
+  if (!endpoint || !checkIsRunningInDocker()) return;
+
+  if (endpoint.includes('localhost')) {
+    process.env.S3_ENDPOINT = endpoint.replace('localhost', 'garage');
+  }
 }
 
 main()
