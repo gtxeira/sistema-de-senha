@@ -1,0 +1,15 @@
+name: CD
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    permissions:
+      contents: read
+      packages: write
+
+    uses: descubra-muriae/workflow-templates/.github/workflows/cd-template.yml@main
+    secrets: inherit
