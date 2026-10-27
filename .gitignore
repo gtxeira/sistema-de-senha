@@ -21,6 +21,13 @@ tests/fixtures/news/*
 
 # production
 /build
+/dist
+
+# bundle do processo principal do Electron (bun build)
+/dist-electron/
+
+# prisma-client gerado (prisma generate)
+/src/server/generated/
 
 # misc
 .DS_Store
@@ -35,6 +42,7 @@ yarn-error.log*
 VERCEL_ENV.md
 .env
 .env.local
+.env.test.host
 
 # typescript
 *.tsbuildinfo
@@ -48,4 +56,5 @@ next-env.d.ts
 /.idea/php.xml
 /.idea/sistemadesenha.iml
 /.idea/vcs.xml
-/bun.lock
+
+compose.local.*

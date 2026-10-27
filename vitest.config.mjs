@@ -1,59 +1,73 @@
-import { defineConfig } from "vitest/config";
-import { loadEnv } from "vite";
-import { fileURLToPath, URL } from "node:url";
-import { join } from "node:path";
+import { resolve } from 'node:path';
+import { fileURLToPath, URL } from 'node:url';
+import { defineConfig } from 'vitest/config';
 
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), "");
-  const root = fileURLToPath(new URL(".", import.meta.url));
+import { loadEnvFile } from './scripts/load-env-file.js';
+
+export default defineConfig(() => {
+  const root = fileURLToPath(new URL('.', import.meta.url));
+  const baseEnv = loadEnvFile(resolve(root, '.env.test'));
+
+  const hostEnv =
+    process.env.TEST_ENV === 'host'
+      ? loadEnvFile(resolve(root, '.env.test.host'))
+      : {};
+
+  const testEnv = { ...baseEnv, ...hostEnv };
 
   return {
     resolve: {
       alias: {
-        "@": fileURLToPath(new URL("./src", import.meta.url)),
+        '@': fileURLToPath(new URL('./src', import.meta.url)),
+        // Em produção o Next resolve `server-only` para o marcador que
+        // rejeita imports em Client Components. Nos testes o pacote lança
+        // por padrão, então apontamos para um stub vazio.
+        'server-only': fileURLToPath(
+          new URL('./tests/stubs/server-only.ts', import.meta.url),
+        ),
       },
     },
     test: {
-      environment: "happy-dom",
-      globals: true,
-      include: ["tests/**/*.test.{js,jsx}"],
-      setupFiles: ["./tests/setup.js"],
+      environment: 'happy-dom',
       fileParallelism: false,
+      globals: true,
+      include: ['tests/**/*.test.{js,jsx,ts,tsx}'],
+      setupFiles: ['./tests/setup.ts'],
 
       env: {
-        DATABASE_URL: env.DATABASE_URL_TEST,
-        NEWS_DIR: join(root, "tests", "fixtures", "news"),
-        S3_ENDPOINT: env.S3_ENDPOINT_TEST,
-        S3_REGION: env.S3_REGION_TEST,
-        S3_ACCESS_KEY: env.S3_ACCESS_KEY_TEST,
-        S3_SECRET_KEY: env.S3_SECRET_KEY_TEST,
-        S3_BUCKET: env.S3_BUCKET_TEST,
-        S3_PUBLIC_URL: env.S3_PUBLIC_URL_TEST,
+        DATABASE_URL: testEnv.DATABASE_URL,
+        S3_ACCESS_KEY: testEnv.S3_ACCESS_KEY,
+        S3_BUCKET: testEnv.S3_BUCKET,
+        S3_ENDPOINT: testEnv.S3_ENDPOINT,
+        S3_PUBLIC_URL: testEnv.S3_PUBLIC_URL,
+        S3_REGION: testEnv.S3_REGION,
+        S3_SECRET_KEY: testEnv.S3_SECRET_KEY,
       },
 
       server: {
         deps: {
-          inline: ["next-auth", "next"],
+          inline: ['next-auth', 'next'],
         },
       },
 
       coverage: {
-        provider: "v8",
-        include: [
-          "src/lib/repositories/**/*.js",
-          "src/lib/queue-server.js",
-          "src/lib/prisma-client.js",
-          "src/lib/event-manager.js",
-          "src/lib/hooks/**/*.js",
-          "src/app/api/**/*.js",
-          "src/middleware.js",
-        ],
         exclude: [
-          "tests/**",
-          "src/**/*.test.{js,jsx}",
-          "src/**/*.module.css",
+          'tests/**',
+          'src/**/*.test.{js,jsx,ts,tsx}',
+          'src/**/*.module.css',
+          // Cliente Prisma gerado — não é código nosso.
+          'src/server/generated/**',
         ],
-        reporter: ["text", "html", "json-summary"],
+        include: [
+          'src/server/**/*.ts',
+          'src/client/**/*.ts',
+          'src/shared/**/*.ts',
+          'src/hooks/**/*.ts',
+          'src/app/api/**/*.ts',
+          'src/proxy.ts',
+        ],
+        provider: 'v8',
+        reporter: ['text', 'html', 'json-summary'],
       },
     },
   };

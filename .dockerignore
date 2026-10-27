@@ -20,9 +20,23 @@ pnpm-debug.log*
 .idea
 .DS_Store
 
+tests
+garage
+compose*.yaml
+Dockerfile
+
 tmp
 temp
 data
 uploads
 #public/uploads
 #public/news
+
+dist
+
+src/server/generated
+
+.agents
+.claude
+
+docs

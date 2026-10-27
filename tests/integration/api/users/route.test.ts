@@ -1,0 +1,267 @@
+import type {
+  SuccessBody,
+  UserSaveBody,
+  UsersListBody,
+} from '@/shared/types/api';
+
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+
+import { readJson } from '@/shared/json';
+import { routeRequest } from '../../../helpers/http';
+import { cleanupAllTestUsers, seedTestUser } from '../../postgres-setup';
+
+let createdUsernames = [];
+
+async function importRoute() {
+  return import('@/app/api/users/route');
+}
+
+async function importUsersRepo() {
+  const mod = await import('@/server/repositories');
+  return mod.users;
+}
+
+describe('/api/users — integration', () => {
+  beforeEach(() => {
+    createdUsernames = [];
+  });
+
+  afterEach(async () => {
+    await cleanupAllTestUsers();
+    createdUsernames = [];
+  });
+
+  describe('GET', () => {
+    it('retorna lista de usuários', async () => {
+      const user = await seedTestUser({
+        full_name: 'GET Test User',
+        username: `test.get.user.${Date.now()}`,
+      });
+      createdUsernames.push(user.username);
+
+      const { GET } = await importRoute();
+      const res = await GET();
+      const body = await readJson<UsersListBody>(res);
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(body.users)).toBe(true);
+      const found = body.users.find((u: { id: string }) => u.id === user.id);
+      expect(found).toBeDefined();
+      expect(found?.full_name).toBe('GET Test User');
+    });
+
+    it('retorna vazio quando não há usuários de teste', async () => {
+      const { GET } = await importRoute();
+      const res = await GET();
+      const body = await readJson<UsersListBody>(res);
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(body.users)).toBe(true);
+    });
+  });
+
+  describe('POST', () => {
+    it('cria usuário e persiste no banco', async () => {
+      const username = `test.post.user.${Date.now()}`;
+      const { POST } = await importRoute();
+      const req = routeRequest('http://localhost/api/users', {
+        full_name: 'Post Test User',
+        password: '123456',
+        role: 'attendant',
+        sector_id: 'farmacia',
+        username,
+      });
+      const res = await POST(req);
+      const body = await readJson<UserSaveBody>(res);
+
+      expect(res.status).toBe(200);
+      expect(body.success).toBe(true);
+      expect(body.user.username).toBe(username);
+      expect(body.user.full_name).toBe('Post Test User');
+      expect(body.user.role).toBe('attendant');
+      expect(body.user.sector_id).toBe('farmacia');
+
+      createdUsernames.push(username);
+
+      const repo = await importUsersRepo();
+      const list = await repo.list();
+      const found = list.find((u) => u.username === username);
+      expect(found).toBeDefined();
+      expect(found?.full_name).toBe('Post Test User');
+    });
+
+    it('retorna 400 com username inválido', async () => {
+      const { POST } = await importRoute();
+      const req = routeRequest('http://localhost/api/users', {
+        full_name: 'Test',
+        password: '123456',
+        username: '!invalido!',
+      });
+      const res = await POST(req);
+
+      expect(res.status).toBe(400);
+      const body = await readJson<UserSaveBody>(res);
+      expect(body.error).toBeDefined();
+    });
+
+    it('retorna 400 sem senha', async () => {
+      const { POST } = await importRoute();
+      const req = routeRequest('http://localhost/api/users', {
+        full_name: 'Test',
+        password: '',
+        username: `test.nopw.user.${Date.now()}`,
+      });
+      const res = await POST(req);
+
+      expect(res.status).toBe(400);
+    });
+
+    it('retorna 400 sem full_name', async () => {
+      const { POST } = await importRoute();
+      const req = routeRequest('http://localhost/api/users', {
+        full_name: '',
+        password: '123456',
+        username: `test.noname.user.${Date.now()}`,
+      });
+      const res = await POST(req);
+
+      expect(res.status).toBe(400);
+    });
+
+    it('retorna 409 com username duplicado', async () => {
+      const username = `test.dup.user.${Date.now()}`;
+      await seedTestUser({ full_name: 'Original', username });
+      createdUsernames.push(username);
+
+      const { POST } = await importRoute();
+      const req = routeRequest('http://localhost/api/users', {
+        full_name: 'Duplicado',
+        password: '123456',
+        username,
+      });
+      const res = await POST(req);
+
+      expect(res.status).toBe(409);
+      const body = await readJson<UserSaveBody>(res);
+      expect(body.error).toMatch(/já existe/i);
+    });
+
+    it('aplica defaults (role=attendant, sector_id=null)', async () => {
+      const username = `test.defaults.user.${Date.now()}`;
+      const { POST } = await importRoute();
+      const req = routeRequest('http://localhost/api/users', {
+        full_name: 'Defaults User',
+        password: '123456',
+        username,
+      });
+      const res = await POST(req);
+      const body = await readJson<UserSaveBody>(res);
+
+      expect(res.status).toBe(200);
+      expect(body.user.role).toBe('attendant');
+      expect(body.user.sector_id).toBeNull();
+
+      createdUsernames.push(username);
+    });
+
+    it('faz trim no username', async () => {
+      const base = `test.trim.user.${Date.now()}`;
+      const username = `  ${base}  `;
+      const { POST } = await importRoute();
+      const req = routeRequest('http://localhost/api/users', {
+        full_name: 'Trim User',
+        password: '123456',
+        username,
+      });
+      const res = await POST(req);
+      const body = await readJson<UserSaveBody>(res);
+
+      expect(res.status).toBe(200);
+      expect(body.user.username).toBe(base);
+
+      createdUsernames.push(base);
+    });
+  });
+
+  describe('DELETE', () => {
+    it('retorna 400 sem id', async () => {
+      const { DELETE } = await importRoute();
+      const req = new Request('http://localhost/api/users');
+      const res = await DELETE(req);
+
+      expect(res.status).toBe(400);
+    });
+
+    it('retorna 404 quando usuário não existe', async () => {
+      const { DELETE } = await importRoute();
+      const fakeId = '00000000-0000-0000-0000-000000000000';
+      const req = new Request(`http://localhost/api/users?id=${fakeId}`);
+      const res = await DELETE(req);
+
+      expect(res.status).toBe(404);
+      const body = await readJson<SuccessBody>(res);
+      expect(body.error).toMatch(/não encontrado/i);
+    });
+
+    it('remove usuário e não aparece mais na listagem', async () => {
+      const username = `test.del.user.${Date.now()}`;
+      const user = await seedTestUser({ full_name: 'To Delete', username });
+      createdUsernames.push(username);
+
+      const { DELETE } = await importRoute();
+      const req = new Request(`http://localhost/api/users?id=${user.id}`);
+      const res = await DELETE(req);
+
+      expect(res.status).toBe(200);
+      const body = await readJson<SuccessBody>(res);
+      expect(body.success).toBe(true);
+
+      const repo = await importUsersRepo();
+      const list = await repo.list();
+      const found = list.find((u) => u.id === user.id);
+      expect(found).toBeUndefined();
+    });
+  });
+
+  describe('fluxo completo', () => {
+    it('cria, lista e deleta usuário', async () => {
+      const username = `test.flow.user.${Date.now()}`;
+
+      // 1. Criar
+      const { POST } = await importRoute();
+      const postRes = await POST(
+        routeRequest('http://localhost/api/users', {
+          full_name: 'Flow User',
+          password: '123456',
+          username,
+        }),
+      );
+      const postData = await readJson<UserSaveBody>(postRes);
+      expect(postRes.status).toBe(200);
+      const userId = postData.user.id;
+
+      // 2. Listar e verificar que aparece
+      const { GET } = await importRoute();
+      const getRes = await GET();
+      const getData = await readJson<UsersListBody>(getRes);
+      const found = getData.users.find((u: { id: string }) => u.id === userId);
+      expect(found).toBeDefined();
+      expect(found?.full_name).toBe('Flow User');
+
+      // 3. Deletar
+      const { DELETE } = await importRoute();
+      const delRes = await DELETE(
+        new Request(`http://localhost/api/users?id=${userId}`),
+      );
+      expect(delRes.status).toBe(200);
+
+      // 4. Verificar que não aparece mais
+      const getRes2 = await GET();
+      const getData2 = await readJson<UsersListBody>(getRes2);
+      const notFound = getData2.users.find(
+        (u: { id: string }) => u.id === userId,
+      );
+      expect(notFound).toBeUndefined();
+    });
+  });
+});

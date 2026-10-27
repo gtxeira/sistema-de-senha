@@ -1,0 +1,6 @@
+services:
+  app:
+    image: sistema-de-senha
+    build:
+      context: .
+      target: runner
