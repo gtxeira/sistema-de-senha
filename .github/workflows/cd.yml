@@ -7,9 +7,45 @@ on:
 
 jobs:
   deploy:
+    runs-on: ubuntu-latest
+
     permissions:
       contents: read
       packages: write
 
-    uses: descubra-muriae/workflow-templates/.github/workflows/cd-template.yml@main
-    secrets: inherit
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set image name
+        id: image
+        run: |
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "image_name=ghcr.io/$REPO_LOWER" >> "$GITHUB_OUTPUT"
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ steps.image.outputs.image_name }}:latest
+            ${{ steps.image.outputs.image_name }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Trigger Coolify Webhook
+        run: |
+          curl -f -X POST "${{ secrets.COOLIFY_WEBHOOK }}" \
+            -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}"
