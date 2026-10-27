@@ -1,6 +1,5 @@
 'use client';
 
-import type { LucideIcon } from 'lucide-react';
 import type {
   RoleSaveBody,
   RolesListBody,
@@ -10,6 +9,7 @@ import type {
 } from '@/shared/types/api';
 import type { RoleRecord, UserRecord } from '@/shared/types/domain';
 
+import { type LucideIcon, Trash2Icon } from 'lucide-react';
 import {
   Check,
   ChevronDown,
@@ -40,6 +40,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
+  AlertDialogMedia,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
@@ -124,25 +125,10 @@ const permMatrixStyle =
   'mb-[18px] rounded-[10px] border border-[#dde9ed] bg-[#f9fcfe] p-[18px]';
 const permMatrixTitleStyle =
   'flex flex-wrap items-center justify-between gap-2 text-[12px] font-bold uppercase tracking-[0.5px] text-[#416477]';
-const permGroupStyle = 'mb-4';
-const permGroupTitleStyle =
-  'mb-2 text-[11px] font-extrabold uppercase tracking-[0.8px] text-[#7a9aad]';
-/* No mobile a permissão e o seletor Herdar/Conceder/Negar empilham: lado a
-   lado o trio de botões não cabia na largura do diálogo e o "Negar"
-   ficava cortado. */
-const permRowStyle =
-  'flex flex-col items-stretch justify-between gap-2 border-b border-dashed border-[#eaf1f4] py-2.5 last:border-b-0 sm:flex-row sm:items-center sm:gap-3 sm:py-1.5';
-const permOnStyle =
-  'inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#1c7c4a]';
-const permOffStyle =
-  'inline-flex items-center gap-1.5 text-[13px] text-[#9ab0bd]';
-const permCheckStyle =
-  'flex cursor-pointer items-center gap-2 py-1 text-[13px] text-[#416477]';
 const formActionsStyle = 'flex gap-2.5 justify-end';
 
 /* Tabelas e estados de lista. */
 const usersTableStyle = 'mt-3 w-full max-w-full';
-const loadingMsgStyle = 'mt-5 text-[13px] text-[#7a9aad]';
 const emptyMsgStyle = 'p-6 text-center text-[13px] text-[#7a9aad]';
 const roleDescriptionStyle =
   'mt-[3px] text-[12px] font-normal tracking-normal text-[#7a9aad]';
@@ -745,11 +731,13 @@ export function AccessSection() {
                             return (
                               <div
                                 key={item.permission}
-                                className={permRowStyle}
+                                className="flex flex-col items-stretch justify-between gap-2 border-b border-dashed border-[#eaf1f4] py-2.5 last:border-b-0 sm:flex-row sm:items-center sm:gap-3 sm:py-1.5"
                               >
                                 <span
                                   className={
-                                    effective ? permOnStyle : permOffStyle
+                                    effective
+                                      ? 'inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#1c7c4a]'
+                                      : 'inline-flex items-center gap-1.5 text-[13px] text-[#9ab0bd]'
                                   }
                                 >
                                   {effective ? (
@@ -830,7 +818,9 @@ export function AccessSection() {
           </Dialog>
 
           <div className={usersTableStyle}>
-            {loading && <p className={loadingMsgStyle}>Carregando…</p>}
+            {loading && (
+              <p className="mt-5 text-[13px] text-[#7a9aad]">Carregando…</p>
+            )}
             {!loading && users.length === 0 && (
               <p className={emptyMsgStyle}>Nenhum usuário cadastrado.</p>
             )}
@@ -1041,12 +1031,14 @@ export function AccessSection() {
                     </Badge>
                   </p>
                   {PERMISSION_GROUPS.map((group) => (
-                    <div key={group.key} className={permGroupStyle}>
-                      <h4 className={permGroupTitleStyle}>{group.label}</h4>
+                    <div key={group.key} className="mb-4">
+                      <h4 className="mb-2 text-[11px] font-extrabold tracking-[0.8px] text-[#7a9aad] uppercase">
+                        {group.label}
+                      </h4>
                       {group.items.map((item) => (
                         <label
                           key={item.permission}
-                          className={permCheckStyle}
+                          className="flex cursor-pointer items-center gap-2 py-1 text-[13px] text-[#416477]"
                           onClick={(e) => {
                             e.preventDefault();
                             if (
@@ -1201,8 +1193,11 @@ export function AccessSection() {
           if (!open) setDeleteUserTarget(null);
         }}
       >
-        <AlertDialogContent>
+        <AlertDialogContent size="sm">
           <AlertDialogHeader>
+            <AlertDialogMedia className="bg-destructive/10 text-destructive">
+              <Trash2Icon />
+            </AlertDialogMedia>
             <AlertDialogTitle>
               {deleteUserTarget
                 ? `Excluir o usuário "${deleteUserTarget.full_name}"?`

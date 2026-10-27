@@ -11,11 +11,13 @@ import type { NewsItem } from '@/shared/types/domain';
 
 import {
   AlertTriangle,
+  ImageIcon,
   ImagePlus,
   Monitor,
   RotateCcw,
   Save,
   Trash2,
+  Trash2Icon,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -48,6 +50,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
+  AlertDialogMedia,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -85,37 +88,6 @@ import {
   SCREEN_ADMIN_USUARIOS,
   SECTORS_MANAGE_ALL,
 } from '@/shared/permissions';
-
-/* ── classes locais desta tela (as comuns vêm de ./admin-styles) ── */
-
-/** Cartões de setor: grid duplo que vira coluna no mobile.
- *  O corte é em `lg` (1024px) e não em `sm`: entre 768px e 1024px a
- *  sidebar continua aberta e sobra pouca largura para duas colunas. */
-const sectorsStyle = 'mt-5 grid grid-cols-1 gap-3.5 lg:grid-cols-2';
-const sectorCardStyle =
-  'flex flex-col justify-between gap-3 rounded-[8px] border border-[#e1ebee] p-[18px] lg:flex-row';
-const cardActionsStyle = 'flex flex-col gap-2';
-
-/** Faixa laranja de "resetar todos os setores". */
-const resetAllWrapperStyle =
-  'mt-5 flex flex-wrap items-center justify-between gap-4 rounded-[8px] border border-[#f5d9b8] bg-[#fff8f0] px-[18px] py-4';
-const resetAllInfoStyle =
-  'flex min-w-[200px] flex-1 items-center gap-2.5 text-[12px] leading-normal text-[#7a4a1e]';
-
-/** Formulário e grade de notícias do monitor. */
-const newsFormStyle =
-  'mt-5 grid grid-cols-1 gap-2.5 lg:grid-cols-[1.3fr_1fr_auto]';
-const uploadStyle =
-  'flex h-8 cursor-pointer items-center gap-[7px] rounded-lg border border-input px-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent';
-const newsGridStyle = 'mt-5 flex flex-wrap gap-3';
-const newsCardStyle =
-  'w-[150px] overflow-hidden rounded-[7px] border border-[#e1ebee]';
-const newsTitleStyle = 'block p-[9px] text-[11px]';
-
-/** Seção de sincronização de senha. */
-const syncInfoStyle = 'mb-4 text-[13px] leading-normal text-[#5a7a8a]';
-const syncRowStyle =
-  'grid grid-cols-1 items-end gap-3 lg:grid-cols-[1fr_1fr_1fr_auto]';
 
 /**
  * Item do carrossel de notícias da tela de administração: o que vem do
@@ -378,7 +350,7 @@ export default function AdminPage() {
               </div>
             </div>
 
-            <div className={sectorsStyle}>
+            <div className="mt-5 grid grid-cols-1 gap-3.5 lg:grid-cols-2">
               {Object.values(SECTORS)
                 .filter((item) => canAccessSector(session, item.id, 'read'))
                 .map((item) => {
@@ -387,7 +359,10 @@ export default function AdminPage() {
                   const canResetSector =
                     canReset && canAccessSector(session, item.id, 'write');
                   return (
-                    <article key={item.id} className={sectorCardStyle}>
+                    <article
+                      key={item.id}
+                      className="flex flex-col justify-between gap-3 rounded-[8px] border border-[#e1ebee] p-4.5 lg:flex-row"
+                    >
                       <div>
                         <strong className="block">{item.name}</strong>
                         <small className="mt-2 block text-[11px] text-[#7a919e]">
@@ -403,7 +378,7 @@ export default function AdminPage() {
                             : `P${String(queue.priorityCurrent).padStart(3, '0')}`}
                         </small>
                       </div>
-                      <div className={cardActionsStyle}>
+                      <div className="flex flex-col gap-2">
                         <Link
                           href={`/monitor/${item.id}`}
                           target="_blank"
@@ -432,8 +407,8 @@ export default function AdminPage() {
             </div>
 
             {canReset && canManageAllSectors && (
-              <div className={resetAllWrapperStyle}>
-                <div className={resetAllInfoStyle}>
+              <div className="mt-5 flex flex-wrap items-center justify-between gap-4 rounded-[8px] border border-[#f5d9b8] bg-[#fff8f0] px-4.5 py-4">
+                <div className="flex min-w-50 flex-1 items-center gap-2.5 text-[12px] leading-normal text-[#7a4a1e]">
                   <AlertTriangle
                     size={16}
                     className="shrink-0 text-[#c97a1e]"
@@ -474,7 +449,10 @@ export default function AdminPage() {
             </div>
 
             {canCreateNews && (
-              <form className={newsFormStyle} onSubmit={addNews}>
+              <form
+                className="mt-5 grid grid-cols-1 gap-2.5 lg:grid-cols-[1.3fr_1fr_auto]"
+                onSubmit={addNews}
+              >
                 <Input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
@@ -482,9 +460,15 @@ export default function AdminPage() {
                   className="h-8"
                   required
                 />
-                <label className={uploadStyle}>
-                  <ImagePlus data-icon="inline-start" className="size-4" />
+                <label className="flex h-8 cursor-pointer items-center gap-1.75 rounded-lg border border-input px-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent">
+                  {image ? (
+                    <ImageIcon data-icon="inline-start" className="size-4" />
+                  ) : (
+                    <ImagePlus data-icon="inline-start" className="size-4" />
+                  )}
+
                   {image ? 'Imagem selecionada' : 'Adicionar imagem'}
+
                   <input
                     type="file"
                     accept="image/*"
@@ -493,24 +477,30 @@ export default function AdminPage() {
                     required
                   />
                 </label>
+
                 <Button type="submit">
                   <ImagePlus data-icon="inline-start" /> Adicionar à lista
                 </Button>
               </form>
             )}
 
-            <div className={newsGridStyle}>
+            <div className="mt-5 flex flex-wrap gap-3">
               {draftNews.map((item, i) => (
-                <article key={`${item.title}-${i}`} className={newsCardStyle}>
+                <article
+                  key={`${item.title}-${i}`}
+                  className="w-[150px] overflow-hidden rounded-[7px] border border-[#e1ebee]"
+                >
                   <Image
                     src={item.image}
                     alt=""
                     width={300}
                     height={170}
-                    className="h-[85px] w-full object-cover"
+                    className="h-21.25 w-full object-cover"
                     unoptimized
                   />
-                  <strong className={newsTitleStyle}>{item.title}</strong>
+                  <strong className="block p-[9px] text-[11px]">
+                    {item.title}
+                  </strong>
                   {canDeleteNews && (
                     <Button
                       variant="ghost"
@@ -527,7 +517,7 @@ export default function AdminPage() {
 
             {(canCreateNews || canDeleteNews) && (
               <Button
-                className="mt-[18px]"
+                className="mt-4.5"
                 onClick={() => void saveNews()}
                 disabled={savingNews}
               >
@@ -548,17 +538,22 @@ export default function AdminPage() {
             if (!open) setResetPending(null);
           }}
         >
-          <AlertDialogContent>
+          <AlertDialogContent size="sm">
             <AlertDialogHeader>
+              <AlertDialogMedia className="bg-destructive/10 text-destructive">
+                <Trash2Icon />
+              </AlertDialogMedia>
               <AlertDialogTitle>
                 {resetIsAll
-                  ? 'ATENÇÃO'
+                  ? 'Zerar as senhas de todos os setores?'
                   : `Zerar as senhas do setor "${resetLabel}"?`}
               </AlertDialogTitle>
-              <AlertDialogDescription className="whitespace-pre-line">
-                {resetIsAll
-                  ? `Isso vai zerar as senhas de ${resetLabel}.\n\nA numeração voltará para ${MIN_QUEUE_NUMBER.toString().padStart(3, '0')}. Esta ação não pode ser desfeita.\n\nDeseja continuar?`
-                  : `A numeração voltará para ${MIN_QUEUE_NUMBER.toString().padStart(3, '0')}.`}
+              <AlertDialogDescription className="flex flex-col whitespace-pre-line">
+                A numeração voltará para{' '}
+                {MIN_QUEUE_NUMBER.toString().padStart(3, '0')}.
+                <small className="mt-1">
+                  Esta ação não poderá ser desfeita.
+                </small>
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -580,13 +575,20 @@ export default function AdminPage() {
             if (!open) setDeleteNewsTarget(null);
           }}
         >
-          <AlertDialogContent>
+          <AlertDialogContent size="sm">
             <AlertDialogHeader>
+              <AlertDialogMedia className="bg-destructive/10 text-destructive">
+                <Trash2Icon />
+              </AlertDialogMedia>
               <AlertDialogTitle>Excluir esta notícia?</AlertDialogTitle>
-              <AlertDialogDescription>
-                {deleteNewsTarget
-                  ? `"${deleteNewsTarget.title}" sairá da lista exibida no monitor. A exclusão é efetivada ao clicar em "Salvar notícias".`
-                  : null}
+              <AlertDialogDescription className="flex flex-col">
+                A imagem{' '}
+                {deleteNewsTarget ? `"${deleteNewsTarget.title}" ` : null}
+                sairá da lista exibida no monitor.
+                <small className="mt-1">
+                  A exclusão é efetivada ao clicar em &quot;Salvar
+                  notícias&quot;.
+                </small>
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -694,7 +696,7 @@ function SyncSection({ canSync, session }: SyncSectionProps) {
         </div>
       </div>
 
-      <p className={syncInfoStyle}>
+      <p className="mb-4 text-[13px] leading-normal text-[#5a7a8a]">
         Pule para um número específico de senha. Útil quando senhas são perdidas
         ou não aparecem nos monitores.
       </p>
@@ -711,7 +713,7 @@ function SyncSection({ canSync, session }: SyncSectionProps) {
 
       {canSync && (
         <form className="mt-4" onSubmit={(e) => void handleSync(e)}>
-          <div className={syncRowStyle}>
+          <div className="grid grid-cols-1 items-end gap-3 lg:grid-cols-[1fr_1fr_1fr_auto]">
             <FilterGroup label="Setor">
               <Select
                 value={syncSector}
@@ -783,6 +785,22 @@ function SyncSection({ canSync, session }: SyncSectionProps) {
           </div>
         </form>
       )}
+
+      <AlertDialog>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your
+              account from our servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction>Continue</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }
