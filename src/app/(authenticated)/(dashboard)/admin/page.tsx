@@ -20,7 +20,6 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { toast } from 'sonner';
 
 import { AccessSection } from '@/app/(authenticated)/(dashboard)/admin/access-section';
 import {
@@ -62,6 +61,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { toast } from '@/components/ui/toast';
 import { useEffectiveSession } from '@/hooks/use-effective-session';
 import {
   CALL_TYPES,
@@ -226,7 +226,10 @@ export default function AdminPage() {
       );
 
       if (!res.ok) {
-        toast.error(data.error || 'Erro ao zerar o contador no banco.');
+        toast.add({
+          title: data.error || 'Erro ao zerar o contador no banco.',
+          type: 'error',
+        });
         return;
       }
 
@@ -242,13 +245,14 @@ export default function AdminPage() {
       });
       saveQueueState(next);
 
-      toast.success(
-        isAll
+      toast.add({
+        title: isAll
           ? `Todas as senhas foram resetadas. Numeração reinicia em ${MIN_QUEUE_NUMBER.toString().padStart(3, '0')}.`
           : `Senhas de "${label}" zeradas. Numeração reinicia em ${MIN_QUEUE_NUMBER.toString().padStart(3, '0')}.`,
-      );
+        type: 'success',
+      });
     } catch {
-      toast.error('Erro ao zerar os contadores.');
+      toast.add({ title: 'Erro ao zerar os contadores.', type: 'error' });
     } finally {
       setResettingSector((prev) => {
         const next = { ...prev };
@@ -274,9 +278,10 @@ export default function AdminPage() {
     setTitle('');
     setImage('');
     pendingFileRef.current = null;
-    toast.info(
-      "Alteração pendente. Clique em 'Salvar notícias' para publicar.",
-    );
+    toast.add({
+      title: "Alteração pendente. Clique em 'Salvar notícias' para publicar.",
+      type: 'info',
+    });
   }
 
   async function saveNews() {
@@ -315,9 +320,15 @@ export default function AdminPage() {
       setDraftNews(data.news);
       refreshNews((v) => v + 1);
       window.dispatchEvent(new Event('news-updated'));
-      toast.success(`${created.length} notícia(s) salva(s) com sucesso.`);
+      toast.add({
+        title: `${created.length} notícia(s) salva(s) com sucesso.`,
+        type: 'success',
+      });
     } catch (error) {
-      toast.error(errorMessage(error, 'Não foi possível salvar as notícias.'));
+      toast.add({
+        title: errorMessage(error, 'Não foi possível salvar as notícias.'),
+        type: 'error',
+      });
     } finally {
       setSavingNews(false);
     }
@@ -332,9 +343,10 @@ export default function AdminPage() {
     setDraftNews(
       draftNews.filter((item) => String(item.id) !== String(target.id)),
     );
-    toast.info(
-      "Exclusão pendente. Clique em 'Salvar notícias' para confirmar.",
-    );
+    toast.add({
+      title: "Exclusão pendente. Clique em 'Salvar notícias' para confirmar.",
+      type: 'info',
+    });
   }
 
   function readImage(event: React.ChangeEvent<HTMLInputElement>) {
@@ -639,7 +651,7 @@ function SyncSection({ canSync, session }: SyncSectionProps) {
     try {
       const num = Number.parseInt(syncNumber, 10);
       if (!num || num < 1 || num > MAX_QUEUE_NUMBER) {
-        toast.error('Use um número entre 1 e 999.');
+        toast.add({ title: 'Use um número entre 1 e 999.', type: 'error' });
         return;
       }
 
@@ -656,10 +668,16 @@ function SyncSection({ canSync, session }: SyncSectionProps) {
 
       if (!res.ok) throw new Error(data.error);
 
-      toast.success(data.message || `Próxima senha: ${data.numberStr}`);
+      toast.add({
+        title: data.message || `Próxima senha: ${data.numberStr}`,
+        type: 'success',
+      });
       setSyncNumber('');
     } catch (error) {
-      toast.error(errorMessage(error, 'Erro ao sincronizar senha.'));
+      toast.add({
+        title: errorMessage(error, 'Erro ao sincronizar senha.'),
+        type: 'error',
+      });
     } finally {
       setSyncing(false);
     }

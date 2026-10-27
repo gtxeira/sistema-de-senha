@@ -1,9 +1,9 @@
 'use client';
 
 import { type ReactNode, useEffect } from 'react';
-import { Toaster } from 'sonner';
 
 import { startSessionRefresh } from '@/client/session/session-refresh';
+import { Toaster } from '@/components/ui/toast';
 import { readCachedSession, useSessionStore } from '@/stores/use-session-store';
 
 export default function Providers({ children }: { children: ReactNode }) {
@@ -21,10 +21,5 @@ export default function Providers({ children }: { children: ReactNode }) {
     useSessionStore.setState({ user: readCachedSession() });
   }, []);
 
-  return (
-    <>
-      {children}
-      <Toaster position="top-right" richColors closeButton />
-    </>
-  );
+  return <Toaster>{children}</Toaster>;
 }

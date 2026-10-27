@@ -23,7 +23,6 @@ import {
   UserCheck,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
 
 import {
   sectionEyebrowStyle,
@@ -78,6 +77,7 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { toast } from '@/components/ui/toast';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
   getSector,
@@ -235,7 +235,10 @@ export function AccessSection() {
       if (!res.ok) throw new Error(data.error);
       setUsers(data.users || []);
     } catch (error) {
-      toast.error(errorMessage(error, 'Erro ao carregar usuários'));
+      toast.add({
+        title: errorMessage(error, 'Erro ao carregar usuários'),
+        type: 'error',
+      });
     } finally {
       setLoading(false);
     }
@@ -248,7 +251,10 @@ export function AccessSection() {
       if (!res.ok) throw new Error(data.error);
       setRoles(data.roles || []);
     } catch (error) {
-      toast.error(errorMessage(error, 'Erro ao carregar cargos'));
+      toast.add({
+        title: errorMessage(error, 'Erro ao carregar cargos'),
+        type: 'error',
+      });
     }
   }
 
@@ -330,15 +336,19 @@ export function AccessSection() {
       const data = await readJson<UserSaveBody>(res);
       if (!res.ok) throw new Error(data.error);
 
-      toast.success(
-        editingUserId
+      toast.add({
+        title: editingUserId
           ? 'Usuário atualizado com sucesso.'
           : `Usuário ${userForm.full_name} criado com sucesso!`,
-      );
+        type: 'success',
+      });
       closeUserForm();
       await loadUsers();
     } catch (error) {
-      toast.error(errorMessage(error, 'Erro ao salvar usuário'));
+      toast.add({
+        title: errorMessage(error, 'Erro ao salvar usuário'),
+        type: 'error',
+      });
     } finally {
       setLoading(false);
     }
@@ -357,10 +367,16 @@ export function AccessSection() {
       });
       const data = await readJson<SuccessBody>(res);
       if (!res.ok) throw new Error(data.error);
-      toast.success(`Usuário ${target.full_name} excluído com sucesso.`);
+      toast.add({
+        title: `Usuário ${target.full_name} excluído com sucesso.`,
+        type: 'success',
+      });
       await loadUsers();
     } catch (error) {
-      toast.error(errorMessage(error, 'Erro ao excluir usuário'));
+      toast.add({
+        title: errorMessage(error, 'Erro ao excluir usuário'),
+        type: 'error',
+      });
     } finally {
       setLoading(false);
     }
@@ -426,12 +442,18 @@ export function AccessSection() {
       const data = await readJson<RoleSaveBody>(res);
       if (!res.ok) throw new Error(data.error);
 
-      toast.success(editingRoleId ? 'Cargo atualizado.' : 'Cargo criado.');
+      toast.add({
+        title: editingRoleId ? 'Cargo atualizado.' : 'Cargo criado.',
+        type: 'success',
+      });
       closeRoleForm();
       await loadRoles();
       await loadUsers();
     } catch (error) {
-      toast.error(errorMessage(error, 'Erro ao salvar cargo'));
+      toast.add({
+        title: errorMessage(error, 'Erro ao salvar cargo'),
+        type: 'error',
+      });
     } finally {
       setLoading(false);
     }
@@ -449,11 +471,14 @@ export function AccessSection() {
       });
       const data = await readJson<SuccessBody>(res);
       if (!res.ok) throw new Error(data.error);
-      toast.success('Cargo excluído.');
+      toast.add({ title: 'Cargo excluído.', type: 'success' });
       await loadRoles();
       await loadUsers();
     } catch (error) {
-      toast.error(errorMessage(error, 'Erro ao excluir cargo'));
+      toast.add({
+        title: errorMessage(error, 'Erro ao excluir cargo'),
+        type: 'error',
+      });
     } finally {
       setLoading(false);
     }
