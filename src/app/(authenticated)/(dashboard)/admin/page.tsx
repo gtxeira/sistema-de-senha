@@ -88,6 +88,7 @@ import {
   SCREEN_ADMIN_USUARIOS,
   SECTORS_MANAGE_ALL,
 } from '@/shared/permissions';
+import { formatNumberString, normalizeCallType } from '@/shared/queue-format';
 
 /**
  * Item do carrossel de notícias da tela de administração: o que vem do
@@ -640,28 +641,59 @@ function SyncSection({ canSync, session }: SyncSectionProps) {
   const [syncType, setSyncType] = useState<string>(CALL_TYPES.NORMAL);
   const [syncNumber, setSyncNumber] = useState('');
   const [syncing, setSyncing] = useState(false);
+  // Alvo da sincronização pendente de confirmação; null = diálogo fechado.
+  const [syncPending, setSyncPending] = useState<{
+    readonly nextNumber: number;
+    readonly sector: string;
+    readonly type: string;
+  } | null>(null);
 
   // Setores operáveis por esta sessão (escopo de escrita)
   const syncSectors = Object.values(SECTORS).filter((s) =>
     canAccessSector(session, s.id, 'write'),
   );
 
-  async function handleSync(e: React.FormEvent<HTMLFormElement>) {
+  // Prévia exibida no diálogo de confirmação.
+  const pendingSector = syncPending ? getSector(syncPending.sector) : undefined;
+  const pendingType = syncPending
+    ? normalizeCallType(syncPending.type)
+    : undefined;
+  const pendingNumberStr =
+    syncPending && pendingType
+      ? formatNumberString(syncPending.nextNumber, pendingType.callType)
+      : '';
+  const pendingSectorName =
+    pendingSector?.name ?? syncPending?.sector ?? 'setor selecionado';
+
+  function handleSync(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
+    const num = Number.parseInt(syncNumber, 10);
+    if (!num || num < 1 || num > MAX_QUEUE_NUMBER) {
+      toast.add({ title: 'Use um número entre 1 e 999.', type: 'error' });
+      return;
+    }
+
+    // O envio só acontece depois da confirmação explícita.
+    setSyncPending({
+      nextNumber: num,
+      sector: syncSector,
+      type: syncType,
+    });
+  }
+
+  async function confirmSync() {
+    const pending = syncPending;
+    if (!pending) return;
+    setSyncPending(null);
     setSyncing(true);
 
     try {
-      const num = Number.parseInt(syncNumber, 10);
-      if (!num || num < 1 || num > MAX_QUEUE_NUMBER) {
-        toast.add({ title: 'Use um número entre 1 e 999.', type: 'error' });
-        return;
-      }
-
       const res = await fetch('/api/queue/sync', {
         body: JSON.stringify({
-          nextNumber: num,
-          sector: syncSector,
-          type: syncType,
+          nextNumber: pending.nextNumber,
+          sector: pending.sector,
+          type: pending.type,
         }),
         headers: { 'Content-Type': 'application/json' },
         method: 'POST',
@@ -786,18 +818,63 @@ function SyncSection({ canSync, session }: SyncSectionProps) {
         </form>
       )}
 
-      <AlertDialog>
-        <AlertDialogContent>
+      <AlertDialog
+        open={syncPending !== null}
+        onOpenChange={(open) => {
+          if (!open) setSyncPending(null);
+        }}
+      >
+        <AlertDialogContent size="default">
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete your
-              account from our servers.
+            <AlertDialogMedia className="bg-primary/10 text-primary">
+              <RotateCcw />
+            </AlertDialogMedia>
+            <AlertDialogTitle>
+              Sincronizar a fila de &quot;{pendingSectorName}&quot;?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="flex flex-col gap-3">
+              <span>
+                A numeração será ajustada para que a{' '}
+                <strong>próxima senha chamada</strong> seja a indicada abaixo.
+              </span>
+
+              <span className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 rounded-lg bg-muted/60 p-3 text-left text-foreground">
+                <span className="text-muted-foreground">Setor</span>
+                <span className="font-medium">{pendingSectorName}</span>
+
+                <span className="text-muted-foreground">Tipo</span>
+                <span className="font-medium">
+                  {pendingType?.sequenceType === CALL_TYPES.PREFERENCIAL
+                    ? 'Preferencial'
+                    : 'Normal'}
+                </span>
+
+                <span className="text-muted-foreground">Novo número</span>
+                <span className="font-heading text-base font-semibold tabular-nums">
+                  {pendingNumberStr}
+                </span>
+              </span>
+
+              <span>
+                Somente a sequência deste setor e tipo é alterada. As senhas já
+                chamadas e o histórico permanecem intactos; as chamadas
+                seguintes continuam a partir do novo número.
+              </span>
+
+              <small className="text-xs">
+                Esta ação não poderá ser desfeita. Confira o setor e o número
+                antes de continuar.
+              </small>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction>Continue</AlertDialogAction>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={syncing}
+              onClick={() => void confirmSync()}
+            >
+              {syncing ? 'Sincronizando…' : 'Sincronizar'}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
